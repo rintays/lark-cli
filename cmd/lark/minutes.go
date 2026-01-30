@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 const maxMinutesPageSize = 50
@@ -81,7 +81,7 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			minutes := make([]larkapi.Minute, 0, limit)
+			minutes := make([]larksdk.Minute, 0, limit)
 			pageToken := ""
 			remaining := limit
 			for {
@@ -89,7 +89,7 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 				if pageSize > maxMinutesPageSize {
 					pageSize = maxMinutesPageSize
 				}
-				result, err := state.SDK.ListMinutes(context.Background(), token, larkapi.ListMinutesRequest{
+				result, err := state.SDK.ListMinutes(context.Background(), token, larksdk.ListMinutesRequest{
 					PageSize:   pageSize,
 					PageToken:  pageToken,
 					UserIDType: userIDType,

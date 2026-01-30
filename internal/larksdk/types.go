@@ -17,3 +17,9 @@ type ExportTaskResult = larkapi.ExportTaskResult
 type Meeting = larkapi.Meeting
 
 type GetMeetingRequest = larkapi.GetMeetingRequest
+
+type Minute = larkapi.Minute
+
+type ListMinutesRequest = larkapi.ListMinutesRequest
+
+type ListMinutesResult = larkapi.ListMinutesResult
