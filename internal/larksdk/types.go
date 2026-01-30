@@ -1,6 +1,9 @@
 package larksdk
 
-import "io"
+import (
+	"encoding/json"
+	"io"
+)
 
 type Chat struct {
 	ChatID      string `json:"chat_id"`
@@ -129,6 +132,19 @@ type BaseRecord struct {
 	Fields           map[string]any `json:"fields,omitempty"`
 	CreatedTime      string         `json:"created_time"`
 	LastModifiedTime string         `json:"last_modified_time"`
+}
+
+type SearchBaseRecordsRequest struct {
+	ViewID   string          `json:"view_id,omitempty"`
+	Filter   json.RawMessage `json:"filter,omitempty"`
+	Sort     json.RawMessage `json:"sort,omitempty"`
+	PageSize int             `json:"page_size,omitempty"`
+}
+
+type SearchBaseRecordsResult struct {
+	Items     []BaseRecord `json:"items"`
+	PageToken string       `json:"page_token"`
+	HasMore   bool         `json:"has_more"`
 }
 
 type ListBaseTablesResult struct {

@@ -53,6 +53,7 @@ func newBaseRecordCmd(state *appState) *cobra.Command {
 		Use:   "record",
 		Short: "Manage Bitable records",
 	}
+	cmd.AddCommand(newBaseRecordSearchCmd(state))
 	cmd.AddCommand(newBaseRecordGetCmd(state))
 	return cmd
 }

@@ -242,3 +242,75 @@ func (c *Client) GetBaseRecord(ctx context.Context, token, appToken, tableID, re
 	}
 	return resp.Data.Record, nil
 }
+
+type searchBaseRecordsRequestBody struct {
+	AppToken string `json:"app_token"`
+	TableID  string `json:"table_id"`
+	SearchBaseRecordsRequest
+}
+
+type searchBaseRecordsResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *searchBaseRecordsResponseData `json:"data"`
+}
+
+type searchBaseRecordsResponseData struct {
+	Items     []BaseRecord `json:"items"`
+	PageToken string       `json:"page_token"`
+	HasMore   bool         `json:"has_more"`
+}
+
+func (r *searchBaseRecordsResponse) Success() bool { return r.Code == 0 }
+
+func (c *Client) SearchBaseRecords(ctx context.Context, token, appToken, tableID string, req SearchBaseRecordsRequest) (SearchBaseRecordsResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return SearchBaseRecordsResult{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return SearchBaseRecordsResult{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return SearchBaseRecordsResult{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return SearchBaseRecordsResult{}, errors.New("table id is required")
+	}
+
+	body := searchBaseRecordsRequestBody{
+		AppToken:                 appToken,
+		TableID:                  tableID,
+		SearchBaseRecordsRequest: req,
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/records/search",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
+		Body:                      body,
+	}
+	apiReq.PathParams.Set("app_token", appToken)
+	apiReq.PathParams.Set("table_id", tableID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return SearchBaseRecordsResult{}, err
+	}
+	if apiResp == nil {
+		return SearchBaseRecordsResult{}, errors.New("search base records failed: empty response")
+	}
+	resp := &searchBaseRecordsResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return SearchBaseRecordsResult{}, err
+	}
+	if !resp.Success() {
+		return SearchBaseRecordsResult{}, fmt.Errorf("search base records failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return SearchBaseRecordsResult{}, nil
+	}
+	return SearchBaseRecordsResult{Items: resp.Data.Items, PageToken: resp.Data.PageToken, HasMore: resp.Data.HasMore}, nil
+}

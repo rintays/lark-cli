@@ -243,6 +243,7 @@ Example:
 ./lark base field list --help
 ./lark base view list --help
 ./lark base record get --help
+./lark base record search --help
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ```
