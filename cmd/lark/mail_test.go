@@ -225,6 +225,18 @@ func TestMailGetCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestMailGetCommandRequiresMessageID(t *testing.T) {
+	cmd := newMailCmd(&appState{})
+	cmd.SetArgs([]string{"get", "--mailbox-id", "mbx_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"message-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestMailListCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{

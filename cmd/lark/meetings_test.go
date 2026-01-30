@@ -93,3 +93,15 @@ func TestMeetingGetCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestMeetingGetRequiresMeetingID(t *testing.T) {
+	cmd := newMeetingsCmd(&appState{})
+	cmd.SetArgs([]string{"get"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"meeting-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

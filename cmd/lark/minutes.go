@@ -31,17 +31,16 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 		Use:   "get <minute-token>",
 		Short: "Get Minutes details",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				return cobra.MaximumNArgs(1)(cmd, args)
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
 			}
 			if len(args) > 0 {
 				if minuteToken != "" && minuteToken != args[0] {
 					return errors.New("minute-token provided twice")
 				}
-				minuteToken = args[0]
-			}
-			if minuteToken == "" {
-				return errors.New("minute-token is required")
+				if err := cmd.Flags().Set("minute-token", args[0]); err != nil {
+					return err
+				}
 			}
 			return nil
 		},
@@ -65,6 +64,7 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&minuteToken, "minute-token", "", "minute token (or provide as positional argument)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
+	_ = cmd.MarkFlagRequired("minute-token")
 	return cmd
 }
 

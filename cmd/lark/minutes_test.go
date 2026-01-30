@@ -94,6 +94,18 @@ func TestMinutesGetCommand(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+
+	t.Run("requires minute token", func(t *testing.T) {
+		cmd := newMinutesCmd(&appState{})
+		cmd.SetArgs([]string{"get"})
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if err.Error() != "required flag(s) \"minute-token\" not set" {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestMinutesListCommand(t *testing.T) {

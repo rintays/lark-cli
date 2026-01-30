@@ -143,17 +143,16 @@ func newMailGetCmd(state *appState) *cobra.Command {
 		Use:   "get <message-id>",
 		Short: "Get a mail message",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				return cobra.MaximumNArgs(1)(cmd, args)
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
 			}
 			if len(args) > 0 {
 				if messageID != "" && messageID != args[0] {
 					return errors.New("message-id provided twice")
 				}
-				messageID = args[0]
-			}
-			if messageID == "" {
-				return errors.New("message-id is required")
+				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
+					return err
+				}
 			}
 			return nil
 		},
@@ -177,6 +176,7 @@ func newMailGetCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
 	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("mailbox-id")
+	_ = cmd.MarkFlagRequired("message-id")
 	return cmd
 }
 
