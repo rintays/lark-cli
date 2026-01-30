@@ -1,221 +1,259 @@
-# lark
+# lark — Feishu/Lark in your terminal
 
-A Golang CLI for Feishu/Lark inspired by gog.
+Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**. Inspired by `gog`.
 
-## Usage
+- **JSON-first output** (`--json`) for scripting
+- **gog-like command layout** (top-level product areas → subcommands)
+- **SDK-first** implementation using the official `oapi-sdk-go` (with `core.ApiReq` for gaps)
 
-### Mail user OAuth token
-Some Mail actions (notably **mail send**) require a **user access token** (OAuth), not a tenant token.
+> Status: actively developed. See “Not implemented yet / TODO” at the bottom.
 
-Provide it either via:
-- `--user-access-token <token>`
-- or environment variable `LARK_USER_ACCESS_TOKEN`
+---
 
-Configure credentials (writes `~/.config/lark/config.json` by default):
+## Features (today)
+
+- **Auth**
+  - Tenant token fetch + caching
+  - Config file support + env fallback
+- **Users / Chats / Msg (IM)**
+  - search users
+  - list chats
+  - send messages (supports `--receive-id-type`)
+- **Drive**
+  - list/search/get/urls/download/upload
+  - share permission updates
+- **Docs (docx)**
+  - create/get/export/cat
+- **Sheets**
+  - read/update/append/clear/metadata
+- **Calendar**
+  - list/create events
+- **Contacts**
+  - basic user lookup
+- **Meetings / Minutes**
+  - baseline read operations (see command help)
+
+---
+
+## Installation
+
+### Build from source
+
+```bash
+git clone https://github.com/rintays/lark.git
+cd lark
+go build -o lark ./cmd/lark
+
+./lark --help
+```
+
+---
+
+## Quick start
+
+### 1) Configure app credentials
+
+Store credentials in config (default: `~/.config/lark/config.json`):
 
 ```bash
 lark auth login --app-id <APP_ID> --app-secret <APP_SECRET>
 ```
 
-You can also set credentials via environment variables when the config fields are empty (config values take precedence):
+Or set env vars (used only when config is empty; config wins):
 
 ```bash
 export LARK_APP_ID=<APP_ID>
 export LARK_APP_SECRET=<APP_SECRET>
 ```
 
-Optionally override the API base URL:
-
-```bash
-lark auth login --app-id <APP_ID> --app-secret <APP_SECRET> --base-url https://open.feishu.cn
-```
-
-Fetch a tenant access token (cached in config):
+### 2) Get tenant token
 
 ```bash
 lark auth
 ```
 
-Get tenant info:
+### 3) Try basic commands
 
 ```bash
 lark whoami
+lark chats list --limit 10
+lark users search --email user@example.com
+lark msg send --chat-id <CHAT_ID> --text "hello"
 ```
 
-Send a message:
+---
+
+## Output modes
+
+- Default: human-friendly text
+- `--json`: machine-readable JSON (recommended for scripts)
+
+Examples:
+
+```bash
+lark chats list --json
+lark users search --email user@example.com --json
+```
+
+---
+
+## Global flags
+
+- `--config <path>`: override config path
+- `--json`: JSON output
+
+---
+
+## Common recipes (examples)
+
+### Send a message
 
 ```bash
 lark msg send --chat-id <CHAT_ID> --text "hello"
 ```
 
-Send a message to a user by email:
+Send to a user by email:
 
 ```bash
 lark msg send --receive-id-type email --receive-id user@example.com --text "hello"
 ```
 
-List recent chats:
+### Drive
 
-```bash
-lark chats list --limit 10
-```
-
-Search users:
-
-```bash
-lark users search --email user@example.com
-lark users search --mobile "+1-555-0100"
-lark users search --name "Ada"
-lark users search --name "Ada" --department-id 0
-```
-
-List Drive files in a folder:
+List files:
 
 ```bash
 lark drive list --folder-id <FOLDER_TOKEN> --limit 20
 ```
 
-Search Drive files by text:
+Search files:
 
 ```bash
 lark drive search --query "budget" --limit 10
 ```
 
-Get Drive file metadata:
-
-```bash
-lark drive get <FILE_TOKEN>
-lark drive get --file-token <FILE_TOKEN>
-```
-
-Download a Drive file:
+Download:
 
 ```bash
 lark drive download --file-token <FILE_TOKEN> --out ./downloaded.bin
 ```
 
-Get Drive file URLs:
-
-```bash
-lark drive urls <FILE_ID> [FILE_ID...]
-```
-
-Show drive urls help:
-
-```bash
-./lark drive urls --help
-```
-
-Update Drive share permissions:
-
-```bash
-lark drive share <FILE_TOKEN> --type docx --link-share tenant_readable --external-access
-```
-
-Show drive share update help:
-
-```bash
-./lark drive share update --help
-```
-
-Upload a file to Drive:
+Upload:
 
 ```bash
 lark drive upload --file ./report.pdf --folder-token <FOLDER_TOKEN> --name "report.pdf"
 ```
 
-Show drive upload help:
+Update share:
 
 ```bash
-./lark drive upload --help
+lark drive share <FILE_TOKEN> --type docx --link-share tenant_readable --external-access
 ```
 
-Create a Docs (docx) document:
+### Docs (docx)
+
+Create:
 
 ```bash
 lark docs create --title "Weekly Update" --folder-id <FOLDER_TOKEN>
 ```
 
-Show docs create help:
-
-```bash
-./lark docs create --help
-```
-
-Get Docs (docx) metadata:
-
-```bash
-lark docs get --doc-id <DOCUMENT_ID>
-```
-
-Show docs get help:
-
-```bash
-./lark docs get --help
-```
-
-Export a Docs (docx) document to PDF:
+Export:
 
 ```bash
 lark docs export --doc-id <DOCUMENT_ID> --format pdf --out ./document.pdf
 ```
 
-Print a Docs (docx) document as text or Markdown:
+Cat:
 
 ```bash
 lark docs cat --doc-id <DOCUMENT_ID> --format txt
 ```
 
-Read a Sheets range:
+### Sheets
+
+Read:
 
 ```bash
 lark sheets read --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
 ```
 
-Update a Sheets range:
+Update:
 
 ```bash
 lark sheets update --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
 ```
 
-Append rows to a Sheets range:
+Append:
 
 ```bash
 lark sheets append --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
 ```
 
-Clear a Sheets range:
+Clear:
 
 ```bash
 lark sheets clear --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
 ```
 
-Fetch spreadsheet metadata:
+Metadata:
 
 ```bash
 lark sheets metadata --spreadsheet-id <SPREADSHEET_TOKEN>
 ```
 
-List calendar events in a time range:
+### Calendar
+
+List events:
 
 ```bash
 lark calendar list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
 ```
 
-Create a calendar event:
+Create event:
 
 ```bash
 lark calendar create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
-Get a contact user:
+---
 
-```bash
-lark contacts user get --open-id <OPEN_ID>
-lark contacts user get --user-id <USER_ID>
-```
+## Mail: user OAuth token (important)
 
-### Global flags
+Some Mail actions (notably **`mail send`**) require a **user access token** (OAuth), not a tenant token.
 
-- `--config` override the config path.
-- `--json` output JSON.
+Current behavior:
+- Provide via `--user-access-token <token>`
+- or env `LARK_USER_ACCESS_TOKEN`
+
+Planned (see TODO): `lark auth user login` will handle browser OAuth and automatically refresh/store user tokens.
+
+---
+
+## Integration testing (planned)
+
+Goal: full end-to-end integration tests that validate:
+- flags behave as expected
+- `--json` output parses
+- real API requests (including writes) succeed with your test app
+
+Planned switch:
+- `LARK_INTEGRATION=1 go test ./...`
+
+---
+
+## Not implemented yet / TODO (from backlog)
+
+This README is written in the style of “what the CLI will look like once the backlog is complete”.
+Items not finished yet (high-level):
+
+- **User OAuth flow:** `lark auth user login` + `ensureUserToken()` (auto refresh)
+- **Mail UX:** default mailbox selection + mailbox management commands
+- **Sheets:** row/col insert/delete commands
+- **Base (Bitable):** `base` top-level command tree (records CRUD, tables/fields/views)
+- **Wiki:** `wiki` command tree (v2 SDK endpoints + v1 search via `core.ApiReq`)
+- **Platform switching convenience:** `lark auth login --platform feishu|lark` (keep `--base-url` override)
+- **Integration tests:** `*_integration_test.go` suite gated by `LARK_INTEGRATION=1`
+
+For the full detailed task breakdown, see:
+- `/Users/fredliang/clawd/BACKLOG.md`
