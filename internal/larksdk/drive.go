@@ -13,17 +13,15 @@ import (
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkdrive "github.com/larksuite/oapi-sdk-go/v3/service/drive/v1"
-
-	"lark/internal/larkapi"
 )
 
-func (c *Client) ListDriveFiles(ctx context.Context, token string, req larkapi.ListDriveFilesRequest) (larkapi.ListDriveFilesResult, error) {
+func (c *Client) ListDriveFiles(ctx context.Context, token string, req ListDriveFilesRequest) (ListDriveFilesResult, error) {
 	if !c.available() {
-		return larkapi.ListDriveFilesResult{}, ErrUnavailable
+		return ListDriveFilesResult{}, ErrUnavailable
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
-		return larkapi.ListDriveFilesResult{}, errors.New("tenant access token is required")
+		return ListDriveFilesResult{}, errors.New("tenant access token is required")
 	}
 
 	builder := larkdrive.NewListFileReqBuilder()
@@ -39,19 +37,19 @@ func (c *Client) ListDriveFiles(ctx context.Context, token string, req larkapi.L
 
 	resp, err := c.sdk.Drive.V1.File.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
-		return larkapi.ListDriveFilesResult{}, err
+		return ListDriveFilesResult{}, err
 	}
 	if resp == nil {
-		return larkapi.ListDriveFilesResult{}, errors.New("list drive files failed: empty response")
+		return ListDriveFilesResult{}, errors.New("list drive files failed: empty response")
 	}
 	if !resp.Success() {
-		return larkapi.ListDriveFilesResult{}, fmt.Errorf("list drive files failed: %s", resp.Msg)
+		return ListDriveFilesResult{}, fmt.Errorf("list drive files failed: %s", resp.Msg)
 	}
 
-	result := larkapi.ListDriveFilesResult{}
+	result := ListDriveFilesResult{}
 	if resp.Data != nil {
 		if resp.Data.Files != nil {
-			result.Files = make([]larkapi.DriveFile, 0, len(resp.Data.Files))
+			result.Files = make([]DriveFile, 0, len(resp.Data.Files))
 			for _, file := range resp.Data.Files {
 				result.Files = append(result.Files, mapDriveFile(file))
 			}
@@ -82,13 +80,13 @@ func (r *searchDriveFilesResponse) Success() bool {
 	return r.Code == 0
 }
 
-func (c *Client) SearchDriveFiles(ctx context.Context, token string, req larkapi.SearchDriveFilesRequest) (larkapi.SearchDriveFilesResult, error) {
+func (c *Client) SearchDriveFiles(ctx context.Context, token string, req SearchDriveFilesRequest) (SearchDriveFilesResult, error) {
 	if !c.available() || c.coreConfig == nil {
-		return larkapi.SearchDriveFilesResult{}, ErrUnavailable
+		return SearchDriveFilesResult{}, ErrUnavailable
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
-		return larkapi.SearchDriveFilesResult{}, errors.New("tenant access token is required")
+		return SearchDriveFilesResult{}, errors.New("tenant access token is required")
 	}
 
 	payload := map[string]any{
@@ -112,22 +110,22 @@ func (c *Client) SearchDriveFiles(ctx context.Context, token string, req larkapi
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
-		return larkapi.SearchDriveFilesResult{}, err
+		return SearchDriveFilesResult{}, err
 	}
 	if apiResp == nil {
-		return larkapi.SearchDriveFilesResult{}, errors.New("search drive files failed: empty response")
+		return SearchDriveFilesResult{}, errors.New("search drive files failed: empty response")
 	}
 	resp := &searchDriveFilesResponse{ApiResp: apiResp}
 	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return larkapi.SearchDriveFilesResult{}, err
+		return SearchDriveFilesResult{}, err
 	}
 	if !resp.Success() {
-		return larkapi.SearchDriveFilesResult{}, fmt.Errorf("search drive files failed: %s", resp.Msg)
+		return SearchDriveFilesResult{}, fmt.Errorf("search drive files failed: %s", resp.Msg)
 	}
-	result := larkapi.SearchDriveFilesResult{}
+	result := SearchDriveFilesResult{}
 	if resp.Data != nil {
 		if resp.Data.Files != nil {
-			result.Files = make([]larkapi.DriveFile, 0, len(resp.Data.Files))
+			result.Files = make([]DriveFile, 0, len(resp.Data.Files))
 			for _, file := range resp.Data.Files {
 				result.Files = append(result.Files, mapDriveFile(file))
 			}
@@ -436,11 +434,11 @@ func (c *Client) DownloadDriveFile(ctx context.Context, token, fileToken string)
 	return resp.Body, nil
 }
 
-func mapDriveFile(file *larkdrive.File) larkapi.DriveFile {
+func mapDriveFile(file *larkdrive.File) DriveFile {
 	if file == nil {
-		return larkapi.DriveFile{}
+		return DriveFile{}
 	}
-	result := larkapi.DriveFile{}
+	result := DriveFile{}
 	if file.Token != nil {
 		result.Token = *file.Token
 	}
