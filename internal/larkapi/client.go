@@ -609,3 +609,109 @@ func (c *Client) GetDriveFile(ctx context.Context, token, fileToken string) (Dri
 	}
 	return parsed.Data.File, nil
 }
+
+type DocxDocument struct {
+	DocumentID string `json:"document_id"`
+	Title      string `json:"title"`
+	URL        string `json:"url"`
+	RevisionID string `json:"revision_id"`
+}
+
+type CreateDocxDocumentRequest struct {
+	Title       string
+	FolderToken string
+}
+
+type createDocxDocumentResponse struct {
+	apiResponse
+	Data struct {
+		Document DocxDocument `json:"document"`
+	} `json:"data"`
+}
+
+func (c *Client) CreateDocxDocument(ctx context.Context, token string, req CreateDocxDocumentRequest) (DocxDocument, error) {
+	payload := map[string]any{
+		"title": req.Title,
+	}
+	if req.FolderToken != "" {
+		payload["folder_token"] = req.FolderToken
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	endpoint, err := c.endpoint("/open-apis/docx/v1/documents", nil)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return DocxDocument{}, fmt.Errorf("create docx document failed: %s", resp.Status)
+	}
+	var parsed createDocxDocumentResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return DocxDocument{}, err
+	}
+	if parsed.Code != 0 {
+		return DocxDocument{}, fmt.Errorf("create docx document failed: %s", parsed.Msg)
+	}
+	return parsed.Data.Document, nil
+}
+
+type getDocxDocumentResponse struct {
+	apiResponse
+	Data struct {
+		Document DocxDocument `json:"document"`
+	} `json:"data"`
+}
+
+func (c *Client) GetDocxDocument(ctx context.Context, token, documentID string) (DocxDocument, error) {
+	if documentID == "" {
+		return DocxDocument{}, fmt.Errorf("document id is required")
+	}
+	endpoint, err := c.endpoint("/open-apis/docx/v1/documents/"+url.PathEscape(documentID), nil)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return DocxDocument{}, fmt.Errorf("get docx document failed: %s", resp.Status)
+	}
+	var parsed getDocxDocumentResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return DocxDocument{}, err
+	}
+	if parsed.Code != 0 {
+		return DocxDocument{}, fmt.Errorf("get docx document failed: %s", parsed.Msg)
+	}
+	return parsed.Data.Document, nil
+}

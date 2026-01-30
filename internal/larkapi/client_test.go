@@ -420,3 +420,87 @@ func TestGetDriveFile(t *testing.T) {
 		t.Fatalf("unexpected file: %+v", file)
 	}
 }
+
+func TestCreateDocxDocument(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/docx/v1/documents" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["title"] != "Specs" {
+			t.Fatalf("unexpected payload: %+v", payload)
+		}
+		if payload["folder_token"] != "fld" {
+			t.Fatalf("unexpected folder_token: %+v", payload)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"document": map[string]any{
+					"document_id": "doc1",
+					"title":       "Specs",
+					"url":         "https://example.com/doc",
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	doc, err := client.CreateDocxDocument(context.Background(), "token", CreateDocxDocumentRequest{
+		Title:       "Specs",
+		FolderToken: "fld",
+	})
+	if err != nil {
+		t.Fatalf("CreateDocxDocument error: %v", err)
+	}
+	if doc.DocumentID != "doc1" || doc.Title != "Specs" {
+		t.Fatalf("unexpected doc: %+v", doc)
+	}
+}
+
+func TestGetDocxDocument(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/docx/v1/documents/doc1" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"document": map[string]any{
+					"document_id": "doc1",
+					"title":       "Specs",
+					"url":         "https://example.com/doc",
+					"revision_id": "rev1",
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	doc, err := client.GetDocxDocument(context.Background(), "token", "doc1")
+	if err != nil {
+		t.Fatalf("GetDocxDocument error: %v", err)
+	}
+	if doc.DocumentID != "doc1" || doc.RevisionID != "rev1" {
+		t.Fatalf("unexpected doc: %+v", doc)
+	}
+}

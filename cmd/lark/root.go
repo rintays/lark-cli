@@ -63,6 +63,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newChatsCmd(state))
 	cmd.AddCommand(newUsersCmd(state))
 	cmd.AddCommand(newDriveCmd(state))
+	cmd.AddCommand(newDocsCmd(state))
 
 	return cmd
 }
