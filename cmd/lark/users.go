@@ -18,6 +18,7 @@ func newUsersCmd(state *appState) *cobra.Command {
 		Use:   "users",
 		Short: "Search users",
 	}
+	cmd.AddCommand(newUserGetCmd(state))
 	cmd.AddCommand(newUsersSearchCmd(state))
 	return cmd
 }

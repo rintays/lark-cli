@@ -46,6 +46,7 @@ go build -o lark ./cmd/lark
 
 ./lark --help
 ./lark users list --help
+./lark users get --help
 ```
 
 ---

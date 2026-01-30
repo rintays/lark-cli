@@ -34,6 +34,8 @@ type ListMinutesResult = larkapi.ListMinutesResult
 
 type User = larkapi.User
 
+type GetContactUserRequest = larkapi.GetContactUserRequest
+
 type BatchGetUserIDRequest = larkapi.BatchGetUserIDRequest
 
 type ListUsersByDepartmentRequest = larkapi.ListUsersByDepartmentRequest

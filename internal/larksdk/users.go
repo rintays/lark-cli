@@ -102,6 +102,39 @@ func (c *Client) ListUsersByDepartment(ctx context.Context, token string, req la
 	return result, nil
 }
 
+func (c *Client) GetContactUser(ctx context.Context, token string, req larkapi.GetContactUserRequest) (larkapi.User, error) {
+	if !c.available() {
+		return larkapi.User{}, ErrUnavailable
+	}
+	if req.UserID == "" {
+		return larkapi.User{}, fmt.Errorf("user id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return larkapi.User{}, errors.New("tenant access token is required")
+	}
+
+	builder := contact.NewGetUserReqBuilder().UserId(req.UserID)
+	if req.UserIDType != "" {
+		builder.UserIdType(req.UserIDType)
+	}
+	resp, err := c.sdk.Contact.V3.User.Get(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return larkapi.User{}, err
+	}
+	if resp == nil {
+		return larkapi.User{}, errors.New("get contact user failed: empty response")
+	}
+	if !resp.Success() {
+		return larkapi.User{}, fmt.Errorf("get contact user failed: %s", resp.Msg)
+	}
+
+	if resp.Data != nil && resp.Data.User != nil {
+		return mapContactUser(resp.Data.User), nil
+	}
+	return larkapi.User{}, nil
+}
+
 func mapContactInfo(user *contact.UserContactInfo) larkapi.User {
 	if user == nil {
 		return larkapi.User{}
