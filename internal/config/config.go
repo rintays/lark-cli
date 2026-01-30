@@ -11,6 +11,7 @@ type Config struct {
 	AppID                      string `json:"app_id"`
 	AppSecret                  string `json:"app_secret"`
 	BaseURL                    string `json:"base_url"`
+	DefaultMailboxID           string `json:"default_mailbox_id"`
 	TenantAccessToken          string `json:"tenant_access_token"`
 	TenantAccessTokenExpiresAt int64  `json:"tenant_access_token_expires_at"`
 	UserAccessToken            string `json:"user_access_token"`

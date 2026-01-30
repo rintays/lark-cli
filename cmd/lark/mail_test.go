@@ -186,6 +186,29 @@ func TestMailMailboxGetCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestMailMailboxSetCommandPersistsDefaultMailbox(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: &bytes.Buffer{}},
+	}
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"mailbox", "set", "--mailbox-id", "mbx_123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail mailbox set error: %v", err)
+	}
+
+	loaded, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if loaded.DefaultMailboxID != "mbx_123" {
+		t.Fatalf("expected default mailbox id %q, got %q", "mbx_123", loaded.DefaultMailboxID)
+	}
+}
+
 func TestMailFoldersCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{

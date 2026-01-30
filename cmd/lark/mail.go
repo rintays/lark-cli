@@ -35,6 +35,7 @@ func newMailMailboxCmd(state *appState) *cobra.Command {
 		Short: "Manage a mailbox",
 	}
 	cmd.AddCommand(newMailMailboxGetCmd(state))
+	cmd.AddCommand(newMailMailboxSetCmd(state))
 	return cmd
 }
 
@@ -72,6 +73,33 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
+	_ = cmd.MarkFlagRequired("mailbox-id")
+	return cmd
+}
+
+func newMailMailboxSetCmd(state *appState) *cobra.Command {
+	var mailboxID string
+
+	cmd := &cobra.Command{
+		Use:   "set",
+		Short: "Set the default mailbox",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.Config == nil {
+				return errors.New("config is required")
+			}
+			state.Config.DefaultMailboxID = mailboxID
+			if err := state.saveConfig(); err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"config_path":        state.ConfigPath,
+				"default_mailbox_id": mailboxID,
+			}
+			return state.Printer.Print(payload, fmt.Sprintf("default mailbox set to %s", mailboxID))
+		},
+	}
+
+	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
 	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
