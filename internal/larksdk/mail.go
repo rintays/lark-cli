@@ -210,7 +210,7 @@ func (c *Client) ListMailFolders(ctx context.Context, token, mailboxID string) (
 }
 
 func (c *Client) ListPublicMailboxes(ctx context.Context, token string) ([]Mailbox, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return nil, ErrUnavailable
 	}
 	tenantToken := c.tenantToken(token)
@@ -218,24 +218,13 @@ func (c *Client) ListPublicMailboxes(ctx context.Context, token string) ([]Mailb
 		return nil, errors.New("tenant access token is required")
 	}
 
-	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/mail/v1/public_mailboxes",
-		HttpMethod:                http.MethodGet,
-		PathParams:                larkcore.PathParams{},
-		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
-	}
-
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	req := larkmail.NewListPublicMailboxReqBuilder().Build()
+	resp, err := c.sdk.Mail.V1.PublicMailbox.List(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return nil, err
 	}
-	if apiResp == nil {
+	if resp == nil {
 		return nil, errors.New("list public mailboxes failed: empty response")
-	}
-	resp := &listMailboxesResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return nil, err
 	}
 	if !resp.Success() {
 		return nil, fmt.Errorf("list public mailboxes failed: %s", resp.Msg)
@@ -243,7 +232,26 @@ func (c *Client) ListPublicMailboxes(ctx context.Context, token string) ([]Mailb
 	if resp.Data == nil || resp.Data.Items == nil {
 		return nil, nil
 	}
-	return resp.Data.Items, nil
+
+	out := make([]Mailbox, 0, len(resp.Data.Items))
+	for _, mb := range resp.Data.Items {
+		if mb == nil {
+			continue
+		}
+		mailbox := Mailbox{}
+		if mb.PublicMailboxId != nil {
+			mailbox.MailboxID = *mb.PublicMailboxId
+		}
+		if mb.Name != nil {
+			mailbox.Name = *mb.Name
+		}
+		// our CLI historically prints `primary_email`; SDK uses `email`.
+		if mb.Email != nil {
+			mailbox.PrimaryEmail = *mb.Email
+		}
+		out = append(out, mailbox)
+	}
+	return out, nil
 }
 
 func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailbox, error) {
