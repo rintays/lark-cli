@@ -709,6 +709,40 @@ func TestMailGetCommandRequiresMessageID(t *testing.T) {
 	}
 }
 
+func TestMailGetCommandMissingMessageIDDoesNotCallHTTP(t *testing.T) {
+	var calls int
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"get", "--mailbox-id", "mbx_1"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if calls != 0 {
+		t.Fatalf("unexpected request count: %d", calls)
+	}
+}
+
 func TestMailListCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{

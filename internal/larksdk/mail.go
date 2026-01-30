@@ -7,7 +7,15 @@ import (
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larkmail "github.com/larksuite/oapi-sdk-go/v3/service/mail/v1"
 )
+
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
 
 type listMailFoldersResponse struct {
 	*larkcore.ApiResp `json:"-"`
@@ -344,7 +352,7 @@ func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMai
 }
 
 func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID string) (MailMessage, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return MailMessage{}, ErrUnavailable
 	}
 	if mailboxID == "" {
@@ -358,26 +366,16 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 		return MailMessage{}, errors.New("tenant access token is required")
 	}
 
-	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/:message_id",
-		HttpMethod:                http.MethodGet,
-		PathParams:                larkcore.PathParams{},
-		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
-	}
-	req.PathParams.Set("mailbox_id", mailboxID)
-	req.PathParams.Set("message_id", messageID)
-
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	req := larkmail.NewGetUserMailboxMessageReqBuilder().
+		UserMailboxId(mailboxID).
+		MessageId(messageID).
+		Build()
+	resp, err := c.sdk.Mail.V1.UserMailboxMessage.Get(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return MailMessage{}, err
 	}
-	if apiResp == nil {
+	if resp == nil {
 		return MailMessage{}, errors.New("get mail message failed: empty response")
-	}
-	resp := &getMailMessageResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return MailMessage{}, err
 	}
 	if !resp.Success() {
 		return MailMessage{}, fmt.Errorf("get mail message failed: %s", resp.Msg)
@@ -385,7 +383,38 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 	if resp.Data == nil || resp.Data.Message == nil {
 		return MailMessage{}, nil
 	}
-	return *resp.Data.Message, nil
+
+	msg := resp.Data.Message
+	out := MailMessage{}
+	if msg.ThreadId != nil {
+		out.ThreadID = *msg.ThreadId
+	}
+	if msg.Subject != nil {
+		out.Subject = *msg.Subject
+	}
+	// MessageId is not part of `Message`; keep caller-provided messageID for stable output.
+	out.MessageID = messageID
+
+	for _, to := range msg.To {
+		if to == nil {
+			continue
+		}
+		out.To = append(out.To, MailAddress{MailAddress: derefString(to.MailAddress), Name: derefString(to.Name)})
+	}
+	for _, cc := range msg.Cc {
+		if cc == nil {
+			continue
+		}
+		out.CC = append(out.CC, MailAddress{MailAddress: derefString(cc.MailAddress), Name: derefString(cc.Name)})
+	}
+	for _, bcc := range msg.Bcc {
+		if bcc == nil {
+			continue
+		}
+		out.BCC = append(out.BCC, MailAddress{MailAddress: derefString(bcc.MailAddress), Name: derefString(bcc.Name)})
+	}
+
+	return out, nil
 }
 
 func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req SendMailRequest) (string, error) {
