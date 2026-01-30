@@ -261,6 +261,7 @@ func TestSheetsMetadataCommand(t *testing.T) {
 		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/metainfo" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
@@ -277,6 +278,10 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
+	legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("legacy client used for sheets metadata")
+	})}}
+
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
@@ -287,8 +292,13 @@ func TestSheetsMetadataCommand(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+		Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
 	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
 	cmd.SetArgs([]string{"metadata", "--spreadsheet-id", "spreadsheet"})
