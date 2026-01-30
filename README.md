@@ -245,6 +245,7 @@ Example:
 ./lark base record create --help
 ./lark base record get --help
 ./lark base record search --help
+./lark base record update --help
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ```
