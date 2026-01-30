@@ -204,9 +204,9 @@ func TestMailPublicMailboxesListCommandWithSDK(t *testing.T) {
 			"data": map[string]any{
 				"items": []map[string]any{
 					{
-						"mailbox_id":    "mbx_1",
-						"name":          "Public",
-						"primary_email": "public@example.com",
+						"public_mailbox_id": "mbx_1",
+						"name":             "Public",
+						"email":            "public@example.com",
 					},
 				},
 			},
