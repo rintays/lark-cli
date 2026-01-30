@@ -120,7 +120,17 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			update, err := state.Client.UpdateSheetRange(context.Background(), token, spreadsheetID, sheetRange, values)
+			updateSheetRange := state.Client.UpdateSheetRange
+			if state.SDK != nil {
+				updateSheetRange = func(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any) (larkapi.SheetValueUpdate, error) {
+					update, err := state.SDK.UpdateSheetRange(ctx, token, spreadsheetToken, sheetRange, values)
+					if errors.Is(err, larksdk.ErrUnavailable) {
+						return state.Client.UpdateSheetRange(ctx, token, spreadsheetToken, sheetRange, values)
+					}
+					return update, err
+				}
+			}
+			update, err := updateSheetRange(context.Background(), token, spreadsheetID, sheetRange, values)
 			if err != nil {
 				return err
 			}
