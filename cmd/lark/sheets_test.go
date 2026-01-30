@@ -63,6 +63,73 @@ func TestSheetsReadCommand(t *testing.T) {
 	}
 }
 
+func TestSheetsUpdateCommand(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPut {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		if values, ok := valueRange["values"].([]any); !ok || len(values) != 2 {
+			t.Fatalf("unexpected values: %#v", valueRange["values"])
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"updatedRange":     "Sheet1!A1:B2",
+				"updatedRows":      2,
+				"updatedColumns":   2,
+				"updatedCells":     4,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+	}
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"update",
+		"--spreadsheet-id", "spreadsheet",
+		"--range", "Sheet1!A1:B2",
+		"--values", `[["Name","Amount"],["Ada",42]]`,
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets update error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Sheet1!A1:B2") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
 func TestSheetsMetadataCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/metainfo" {

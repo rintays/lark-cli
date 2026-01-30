@@ -1466,11 +1466,31 @@ type SheetValueRange struct {
 	Values         [][]any `json:"values"`
 }
 
+type SheetValueRangeInput struct {
+	Range          string  `json:"range"`
+	MajorDimension string  `json:"major_dimension,omitempty"`
+	Values         [][]any `json:"values"`
+}
+
 type readSheetRangeResponse struct {
 	apiResponse
 	Data struct {
 		ValueRange SheetValueRange `json:"valueRange"`
 	} `json:"data"`
+}
+
+type SheetValueUpdate struct {
+	SpreadsheetToken string `json:"spreadsheetToken"`
+	UpdatedRange     string `json:"updatedRange"`
+	UpdatedRows      int    `json:"updatedRows"`
+	UpdatedColumns   int    `json:"updatedColumns"`
+	UpdatedCells     int    `json:"updatedCells"`
+	Revision         int64  `json:"revision"`
+}
+
+type updateSheetRangeResponse struct {
+	apiResponse
+	Data SheetValueUpdate `json:"data"`
 }
 
 type clearSheetRangeResponse struct {
@@ -1540,6 +1560,60 @@ func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sh
 		return SheetValueRange{}, fmt.Errorf("read sheet range failed: %s", parsed.Msg)
 	}
 	return parsed.Data.ValueRange, nil
+}
+
+func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any) (SheetValueUpdate, error) {
+	if spreadsheetToken == "" {
+		return SheetValueUpdate{}, fmt.Errorf("spreadsheet token is required")
+	}
+	if sheetRange == "" {
+		return SheetValueUpdate{}, fmt.Errorf("range is required")
+	}
+	if len(values) == 0 {
+		return SheetValueUpdate{}, fmt.Errorf("values are required")
+	}
+	payload := map[string]any{
+		"valueRange": SheetValueRangeInput{
+			Range:  sheetRange,
+			Values: values,
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return SheetValueUpdate{}, err
+	}
+	path := fmt.Sprintf("/open-apis/sheets/v2/spreadsheets/%s/values", url.PathEscape(spreadsheetToken))
+	endpoint, err := c.endpoint(path, nil)
+	if err != nil {
+		return SheetValueUpdate{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPut, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return SheetValueUpdate{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return SheetValueUpdate{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return SheetValueUpdate{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return SheetValueUpdate{}, fmt.Errorf("update sheet range failed: %s", resp.Status)
+	}
+	var parsed updateSheetRangeResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return SheetValueUpdate{}, err
+	}
+	if parsed.Code != 0 {
+		return SheetValueUpdate{}, fmt.Errorf("update sheet range failed: %s", parsed.Msg)
+	}
+	return parsed.Data, nil
 }
 
 func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (string, error) {
