@@ -200,6 +200,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			ctx := context.Background()
 			messages := make([]larksdk.MailMessage, 0, limit)
 			pageToken := ""
 			remaining := limit
@@ -208,7 +209,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 				if pageSize > maxMailPageSize {
 					pageSize = maxMailPageSize
 				}
-				result, err := state.SDK.ListMailMessages(context.Background(), token, larksdk.ListMailMessagesRequest{
+				result, err := state.SDK.ListMailMessages(ctx, token, larksdk.ListMailMessagesRequest{
 					MailboxID:  mailboxID,
 					FolderID:   folderID,
 					PageSize:   pageSize,
@@ -218,7 +219,22 @@ func newMailListCmd(state *appState) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				messages = append(messages, result.Items...)
+				for _, message := range result.Items {
+					if len(messages) >= limit {
+						break
+					}
+					if message.MessageID == "" {
+						continue
+					}
+					item, err := state.SDK.GetMailMessage(ctx, token, mailboxID, message.MessageID)
+					if err != nil {
+						return err
+					}
+					if item.MessageID == "" {
+						item.MessageID = message.MessageID
+					}
+					messages = append(messages, item)
+				}
 				if len(messages) >= limit || !result.HasMore {
 					break
 				}

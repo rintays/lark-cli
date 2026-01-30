@@ -323,46 +323,53 @@ func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMai
 		return ListMailMessagesResponse{}, errors.New("tenant access token is required")
 	}
 
-	reqParams := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages",
-		HttpMethod:                http.MethodGet,
-		PathParams:                larkcore.PathParams{},
-		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
-	}
-	reqParams.PathParams.Set("mailbox_id", req.MailboxID)
-	reqParams.QueryParams.Set("page_size", fmt.Sprintf("%d", req.PageSize))
+	reqBuilder := larkmail.NewListUserMailboxMessageReqBuilder().
+		UserMailboxId(req.MailboxID).
+		PageSize(req.PageSize)
 	if req.PageToken != "" {
-		reqParams.QueryParams.Set("page_token", req.PageToken)
+		reqBuilder.PageToken(req.PageToken)
 	}
 	if req.FolderID != "" {
-		reqParams.QueryParams.Set("folder_id", req.FolderID)
+		reqBuilder.FolderId(req.FolderID)
 	}
 	if req.OnlyUnread {
-		reqParams.QueryParams.Set("only_unread", "true")
+		reqBuilder.OnlyUnread(true)
 	}
-
-	apiResp, err := larkcore.Request(ctx, reqParams, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	listReq := reqBuilder.Build()
+	resp, err := c.sdk.Mail.V1.UserMailboxMessage.List(ctx, listReq, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return ListMailMessagesResponse{}, err
 	}
-	if apiResp == nil {
+	if resp == nil {
 		return ListMailMessagesResponse{}, errors.New("list mail messages failed: empty response")
-	}
-	resp := &listMailMessagesResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return ListMailMessagesResponse{}, err
 	}
 	if !resp.Success() {
 		return ListMailMessagesResponse{}, fmt.Errorf("list mail messages failed: %s", resp.Msg)
 	}
-	if resp.Data == nil {
+	if resp.Data == nil || resp.Data.Items == nil {
 		return ListMailMessagesResponse{}, nil
 	}
+
+	items := make([]MailMessage, 0, len(resp.Data.Items))
+	for _, messageID := range resp.Data.Items {
+		if messageID == "" {
+			continue
+		}
+		items = append(items, MailMessage{MessageID: messageID})
+	}
+
+	hasMore := false
+	if resp.Data.HasMore != nil {
+		hasMore = *resp.Data.HasMore
+	}
+	pageToken := ""
+	if resp.Data.PageToken != nil {
+		pageToken = *resp.Data.PageToken
+	}
 	return ListMailMessagesResponse{
-		Items:     resp.Data.Items,
-		HasMore:   resp.Data.HasMore,
-		PageToken: resp.Data.PageToken,
+		Items:     items,
+		HasMore:   hasMore,
+		PageToken: pageToken,
 	}, nil
 }
 

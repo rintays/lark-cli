@@ -205,8 +205,8 @@ func TestMailPublicMailboxesListCommandWithSDK(t *testing.T) {
 				"items": []map[string]any{
 					{
 						"public_mailbox_id": "mbx_1",
-						"name":             "Public",
-						"email":            "public@example.com",
+						"name":              "Public",
+						"email":             "public@example.com",
 					},
 				},
 			},
@@ -345,40 +345,66 @@ func TestMailFoldersCommandRequiresSDK(t *testing.T) {
 }
 
 func TestMailListCommandWithSDK(t *testing.T) {
+	var listCalls int
+	var getCalls int
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("page_size") != "2" {
-			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
-		}
-		if r.URL.Query().Get("folder_id") != "fld_1" {
-			t.Fatalf("unexpected folder_id: %s", r.URL.Query().Get("folder_id"))
-		}
-		if r.URL.Query().Get("only_unread") != "true" {
-			t.Fatalf("unexpected only_unread: %s", r.URL.Query().Get("only_unread"))
-		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"items": []map[string]any{
-					{
+		switch r.URL.Path {
+		case "/open-apis/mail/v1/user_mailboxes/mbx_1/messages":
+			listCalls++
+			if r.URL.Query().Get("page_size") != "2" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
+			if r.URL.Query().Get("folder_id") != "fld_1" {
+				t.Fatalf("unexpected folder_id: %s", r.URL.Query().Get("folder_id"))
+			}
+			if r.URL.Query().Get("only_unread") != "true" {
+				t.Fatalf("unexpected only_unread: %s", r.URL.Query().Get("only_unread"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items":      []string{"msg_1", "msg_2"},
+					"has_more":   false,
+					"page_token": "",
+				},
+			})
+		case "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/msg_1":
+			getCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"message": map[string]any{
 						"message_id": "msg_1",
 						"subject":    "Hello",
 					},
 				},
-				"has_more":   false,
-				"page_token": "",
-			},
-		})
+			})
+		case "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/msg_2":
+			getCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"message": map[string]any{
+						"message_id": "msg_2",
+						"subject":    "World",
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -415,37 +441,59 @@ func TestMailListCommandWithSDK(t *testing.T) {
 	if !strings.Contains(buf.String(), "msg_1\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
+	if !strings.Contains(buf.String(), "msg_2\tWorld") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if listCalls != 1 {
+		t.Fatalf("expected 1 list call, got %d", listCalls)
+	}
+	if getCalls != 2 {
+		t.Fatalf("expected 2 get calls, got %d", getCalls)
+	}
 }
 
 func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
+	var listCalls int
+	var getCalls int
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_default/messages" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("page_size") != "1" {
-			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
-		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"items": []map[string]any{
-					{
+		switch r.URL.Path {
+		case "/open-apis/mail/v1/user_mailboxes/mbx_default/messages":
+			listCalls++
+			if r.URL.Query().Get("page_size") != "1" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items":      []string{"msg_1"},
+					"has_more":   false,
+					"page_token": "",
+				},
+			})
+		case "/open-apis/mail/v1/user_mailboxes/mbx_default/messages/msg_1":
+			getCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"message": map[string]any{
 						"message_id": "msg_1",
 						"subject":    "Hello",
 					},
 				},
-				"has_more":   false,
-				"page_token": "",
-			},
-		})
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -476,37 +524,56 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 	if !strings.Contains(buf.String(), "msg_1\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
+	if listCalls != 1 {
+		t.Fatalf("expected 1 list call, got %d", listCalls)
+	}
+	if getCalls != 1 {
+		t.Fatalf("expected 1 get call, got %d", getCalls)
+	}
 }
 
 func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
+	var listCalls int
+	var getCalls int
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/me/messages" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("page_size") != "1" {
-			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
-		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"items": []map[string]any{
-					{
+		switch r.URL.Path {
+		case "/open-apis/mail/v1/user_mailboxes/me/messages":
+			listCalls++
+			if r.URL.Query().Get("page_size") != "1" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items":      []string{"msg_1"},
+					"has_more":   false,
+					"page_token": "",
+				},
+			})
+		case "/open-apis/mail/v1/user_mailboxes/me/messages/msg_1":
+			getCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"message": map[string]any{
 						"message_id": "msg_1",
 						"subject":    "Hello",
 					},
 				},
-				"has_more":   false,
-				"page_token": "",
-			},
-		})
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -535,6 +602,45 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 
 	if !strings.Contains(buf.String(), "msg_1\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if listCalls != 1 {
+		t.Fatalf("expected 1 list call, got %d", listCalls)
+	}
+	if getCalls != 1 {
+		t.Fatalf("expected 1 get call, got %d", getCalls)
+	}
+}
+
+func TestMailListCommandLimitMustBePositiveDoesNotCallHTTP(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected HTTP call: %s", r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"list", "--limit", "0"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "limit must be greater than 0" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 func TestMailGetCommandWithSDK(t *testing.T) {
