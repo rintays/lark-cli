@@ -442,6 +442,116 @@ func (c *Client) CreateCalendarEventAttendees(ctx context.Context, token string,
 	return nil
 }
 
+type MeetingUser struct {
+	ID       string `json:"id"`
+	UserType int    `json:"user_type"`
+}
+
+type MeetingParticipant struct {
+	ID                string `json:"id"`
+	FirstJoinTime     string `json:"first_join_time"`
+	FinalLeaveTime    string `json:"final_leave_time"`
+	InMeetingDuration string `json:"in_meeting_duration"`
+	UserType          int    `json:"user_type"`
+	IsHost            bool   `json:"is_host"`
+	IsCohost          bool   `json:"is_cohost"`
+	IsExternal        bool   `json:"is_external"`
+	Status            int    `json:"status"`
+}
+
+type MeetingAbility struct {
+	UseVideo        bool `json:"use_video"`
+	UseAudio        bool `json:"use_audio"`
+	UseShareScreen  bool `json:"use_share_screen"`
+	UseFollowScreen bool `json:"use_follow_screen"`
+	UseRecording    bool `json:"use_recording"`
+	UsePSTN         bool `json:"use_pstn"`
+}
+
+type Meeting struct {
+	ID                          string               `json:"id"`
+	Topic                       string               `json:"topic"`
+	URL                         string               `json:"url"`
+	MeetingNo                   string               `json:"meeting_no"`
+	Password                    string               `json:"password"`
+	CreateTime                  string               `json:"create_time"`
+	StartTime                   string               `json:"start_time"`
+	EndTime                     string               `json:"end_time"`
+	HostUser                    MeetingUser          `json:"host_user"`
+	Status                      int                  `json:"status"`
+	ParticipantCount            string               `json:"participant_count"`
+	ParticipantCountAccumulated string               `json:"participant_count_accumulated"`
+	Participants                []MeetingParticipant `json:"participants,omitempty"`
+	Ability                     MeetingAbility       `json:"ability,omitempty"`
+}
+
+type GetMeetingRequest struct {
+	MeetingID          string
+	WithParticipants   bool
+	WithMeetingAbility bool
+	UserIDType         string
+	QueryMode          int
+}
+
+type getMeetingResponse struct {
+	apiResponse
+	Data struct {
+		Meeting Meeting `json:"meeting"`
+	} `json:"data"`
+}
+
+func (c *Client) GetMeeting(ctx context.Context, token string, req GetMeetingRequest) (Meeting, error) {
+	if req.MeetingID == "" {
+		return Meeting{}, fmt.Errorf("meeting id is required")
+	}
+	query := url.Values{}
+	if req.WithParticipants {
+		query.Set("with_participants", "true")
+	}
+	if req.WithMeetingAbility {
+		query.Set("with_meeting_ability", "true")
+	}
+	if req.UserIDType != "" {
+		query.Set("user_id_type", req.UserIDType)
+	}
+	if req.QueryMode != 0 {
+		query.Set("query_mode", fmt.Sprintf("%d", req.QueryMode))
+	}
+	endpoint, err := c.endpoint("/open-apis/vc/v1/meetings/"+url.PathEscape(req.MeetingID), query)
+	if err != nil {
+		return Meeting{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return Meeting{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return Meeting{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return Meeting{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return Meeting{}, fmt.Errorf("get meeting failed: %s", resp.Status)
+	}
+	var parsed getMeetingResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return Meeting{}, err
+	}
+	if parsed.Code != 0 {
+		return Meeting{}, fmt.Errorf("get meeting failed: %s", parsed.Msg)
+	}
+	if parsed.Data.Meeting.ID == "" {
+		return Meeting{}, fmt.Errorf("get meeting response missing meeting")
+	}
+	return parsed.Data.Meeting, nil
+}
+
 type MessageRequest struct {
 	ReceiveID     string
 	ReceiveIDType string

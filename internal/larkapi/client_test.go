@@ -265,6 +265,71 @@ func TestCreateCalendarEventAttendees(t *testing.T) {
 	}
 }
 
+func TestGetMeeting(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/vc/v1/meetings/meet_1" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("with_participants") != "true" {
+			t.Fatalf("unexpected with_participants: %s", r.URL.Query().Get("with_participants"))
+		}
+		if r.URL.Query().Get("with_meeting_ability") != "true" {
+			t.Fatalf("unexpected with_meeting_ability: %s", r.URL.Query().Get("with_meeting_ability"))
+		}
+		if r.URL.Query().Get("user_id_type") != "open_id" {
+			t.Fatalf("unexpected user_id_type: %s", r.URL.Query().Get("user_id_type"))
+		}
+		if r.URL.Query().Get("query_mode") != "1" {
+			t.Fatalf("unexpected query_mode: %s", r.URL.Query().Get("query_mode"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"meeting": map[string]any{
+					"id":           "meet_1",
+					"topic":        "Demo",
+					"meeting_no":   "123456789",
+					"start_time":   "1700000000",
+					"end_time":     "1700003600",
+					"status":       2,
+					"host_user":    map[string]any{"id": "ou_1", "user_type": 1},
+					"participants": []map[string]any{{"id": "ou_2", "user_type": 1, "status": 2}},
+					"ability":      map[string]any{"use_video": true},
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	meeting, err := client.GetMeeting(context.Background(), "token", GetMeetingRequest{
+		MeetingID:          "meet_1",
+		WithParticipants:   true,
+		WithMeetingAbility: true,
+		UserIDType:         "open_id",
+		QueryMode:          1,
+	})
+	if err != nil {
+		t.Fatalf("GetMeeting error: %v", err)
+	}
+	if meeting.ID != "meet_1" || meeting.Topic != "Demo" || meeting.Status != 2 {
+		t.Fatalf("unexpected meeting: %+v", meeting)
+	}
+	if len(meeting.Participants) != 1 || meeting.Participants[0].ID != "ou_2" {
+		t.Fatalf("unexpected participants: %+v", meeting.Participants)
+	}
+	if !meeting.Ability.UseVideo {
+		t.Fatalf("unexpected meeting ability: %+v", meeting.Ability)
+	}
+}
+
 func TestSendMessage(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
