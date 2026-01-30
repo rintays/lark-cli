@@ -178,6 +178,36 @@ func TestDriveGetCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestDriveGetMissingFileTokenDoesNotCallHTTP(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{Config: &config.Config{
+		AppID:                      "app",
+		AppSecret:                  "secret",
+		BaseURL:                    baseURL,
+		TenantAccessToken:          "token",
+		TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+	}}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"get"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "file-token") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDriveURLsCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
