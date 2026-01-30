@@ -116,7 +116,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			files := make([]larkapi.DriveFile, 0, limit)
+			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
 			remaining := limit
 			for {
@@ -124,7 +124,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
-				result, err := state.Client.SearchDriveFiles(context.Background(), token, larkapi.SearchDriveFilesRequest{
+				result, err := state.Client.SearchDriveFiles(context.Background(), token, larksdk.SearchDriveFilesRequest{
 					Query:     query,
 					PageSize:  pageSize,
 					PageToken: pageToken,

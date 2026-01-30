@@ -31,3 +31,7 @@ type GetDriveFileRequest = larkapi.GetDriveFileRequest
 type ListDriveFilesRequest = larkapi.ListDriveFilesRequest
 
 type ListDriveFilesResult = larkapi.ListDriveFilesResult
+
+type SearchDriveFilesRequest = larkapi.SearchDriveFilesRequest
+
+type SearchDriveFilesResult = larkapi.SearchDriveFilesResult
