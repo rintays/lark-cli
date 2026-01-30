@@ -8,11 +8,9 @@ import (
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	im "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
-
-	"lark/internal/larkapi"
 )
 
-func (c *Client) SendMessage(ctx context.Context, token string, req larkapi.MessageRequest) (string, error) {
+func (c *Client) SendMessage(ctx context.Context, token string, req MessageRequest) (string, error) {
 	if !c.available() {
 		return "", ErrUnavailable
 	}

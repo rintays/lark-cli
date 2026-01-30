@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 func newMsgCmd(state *appState) *cobra.Command {
@@ -45,7 +45,7 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			messageID, err := state.SDK.SendMessage(context.Background(), token, larkapi.MessageRequest{
+			messageID, err := state.SDK.SendMessage(context.Background(), token, larksdk.MessageRequest{
 				ReceiveID:     receiveID,
 				ReceiveIDType: receiveIDType,
 				Text:          text,

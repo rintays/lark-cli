@@ -7,3 +7,5 @@ type Chat = larkapi.Chat
 type ListChatsRequest = larkapi.ListChatsRequest
 
 type ListChatsResult = larkapi.ListChatsResult
+
+type MessageRequest = larkapi.MessageRequest
