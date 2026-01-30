@@ -94,18 +94,28 @@ func newRootCmd() *cobra.Command {
 func applyBaseURLOverrides(state *appState, cfg *config.Config) error {
 	state.baseURLPersist = cfg.BaseURL
 	if state.BaseURL != "" {
-		cfg.BaseURL = state.BaseURL
+		cfg.BaseURL = normalizeBaseURL(state.BaseURL)
 		return nil
 	}
 	if state.Platform == "" {
+		cfg.BaseURL = normalizeBaseURL(cfg.BaseURL)
 		return nil
 	}
 	baseURL, err := platformBaseURL(state.Platform)
 	if err != nil {
 		return err
 	}
-	cfg.BaseURL = baseURL
+	cfg.BaseURL = normalizeBaseURL(baseURL)
 	return nil
+}
+
+func normalizeBaseURL(raw string) string {
+	base := strings.TrimSpace(raw)
+	base = strings.TrimRight(base, "/")
+	base = strings.TrimSuffix(base, "/open-apis")
+	base = strings.TrimSuffix(base, "/open-apis/")
+	base = strings.TrimRight(base, "/")
+	return base
 }
 
 func platformBaseURL(platform string) (string, error) {

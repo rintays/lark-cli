@@ -55,8 +55,9 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 			state.Config.AppID = appID
 			state.Config.AppSecret = appSecret
 			if baseURL != "" {
-				state.Config.BaseURL = baseURL
-				state.baseURLPersist = baseURL
+				normalized := normalizeBaseURL(baseURL)
+				state.Config.BaseURL = normalized
+				state.baseURLPersist = normalized
 			}
 			if err := state.saveConfig(); err != nil {
 				return err
