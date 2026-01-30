@@ -181,3 +181,64 @@ func (c *Client) ListBaseViews(ctx context.Context, token, appToken, tableID str
 	}
 	return ListBaseViewsResult{Items: resp.Data.Items, PageToken: resp.Data.PageToken, HasMore: resp.Data.HasMore}, nil
 }
+
+type getBaseRecordResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *getBaseRecordResponseData `json:"data"`
+}
+
+type getBaseRecordResponseData struct {
+	Record BaseRecord `json:"record"`
+}
+
+func (r *getBaseRecordResponse) Success() bool { return r.Code == 0 }
+
+func (c *Client) GetBaseRecord(ctx context.Context, token, appToken, tableID, recordID string) (BaseRecord, error) {
+	if !c.available() || c.coreConfig == nil {
+		return BaseRecord{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return BaseRecord{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return BaseRecord{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return BaseRecord{}, errors.New("table id is required")
+	}
+	if recordID == "" {
+		return BaseRecord{}, errors.New("record id is required")
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/records/:record_id",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
+	}
+	apiReq.PathParams.Set("app_token", appToken)
+	apiReq.PathParams.Set("table_id", tableID)
+	apiReq.PathParams.Set("record_id", recordID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecord{}, err
+	}
+	if apiResp == nil {
+		return BaseRecord{}, errors.New("get base record failed: empty response")
+	}
+	resp := &getBaseRecordResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return BaseRecord{}, err
+	}
+	if !resp.Success() {
+		return BaseRecord{}, fmt.Errorf("get base record failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return BaseRecord{}, nil
+	}
+	return resp.Data.Record, nil
+}

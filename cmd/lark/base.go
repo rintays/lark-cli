@@ -17,6 +17,7 @@ func newBaseCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newBaseTableCmd(state))
 	cmd.AddCommand(newBaseFieldCmd(state))
 	cmd.AddCommand(newBaseViewCmd(state))
+	cmd.AddCommand(newBaseRecordCmd(state))
 	return cmd
 }
 
@@ -44,6 +45,15 @@ func newBaseViewCmd(state *appState) *cobra.Command {
 		Short: "Manage Bitable views",
 	}
 	cmd.AddCommand(newBaseViewListCmd(state))
+	return cmd
+}
+
+func newBaseRecordCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "record",
+		Short: "Manage Bitable records",
+	}
+	cmd.AddCommand(newBaseRecordGetCmd(state))
 	return cmd
 }
 
@@ -161,5 +171,40 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
 	_ = cmd.MarkFlagRequired("app-token")
 	_ = cmd.MarkFlagRequired("table-id")
+	return cmd
+}
+
+func newBaseRecordGetCmd(state *appState) *cobra.Command {
+	var appToken string
+	var tableID string
+	var recordID string
+
+	cmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get a Bitable record",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			record, err := state.SDK.GetBaseRecord(context.Background(), token, appToken, tableID, recordID)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"record": record}
+			text := fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime, record.LastModifiedTime)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
+	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
+	cmd.Flags().StringVar(&recordID, "record-id", "", "Bitable record id")
+	_ = cmd.MarkFlagRequired("app-token")
+	_ = cmd.MarkFlagRequired("table-id")
+	_ = cmd.MarkFlagRequired("record-id")
 	return cmd
 }

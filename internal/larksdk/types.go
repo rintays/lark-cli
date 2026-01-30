@@ -124,6 +124,13 @@ type BaseView struct {
 	ViewType string `json:"view_type"`
 }
 
+type BaseRecord struct {
+	RecordID         string         `json:"record_id"`
+	Fields           map[string]any `json:"fields,omitempty"`
+	CreatedTime      string         `json:"created_time"`
+	LastModifiedTime string         `json:"last_modified_time"`
+}
+
 type ListBaseTablesResult struct {
 	Items     []BaseTable `json:"items"`
 	PageToken string      `json:"page_token"`
