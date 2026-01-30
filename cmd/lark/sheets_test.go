@@ -532,6 +532,123 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	}
 }
 
+func TestSheetsClearCommandWithSDK(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values_clear" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("range") != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range query: %s", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"clearedRange": "Sheet1!A1:B2",
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("legacy client used for sheets clear")
+	})}}
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"clear", "--spreadsheet-id", "spreadsheet", "--range", "Sheet1!A1:B2"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets clear error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "ok") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if !strings.Contains(output, "Sheet1!A1:B2") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestSheetsClearCommandFallbackToAPI(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values_clear" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected payload: %+v", payload)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"clearedRange": "Sheet1!A1:B2",
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+		SDK:     &larksdk.Client{},
+	}
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"clear", "--spreadsheet-id", "spreadsheet", "--range", "Sheet1!A1:B2"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets clear error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "ok") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if !strings.Contains(output, "Sheet1!A1:B2") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
 func TestSheetsClearCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -550,6 +667,7 @@ func TestSheetsClearCommand(t *testing.T) {
 		if payload["range"] != "Sheet1!A1:B2" {
 			t.Fatalf("unexpected payload: %+v", payload)
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",

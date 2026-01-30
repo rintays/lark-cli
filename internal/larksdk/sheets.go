@@ -35,6 +35,16 @@ func (r *updateSheetRangeResponse) Success() bool {
 	return r.Code == 0
 }
 
+type clearSheetRangeResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data map[string]any `json:"data"`
+}
+
+func (r *clearSheetRangeResponse) Success() bool {
+	return r.Code == 0
+}
+
 func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (larkapi.SheetValueRange, error) {
 	if !c.available() || c.coreConfig == nil {
 		return larkapi.SheetValueRange{}, ErrUnavailable
@@ -133,4 +143,54 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 		return larkapi.SheetValueUpdate{}, nil
 	}
 	return *resp.Data, nil
+}
+
+func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (string, error) {
+	if !c.available() || c.coreConfig == nil {
+		return "", ErrUnavailable
+	}
+	if spreadsheetToken == "" {
+		return "", errors.New("spreadsheet token is required")
+	}
+	if sheetRange == "" {
+		return "", errors.New("range is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return "", errors.New("tenant access token is required")
+	}
+
+	req := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/values_clear",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
+	req.QueryParams.Set("range", sheetRange)
+
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return "", err
+	}
+	if apiResp == nil {
+		return "", errors.New("clear sheet range failed: empty response")
+	}
+	resp := &clearSheetRangeResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return "", err
+	}
+	if !resp.Success() {
+		return "", fmt.Errorf("clear sheet range failed: %s", resp.Msg)
+	}
+	clearedRange := sheetRange
+	if resp.Data != nil {
+		if value, ok := resp.Data["clearedRange"].(string); ok && value != "" {
+			clearedRange = value
+		} else if value, ok := resp.Data["cleared_range"].(string); ok && value != "" {
+			clearedRange = value
+		}
+	}
+	return clearedRange, nil
 }

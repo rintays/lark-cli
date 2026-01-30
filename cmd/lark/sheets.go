@@ -205,7 +205,17 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			clearedRange, err := state.Client.ClearSheetRange(context.Background(), token, spreadsheetID, sheetRange)
+			clearSheetRange := state.Client.ClearSheetRange
+			if state.SDK != nil {
+				clearSheetRange = func(ctx context.Context, token, spreadsheetToken, sheetRange string) (string, error) {
+					clearedRange, err := state.SDK.ClearSheetRange(ctx, token, spreadsheetToken, sheetRange)
+					if errors.Is(err, larksdk.ErrUnavailable) {
+						return state.Client.ClearSheetRange(ctx, token, spreadsheetToken, sheetRange)
+					}
+					return clearedRange, err
+				}
+			}
+			clearedRange, err := clearSheetRange(context.Background(), token, spreadsheetID, sheetRange)
 			if err != nil {
 				return err
 			}
