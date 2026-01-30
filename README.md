@@ -242,6 +242,7 @@ Example:
 ./lark base table list --help
 ./lark base field list --help
 ./lark base view list --help
+./lark base record create --help
 ./lark base record get --help
 ./lark base record search --help
 ./lark mail mailbox get --help
