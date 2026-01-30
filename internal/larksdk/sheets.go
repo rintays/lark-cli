@@ -7,8 +7,6 @@ import (
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
-
-	"lark/internal/larkapi"
 )
 
 type readSheetRangeResponse struct {
@@ -63,7 +61,7 @@ func (r *clearSheetRangeResponse) Success() bool {
 type spreadsheetMetadataResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
-	Data *larkapi.SpreadsheetMetadata `json:"data"`
+	Data *SpreadsheetMetadata `json:"data"`
 }
 
 func (r *spreadsheetMetadataResponse) Success() bool {
@@ -278,16 +276,16 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 	return result, nil
 }
 
-func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (larkapi.SpreadsheetMetadata, error) {
+func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (SpreadsheetMetadata, error) {
 	if !c.available() || c.coreConfig == nil {
-		return larkapi.SpreadsheetMetadata{}, ErrUnavailable
+		return SpreadsheetMetadata{}, ErrUnavailable
 	}
 	if spreadsheetToken == "" {
-		return larkapi.SpreadsheetMetadata{}, errors.New("spreadsheet token is required")
+		return SpreadsheetMetadata{}, errors.New("spreadsheet token is required")
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
-		return larkapi.SpreadsheetMetadata{}, errors.New("tenant access token is required")
+		return SpreadsheetMetadata{}, errors.New("tenant access token is required")
 	}
 
 	req := &larkcore.ApiReq{
@@ -301,20 +299,20 @@ func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetT
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
-		return larkapi.SpreadsheetMetadata{}, err
+		return SpreadsheetMetadata{}, err
 	}
 	if apiResp == nil {
-		return larkapi.SpreadsheetMetadata{}, errors.New("get spreadsheet metadata failed: empty response")
+		return SpreadsheetMetadata{}, errors.New("get spreadsheet metadata failed: empty response")
 	}
 	resp := &spreadsheetMetadataResponse{ApiResp: apiResp}
 	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return larkapi.SpreadsheetMetadata{}, err
+		return SpreadsheetMetadata{}, err
 	}
 	if !resp.Success() {
-		return larkapi.SpreadsheetMetadata{}, fmt.Errorf("get spreadsheet metadata failed: %s", resp.Msg)
+		return SpreadsheetMetadata{}, fmt.Errorf("get spreadsheet metadata failed: %s", resp.Msg)
 	}
 	if resp.Data == nil {
-		return larkapi.SpreadsheetMetadata{}, nil
+		return SpreadsheetMetadata{}, nil
 	}
 	return *resp.Data, nil
 }

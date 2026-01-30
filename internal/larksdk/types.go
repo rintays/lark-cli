@@ -42,6 +42,8 @@ type SearchDriveFilesResult = larkapi.SearchDriveFilesResult
 
 type SheetValueRange = larkapi.SheetValueRange
 
+type SpreadsheetMetadata = larkapi.SpreadsheetMetadata
+
 type SheetValueRangeInput struct {
 	Range          string  `json:"range"`
 	MajorDimension string  `json:"major_dimension,omitempty"`
