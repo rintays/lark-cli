@@ -32,6 +32,9 @@ func newChatsListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
@@ -39,10 +42,7 @@ func newChatsListCmd(state *appState) *cobra.Command {
 			chats := make([]larkapi.Chat, 0, limit)
 			pageToken := ""
 			remaining := limit
-			listChats := state.Client.ListChats
-			if state.SDK != nil {
-				listChats = state.SDK.ListChats
-			}
+			listChats := state.SDK.ListChats
 			for {
 				pageSize := remaining
 				if pageSize > maxChatsPageSize {
