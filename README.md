@@ -10,6 +10,13 @@ Configure credentials (writes `~/.config/lark/config.json` by default):
 lark auth login --app-id <APP_ID> --app-secret <APP_SECRET>
 ```
 
+You can also set credentials via environment variables when the config fields are empty (config values take precedence):
+
+```bash
+export LARK_APP_ID=<APP_ID>
+export LARK_APP_SECRET=<APP_SECRET>
+```
+
 Optionally override the API base URL:
 
 ```bash

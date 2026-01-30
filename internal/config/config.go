@@ -26,6 +26,7 @@ func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			applyEnvFallback(cfg)
 			return cfg, nil
 		}
 		return nil, err
@@ -36,6 +37,7 @@ func Load(path string) (*Config, error) {
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = "https://open.feishu.cn"
 	}
+	applyEnvFallback(cfg)
 	return cfg, nil
 }
 
@@ -56,4 +58,17 @@ func DefaultPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(home, ".config", "lark", "config.json"), nil
+}
+
+func applyEnvFallback(cfg *Config) {
+	if cfg.AppID == "" {
+		if appID := os.Getenv("LARK_APP_ID"); appID != "" {
+			cfg.AppID = appID
+		}
+	}
+	if cfg.AppSecret == "" {
+		if appSecret := os.Getenv("LARK_APP_SECRET"); appSecret != "" {
+			cfg.AppSecret = appSecret
+		}
+	}
 }
