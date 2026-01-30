@@ -23,3 +23,9 @@ type Minute = larkapi.Minute
 type ListMinutesRequest = larkapi.ListMinutesRequest
 
 type ListMinutesResult = larkapi.ListMinutesResult
+
+type DriveFile = larkapi.DriveFile
+
+type ListDriveFilesRequest = larkapi.ListDriveFilesRequest
+
+type ListDriveFilesResult = larkapi.ListDriveFilesResult

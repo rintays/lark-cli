@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 const maxDrivePageSize = 200
@@ -50,7 +51,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			files := make([]larkapi.DriveFile, 0, limit)
+			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
 			remaining := limit
 			for {
@@ -58,7 +59,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
-				result, err := state.SDK.ListDriveFiles(context.Background(), token, larkapi.ListDriveFilesRequest{
+				result, err := state.SDK.ListDriveFiles(context.Background(), token, larksdk.ListDriveFilesRequest{
 					FolderToken: folderID,
 					PageSize:    pageSize,
 					PageToken:   pageToken,
