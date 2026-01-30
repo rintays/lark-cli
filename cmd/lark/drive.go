@@ -24,6 +24,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newDriveListCmd(state))
 	cmd.AddCommand(newDriveSearchCmd(state))
 	cmd.AddCommand(newDriveGetCmd(state))
+	cmd.AddCommand(newDriveExportCmd(state))
 	cmd.AddCommand(newDriveDownloadCmd(state))
 	cmd.AddCommand(newDriveUploadCmd(state))
 	cmd.AddCommand(newDriveURLsCmd(state))
@@ -312,6 +313,90 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token")
+	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
+	return cmd
+}
+
+func newDriveExportCmd(state *appState) *cobra.Command {
+	var fileToken string
+	var fileType string
+	var format string
+	var outPath string
+
+	cmd := &cobra.Command{
+		Use:   "export <file-token>",
+		Short: "Export a Drive file",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				if fileToken != "" && fileToken != args[0] {
+					return errors.New("file-token provided twice")
+				}
+				fileToken = args[0]
+			}
+			if fileToken == "" {
+				return errors.New("file-token is required")
+			}
+			if fileType == "" {
+				return errors.New("type is required")
+			}
+			if format == "" {
+				return errors.New("format is required")
+			}
+			if outPath == "" {
+				return errors.New("out path is required")
+			}
+			if info, err := os.Stat(outPath); err == nil && info.IsDir() {
+				return fmt.Errorf("output path is a directory: %s", outPath)
+			}
+			format = strings.ToLower(format)
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			ticket, err := state.Client.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
+				Token:         fileToken,
+				Type:          fileType,
+				FileExtension: format,
+			})
+			if err != nil {
+				return err
+			}
+			result, err := pollExportTask(context.Background(), state.Client, token, ticket)
+			if err != nil {
+				return err
+			}
+			reader, err := state.Client.DownloadExportedFile(context.Background(), token, result.FileToken)
+			if err != nil {
+				return err
+			}
+			defer reader.Close()
+			outFile, err := os.Create(outPath)
+			if err != nil {
+				return err
+			}
+			defer outFile.Close()
+			written, err := io.Copy(outFile, reader)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"file_token":        fileToken,
+				"type":              fileType,
+				"format":            format,
+				"export_file_token": result.FileToken,
+				"file_name":         result.FileName,
+				"output_path":       outPath,
+				"bytes_written":     written,
+			}
+			text := fmt.Sprintf("%s\t%s\t%d", fileToken, outPath, written)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (or provide as positional argument)")
+	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: docx, sheet, bitable)")
+	cmd.Flags().StringVar(&format, "format", "", "export format (for example: pdf, docx, xlsx)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
 	return cmd
 }

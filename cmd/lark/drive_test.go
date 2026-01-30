@@ -441,3 +441,120 @@ func TestDriveDownloadCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestDriveExportCommand(t *testing.T) {
+	cases := []struct {
+		name    string
+		useJSON bool
+	}{
+		{name: "text"},
+		{name: "json", useJSON: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			exported := []byte("exported bytes")
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Header.Get("Authorization") != "Bearer token" {
+					t.Fatalf("missing auth header")
+				}
+				switch {
+				case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
+					var payload map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						t.Fatalf("decode payload: %v", err)
+					}
+					if payload["token"] != "f1" {
+						t.Fatalf("unexpected token: %+v", payload)
+					}
+					if payload["type"] != "docx" {
+						t.Fatalf("unexpected type: %+v", payload)
+					}
+					if payload["file_extension"] != "pdf" {
+						t.Fatalf("unexpected file_extension: %+v", payload)
+					}
+					_ = json.NewEncoder(w).Encode(map[string]any{
+						"code": 0,
+						"msg":  "ok",
+						"data": map[string]any{
+							"ticket": "ticket1",
+						},
+					})
+				case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1":
+					_ = json.NewEncoder(w).Encode(map[string]any{
+						"code": 0,
+						"msg":  "ok",
+						"data": map[string]any{
+							"result": map[string]any{
+								"file_extension": "pdf",
+								"type":           "docx",
+								"file_name":      "Export.pdf",
+								"file_token":     "file1",
+								"file_size":      int64(len(exported)),
+								"job_error_msg":  "success",
+								"job_status":     0,
+							},
+						},
+					})
+				case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/file/file1/download":
+					_, _ = w.Write(exported)
+				default:
+					t.Fatalf("unexpected path: %s %s", r.Method, r.URL.Path)
+				}
+			})
+			httpClient, baseURL := testutil.NewTestClient(handler)
+
+			outDir := t.TempDir()
+			outPath := filepath.Join(outDir, "export.pdf")
+
+			var buf bytes.Buffer
+			state := &appState{
+				Config: &config.Config{
+					AppID:                      "app",
+					AppSecret:                  "secret",
+					BaseURL:                    baseURL,
+					TenantAccessToken:          "token",
+					TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+				JSON:    tc.useJSON,
+				Printer: output.Printer{Writer: &buf, JSON: tc.useJSON},
+				Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+			}
+
+			prevInterval := exportTaskPollInterval
+			exportTaskPollInterval = 0
+			defer func() {
+				exportTaskPollInterval = prevInterval
+			}()
+
+			cmd := newDriveCmd(state)
+			cmd.SetArgs([]string{"export", "--file-token", "f1", "--type", "docx", "--format", "pdf", "--out", outPath})
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("drive export error: %v", err)
+			}
+
+			data, err := os.ReadFile(outPath)
+			if err != nil {
+				t.Fatalf("read exported file: %v", err)
+			}
+			if !bytes.Equal(data, exported) {
+				t.Fatalf("unexpected export content: %q", string(data))
+			}
+
+			if tc.useJSON {
+				var payload map[string]any
+				if err := json.NewDecoder(bytes.NewReader(buf.Bytes())).Decode(&payload); err != nil {
+					t.Fatalf("decode output: %v", err)
+				}
+				if payload["file_token"] != "f1" {
+					t.Fatalf("unexpected file_token: %+v", payload["file_token"])
+				}
+				if payload["export_file_token"] != "file1" {
+					t.Fatalf("unexpected export_file_token: %+v", payload["export_file_token"])
+				}
+			} else if !strings.Contains(buf.String(), outPath) {
+				t.Fatalf("unexpected output: %q", buf.String())
+			}
+		})
+	}
+}
