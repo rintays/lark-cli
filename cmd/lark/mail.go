@@ -34,9 +34,6 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 		Use:   "folders",
 		Short: "List mail folders",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if mailboxID == "" {
-				return errors.New("mailbox-id is required")
-			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
@@ -62,6 +59,7 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
+	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
 
@@ -75,9 +73,6 @@ func newMailListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List mail messages",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if mailboxID == "" {
-				return errors.New("mailbox-id is required")
-			}
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
@@ -136,6 +131,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "filter by folder ID")
 	cmd.Flags().IntVar(&limit, "limit", 20, "max number of messages to return")
 	cmd.Flags().BoolVar(&onlyUnread, "only-unread", false, "only return unread messages")
+	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
 
@@ -146,20 +142,22 @@ func newMailGetCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <message-id>",
 		Short: "Get a mail message",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 1 {
+				return cobra.MaximumNArgs(1)(cmd, args)
+			}
 			if len(args) > 0 {
 				if messageID != "" && messageID != args[0] {
 					return errors.New("message-id provided twice")
 				}
 				messageID = args[0]
 			}
-			if mailboxID == "" {
-				return errors.New("mailbox-id is required")
-			}
 			if messageID == "" {
 				return errors.New("message-id is required")
 			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
@@ -178,6 +176,7 @@ func newMailGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
 	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
+	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
 
@@ -207,18 +206,6 @@ func newMailSendCmd(state *appState) *cobra.Command {
 				if err != nil || token == "" {
 					return errors.New(userTokenHint)
 				}
-			}
-			if mailboxID == "" {
-				return errors.New("mailbox-id is required")
-			}
-			if subject == "" {
-				return errors.New("subject is required")
-			}
-			if len(to) == 0 {
-				return errors.New("to is required")
-			}
-			if bodyText == "" && bodyHTML == "" {
-				return errors.New("text or html body is required")
 			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -250,6 +237,10 @@ func newMailSendCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&bodyHTML, "html", "", "HTML body")
 	cmd.Flags().StringVar(&headFrom, "from-name", "", "display name for From header")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
+	_ = cmd.MarkFlagRequired("mailbox-id")
+	_ = cmd.MarkFlagRequired("subject")
+	_ = cmd.MarkFlagRequired("to")
+	cmd.MarkFlagsOneRequired("text", "html")
 	return cmd
 }
 

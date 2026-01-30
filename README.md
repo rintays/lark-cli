@@ -82,7 +82,7 @@ lark auth
 lark whoami
 lark chats list --limit 10
 lark users search --email user@example.com
-lark msg send --chat-id <CHAT_ID> --text "hello"
+lark messages send --chat-id <CHAT_ID> --text "hello"
 ```
 
 ---
@@ -113,13 +113,13 @@ lark users search --email user@example.com --json
 ### Send a message
 
 ```bash
-lark msg send --chat-id <CHAT_ID> --text "hello"
+lark messages send --chat-id <CHAT_ID> --text "hello"
 ```
 
 Send to a user by email:
 
 ```bash
-lark msg send --receive-id-type email --receive-id user@example.com --text "hello"
+lark messages send --receive-id-type email --receive-id user@example.com --text "hello"
 ```
 
 ### Drive

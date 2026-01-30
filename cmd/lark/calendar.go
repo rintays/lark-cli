@@ -33,9 +33,6 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List events in a time range",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if start == "" || end == "" {
-				return errors.New("start and end are required")
-			}
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
@@ -91,6 +88,8 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&end, "end", "", "end time (RFC3339)")
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of events to return")
+	_ = cmd.MarkFlagRequired("start")
+	_ = cmd.MarkFlagRequired("end")
 
 	return cmd
 }
@@ -107,12 +106,6 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 		Use:   "create",
 		Short: "Create a calendar event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if summary == "" {
-				return errors.New("summary is required")
-			}
-			if start == "" || end == "" {
-				return errors.New("start and end are required")
-			}
 			startTime, err := time.Parse(time.RFC3339, start)
 			if err != nil {
 				return fmt.Errorf("invalid start time: %w", err)
@@ -177,6 +170,9 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&summary, "summary", "", "event summary")
 	cmd.Flags().StringVar(&description, "description", "", "event description")
 	cmd.Flags().StringArrayVar(&attendees, "attendee", nil, "attendee email (repeatable)")
+	_ = cmd.MarkFlagRequired("summary")
+	_ = cmd.MarkFlagRequired("start")
+	_ = cmd.MarkFlagRequired("end")
 
 	return cmd
 }

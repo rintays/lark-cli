@@ -43,3 +43,6 @@
 - Default config path: `~/.config/lark/config.json`.
 - Common env vars: `LARK_APP_ID`, `LARK_APP_SECRET`, `LARK_USER_ACCESS_TOKEN`.
 - Never commit real credentials or tokens.
+
+## Agent Notes
+- 2026-01-30: CLI 命令命名统一（messages/contacts users），必填 flag 校验改为 Cobra 标注与 Args 校验，补充命令参数校验测试，更新 README 示例。

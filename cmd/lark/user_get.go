@@ -17,12 +17,6 @@ func newUserGetCmd(state *appState) *cobra.Command {
 		Use:   "get",
 		Short: "Get a contact user by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if openID == "" && userID == "" {
-				return errors.New("open-id or user-id is required")
-			}
-			if openID != "" && userID != "" {
-				return errors.New("only one of open-id or user-id can be used at a time")
-			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
@@ -49,6 +43,8 @@ func newUserGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&openID, "open-id", "", "open ID")
 	cmd.Flags().StringVar(&userID, "user-id", "", "user ID")
+	cmd.MarkFlagsOneRequired("open-id", "user-id")
+	cmd.MarkFlagsMutuallyExclusive("open-id", "user-id")
 
 	return cmd
 }

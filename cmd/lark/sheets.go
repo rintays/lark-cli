@@ -33,12 +33,6 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 		Use:   "read",
 		Short: "Read a range from Sheets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if spreadsheetID == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if sheetRange == "" {
-				return errors.New("range is required")
-			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
@@ -58,6 +52,8 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
 	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("range")
 	return cmd
 }
 
@@ -68,9 +64,6 @@ func newSheetsMetadataCmd(state *appState) *cobra.Command {
 		Use:   "metadata",
 		Short: "Get spreadsheet metadata",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if spreadsheetID == "" {
-				return errors.New("spreadsheet-id is required")
-			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
@@ -89,6 +82,7 @@ func newSheetsMetadataCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
 	return cmd
 }
 
@@ -101,12 +95,6 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 		Use:   "update",
 		Short: "Update a range in Sheets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if spreadsheetID == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if sheetRange == "" {
-				return errors.New("range is required")
-			}
 			values, err := parseSheetValues(valuesRaw)
 			if err != nil {
 				return err
@@ -131,6 +119,9 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
 	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("range")
+	_ = cmd.MarkFlagRequired("values")
 	return cmd
 }
 
@@ -144,12 +135,6 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 		Use:   "append",
 		Short: "Append rows to Sheets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if spreadsheetID == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if sheetRange == "" {
-				return errors.New("range is required")
-			}
 			values, err := parseSheetValues(valuesRaw)
 			if err != nil {
 				return err
@@ -175,6 +160,9 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
 	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("range")
+	_ = cmd.MarkFlagRequired("values")
 	return cmd
 }
 
@@ -186,12 +174,6 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 		Use:   "clear",
 		Short: "Clear a range in Sheets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if spreadsheetID == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if sheetRange == "" {
-				return errors.New("range is required")
-			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
@@ -209,6 +191,8 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
 	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("range")
 	return cmd
 }
 

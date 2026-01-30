@@ -34,22 +34,6 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 		Aliases: []string{"list"},
 		Short:   "Search users by email, mobile, or name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			criteria := 0
-			if email != "" {
-				criteria++
-			}
-			if mobile != "" {
-				criteria++
-			}
-			if name != "" {
-				criteria++
-			}
-			if criteria == 0 {
-				return errors.New("one of email, mobile, or name is required")
-			}
-			if criteria > 1 {
-				return errors.New("only one of email, mobile, or name can be used at a time")
-			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
@@ -92,6 +76,8 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&mobile, "mobile", "", "search by mobile")
 	cmd.Flags().StringVar(&name, "name", "", "search by name")
 	cmd.Flags().StringVar(&departmentID, "department-id", "0", "department ID for name search")
+	cmd.MarkFlagsOneRequired("email", "mobile", "name")
+	cmd.MarkFlagsMutuallyExclusive("email", "mobile", "name")
 
 	return cmd
 }

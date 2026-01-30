@@ -38,9 +38,6 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 		Use:   "create",
 		Short: "Create a Docs (docx) document",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if title == "" {
-				return errors.New("title is required")
-			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
@@ -63,6 +60,7 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&title, "title", "", "document title")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root)")
+	_ = cmd.MarkFlagRequired("title")
 	return cmd
 }
 
@@ -73,9 +71,6 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 		Use:   "get",
 		Short: "Get Docs (docx) document metadata",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if documentID == "" {
-				return errors.New("doc-id is required")
-			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
@@ -94,6 +89,7 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID")
+	_ = cmd.MarkFlagRequired("doc-id")
 	return cmd
 }
 
@@ -106,15 +102,6 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 		Use:   "export --doc-id <DOCUMENT_ID> --format pdf --out <path>",
 		Short: "Export a Docs (docx) document",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if documentID == "" {
-				return errors.New("doc-id is required")
-			}
-			if format == "" {
-				return errors.New("format is required")
-			}
-			if outPath == "" {
-				return errors.New("out path is required")
-			}
 			if info, err := os.Stat(outPath); err == nil && info.IsDir() {
 				return fmt.Errorf("output path is a directory: %s", outPath)
 			}
@@ -167,6 +154,9 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID")
 	cmd.Flags().StringVar(&format, "format", "", "export format (pdf)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
+	_ = cmd.MarkFlagRequired("doc-id")
+	_ = cmd.MarkFlagRequired("format")
+	_ = cmd.MarkFlagRequired("out")
 	return cmd
 }
 
@@ -178,9 +168,6 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 		Use:   "cat --doc-id <DOCUMENT_ID> [--format txt|md]",
 		Short: "Print Docs (docx) document content",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if documentID == "" {
-				return errors.New("doc-id is required")
-			}
 			format = strings.ToLower(strings.TrimSpace(format))
 			if format == "" {
 				format = "txt"
@@ -235,6 +222,7 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID")
 	cmd.Flags().StringVar(&format, "format", "txt", "output format (txt or md)")
+	_ = cmd.MarkFlagRequired("doc-id")
 	return cmd
 }
 

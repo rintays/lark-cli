@@ -29,8 +29,10 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <meeting-id>",
 		Short: "Get meeting details",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 1 {
+				return cobra.MaximumNArgs(1)(cmd, args)
+			}
 			if len(args) > 0 {
 				if meetingID != "" && meetingID != args[0] {
 					return errors.New("meeting-id provided twice")
@@ -40,6 +42,9 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 			if meetingID == "" {
 				return errors.New("meeting-id is required")
 			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if queryMode < 0 || queryMode > 1 {
 				return errors.New("query-mode must be 0 or 1")
 			}

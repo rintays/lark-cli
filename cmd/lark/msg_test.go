@@ -99,3 +99,29 @@ func TestMsgSendCommandWithSDK(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestMsgSendRequiresFlags(t *testing.T) {
+	t.Run("requires text", func(t *testing.T) {
+		cmd := newMsgCmd(&appState{})
+		cmd.SetArgs([]string{"send", "--receive-id", "ou_1"})
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !strings.Contains(err.Error(), "text") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("requires chat or receive id", func(t *testing.T) {
+		cmd := newMsgCmd(&appState{})
+		cmd.SetArgs([]string{"send", "--text", "hello"})
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !strings.Contains(err.Error(), "chat-id") && !strings.Contains(err.Error(), "receive-id") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}

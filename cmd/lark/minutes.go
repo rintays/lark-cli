@@ -30,8 +30,10 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <minute-token>",
 		Short: "Get Minutes details",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 1 {
+				return cobra.MaximumNArgs(1)(cmd, args)
+			}
 			if len(args) > 0 {
 				if minuteToken != "" && minuteToken != args[0] {
 					return errors.New("minute-token provided twice")
@@ -41,6 +43,9 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 			if minuteToken == "" {
 				return errors.New("minute-token is required")
 			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err

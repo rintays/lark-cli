@@ -211,3 +211,27 @@ func TestUsersSearchRequiresSDK(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestUsersSearchRequiresCriteria(t *testing.T) {
+	cmd := newUsersCmd(&appState{})
+	cmd.SetArgs([]string{"search"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "email") && !strings.Contains(err.Error(), "mobile") && !strings.Contains(err.Error(), "name") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestUsersSearchRejectsMultipleCriteria(t *testing.T) {
+	cmd := newUsersCmd(&appState{})
+	cmd.SetArgs([]string{"search", "--email", "dev@example.com", "--name", "Ada"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "group") && !strings.Contains(err.Error(), "were all set") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
