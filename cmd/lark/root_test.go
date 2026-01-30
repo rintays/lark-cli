@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,5 +89,38 @@ func TestEnsureTenantTokenRefreshesAndSaves(t *testing.T) {
 	}
 	if saved.TenantAccessTokenExpiresAt == 0 {
 		t.Fatalf("expected expiry saved")
+	}
+}
+
+func TestRootHelpShowsMeetingsCommand(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.PersistentPreRunE = nil
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--help"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("help error: %v", err)
+	}
+
+	foundMeetings := false
+	scanner := bufio.NewScanner(strings.NewReader(buf.String()))
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimLeft(line, " \t")
+		if trimmed == "meetings" || strings.HasPrefix(trimmed, "meetings ") || strings.HasPrefix(trimmed, "meetings\t") {
+			foundMeetings = true
+		}
+		if trimmed == "meeting" || strings.HasPrefix(trimmed, "meeting ") || strings.HasPrefix(trimmed, "meeting\t") {
+			t.Fatalf("unexpected meeting command in help output: %q", line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("scan help output: %v", err)
+	}
+	if !foundMeetings {
+		t.Fatalf("expected meetings command in help output, got:\n%s", buf.String())
 	}
 }
