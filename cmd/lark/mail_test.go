@@ -169,6 +169,60 @@ func TestMailListCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestMailGetCommandWithSDK(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/msg_1" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"message": map[string]any{
+					"message_id": "msg_1",
+					"subject":    "Hello",
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"get", "msg_1", "--mailbox-id", "mbx_1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail get error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "msg_1\tHello") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
 func TestMailListCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
@@ -184,6 +238,30 @@ func TestMailListCommandRequiresSDK(t *testing.T) {
 
 	cmd := newMailCmd(state)
 	cmd.SetArgs([]string{"list", "--mailbox-id", "mbx_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "sdk client is required" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestMailGetCommandRequiresSDK(t *testing.T) {
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    "http://example.com",
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+		Client:  &larkapi.Client{},
+	}
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"get", "msg_1", "--mailbox-id", "mbx_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")

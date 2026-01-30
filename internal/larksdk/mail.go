@@ -73,6 +73,20 @@ func (r *listMailMessagesResponse) Success() bool {
 	return r.Code == 0
 }
 
+type getMailMessageResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *getMailMessageResponseData `json:"data"`
+}
+
+type getMailMessageResponseData struct {
+	Message *MailMessage `json:"message"`
+}
+
+func (r *getMailMessageResponse) Success() bool {
+	return r.Code == 0
+}
+
 func (c *Client) ListMailFolders(ctx context.Context, token, mailboxID string) ([]larkapi.MailFolder, error) {
 	if !c.available() || c.coreConfig == nil {
 		return nil, ErrUnavailable
@@ -170,4 +184,49 @@ func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMai
 		HasMore:   resp.Data.HasMore,
 		PageToken: resp.Data.PageToken,
 	}, nil
+}
+
+func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID string) (MailMessage, error) {
+	if !c.available() || c.coreConfig == nil {
+		return MailMessage{}, ErrUnavailable
+	}
+	if mailboxID == "" {
+		return MailMessage{}, errors.New("mailbox id is required")
+	}
+	if messageID == "" {
+		return MailMessage{}, errors.New("message id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return MailMessage{}, errors.New("tenant access token is required")
+	}
+
+	req := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/:message_id",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	req.PathParams.Set("mailbox_id", mailboxID)
+	req.PathParams.Set("message_id", messageID)
+
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return MailMessage{}, err
+	}
+	if apiResp == nil {
+		return MailMessage{}, errors.New("get mail message failed: empty response")
+	}
+	resp := &getMailMessageResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return MailMessage{}, err
+	}
+	if !resp.Success() {
+		return MailMessage{}, fmt.Errorf("get mail message failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Message == nil {
+		return MailMessage{}, nil
+	}
+	return *resp.Data.Message, nil
 }

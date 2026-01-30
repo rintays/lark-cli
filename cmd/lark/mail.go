@@ -160,11 +160,14 @@ func newMailGetCmd(state *appState) *cobra.Command {
 			if messageID == "" {
 				return errors.New("message-id is required")
 			}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
 			}
-			message, err := state.Client.GetMailMessage(context.Background(), token, mailboxID, messageID)
+			message, err := state.SDK.GetMailMessage(context.Background(), token, mailboxID, messageID)
 			if err != nil {
 				return err
 			}
