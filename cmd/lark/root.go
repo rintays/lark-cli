@@ -96,6 +96,13 @@ func cachedTokenValid(cfg *config.Config, now time.Time) bool {
 	return cfg.TenantAccessTokenExpiresAt > now.Add(60*time.Second).Unix()
 }
 
+func cachedUserTokenValid(cfg *config.Config, now time.Time) bool {
+	if cfg.UserAccessToken == "" || cfg.UserAccessTokenExpiresAt == 0 {
+		return false
+	}
+	return cfg.UserAccessTokenExpiresAt > now.Add(60*time.Second).Unix()
+}
+
 func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
 	if err := requireCredentials(state.Config); err != nil {
 		return "", err
@@ -128,6 +135,60 @@ func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
 		return "", err
 	}
 	return token, nil
+}
+
+func ensureUserToken(ctx context.Context, state *appState) (string, error) {
+	if err := requireCredentials(state.Config); err != nil {
+		return "", err
+	}
+	if cachedUserTokenValid(state.Config, time.Now()) {
+		return state.Config.UserAccessToken, nil
+	}
+	if state.Config.RefreshToken == "" {
+		return "", expireUserToken(state, errors.New("refresh token missing"))
+	}
+	if state.Verbose {
+		fmt.Fprintln(state.Printer.Writer, "refreshing user access token")
+	}
+	sdk := state.SDK
+	if sdk == nil {
+		var err error
+		sdk, err = larksdk.New(state.Config)
+		if err != nil {
+			return "", errors.New("auth client is required")
+		}
+	}
+	token, newRefreshToken, expiresIn, err := sdk.RefreshUserAccessToken(ctx, state.Config.RefreshToken)
+	if err != nil {
+		return "", expireUserToken(state, err)
+	}
+	state.Config.UserAccessToken = token
+	state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(expiresIn) * time.Second).Unix()
+	if newRefreshToken != "" {
+		state.Config.RefreshToken = newRefreshToken
+	}
+	if err := config.Save(state.ConfigPath, state.Config); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func expireUserToken(state *appState, cause error) error {
+	state.Config.UserAccessToken = ""
+	state.Config.UserAccessTokenExpiresAt = 0
+	state.Config.RefreshToken = ""
+	saveErr := config.Save(state.ConfigPath, state.Config)
+	base := "user access token expired; run `lark auth user login`"
+	if saveErr != nil {
+		if cause != nil {
+			return fmt.Errorf("%s: %v; failed to clear cached token: %w", base, cause, saveErr)
+		}
+		return fmt.Errorf("%s: failed to clear cached token: %w", base, saveErr)
+	}
+	if cause != nil {
+		return fmt.Errorf("%s: %w", base, cause)
+	}
+	return errors.New(base)
 }
 
 func execute() int {
