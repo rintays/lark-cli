@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 const exportTaskMaxAttempts = 20
@@ -120,7 +121,7 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
+			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larksdk.CreateExportTaskRequest{
 				Token:         documentID,
 				Type:          "docx",
 				FileExtension: format,
@@ -191,7 +192,7 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
+			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larksdk.CreateExportTaskRequest{
 				Token:         documentID,
 				Type:          "docx",
 				FileExtension: format,
@@ -233,36 +234,36 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 }
 
 type exportTaskClient interface {
-	GetExportTask(ctx context.Context, token, ticket string) (larkapi.ExportTaskResult, error)
+	GetExportTask(ctx context.Context, token, ticket string) (larksdk.ExportTaskResult, error)
 }
 
-func pollExportTask(ctx context.Context, client exportTaskClient, token, ticket string) (larkapi.ExportTaskResult, error) {
-	var lastResult larkapi.ExportTaskResult
+func pollExportTask(ctx context.Context, client exportTaskClient, token, ticket string) (larksdk.ExportTaskResult, error) {
+	var lastResult larksdk.ExportTaskResult
 	for attempt := 0; attempt < exportTaskMaxAttempts; attempt++ {
 		result, err := client.GetExportTask(ctx, token, ticket)
 		if err != nil {
-			return larkapi.ExportTaskResult{}, err
+			return larksdk.ExportTaskResult{}, err
 		}
 		lastResult = result
 		switch result.JobStatus {
 		case 0:
 			if result.FileToken == "" {
-				return larkapi.ExportTaskResult{}, errors.New("export task completed without file token")
+				return larksdk.ExportTaskResult{}, errors.New("export task completed without file token")
 			}
 			return result, nil
 		case 1:
 		default:
 			if result.JobErrorMsg != "" {
-				return larkapi.ExportTaskResult{}, fmt.Errorf("export task failed: %s", result.JobErrorMsg)
+				return larksdk.ExportTaskResult{}, fmt.Errorf("export task failed: %s", result.JobErrorMsg)
 			}
-			return larkapi.ExportTaskResult{}, fmt.Errorf("export task failed with status %d", result.JobStatus)
+			return larksdk.ExportTaskResult{}, fmt.Errorf("export task failed with status %d", result.JobStatus)
 		}
 		if exportTaskPollInterval > 0 {
 			time.Sleep(exportTaskPollInterval)
 		}
 	}
 	if lastResult.JobErrorMsg != "" {
-		return larkapi.ExportTaskResult{}, fmt.Errorf("export task not ready: %s", lastResult.JobErrorMsg)
+		return larksdk.ExportTaskResult{}, fmt.Errorf("export task not ready: %s", lastResult.JobErrorMsg)
 	}
-	return larkapi.ExportTaskResult{}, fmt.Errorf("export task not ready after %d attempts", exportTaskMaxAttempts)
+	return larksdk.ExportTaskResult{}, fmt.Errorf("export task not ready after %d attempts", exportTaskMaxAttempts)
 }

@@ -11,8 +11,6 @@ import (
 	"net/url"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
-
-	"lark/internal/larkapi"
 )
 
 type createExportTaskResponse struct {
@@ -36,14 +34,14 @@ type getExportTaskResponse struct {
 }
 
 type getExportTaskResponseData struct {
-	Result larkapi.ExportTaskResult `json:"result"`
+	Result ExportTaskResult `json:"result"`
 }
 
 func (r *getExportTaskResponse) Success() bool {
 	return r.Code == 0
 }
 
-func (c *Client) CreateExportTask(ctx context.Context, token string, req larkapi.CreateExportTaskRequest) (string, error) {
+func (c *Client) CreateExportTask(ctx context.Context, token string, req CreateExportTaskRequest) (string, error) {
 	if !c.available() || c.coreConfig == nil {
 		return "", ErrUnavailable
 	}
@@ -96,16 +94,16 @@ func (c *Client) CreateExportTask(ctx context.Context, token string, req larkapi
 	return resp.Data.Ticket, nil
 }
 
-func (c *Client) GetExportTask(ctx context.Context, token, ticket string) (larkapi.ExportTaskResult, error) {
+func (c *Client) GetExportTask(ctx context.Context, token, ticket string) (ExportTaskResult, error) {
 	if !c.available() || c.coreConfig == nil {
-		return larkapi.ExportTaskResult{}, ErrUnavailable
+		return ExportTaskResult{}, ErrUnavailable
 	}
 	if ticket == "" {
-		return larkapi.ExportTaskResult{}, fmt.Errorf("export ticket is required")
+		return ExportTaskResult{}, fmt.Errorf("export ticket is required")
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
-		return larkapi.ExportTaskResult{}, errors.New("tenant access token is required")
+		return ExportTaskResult{}, errors.New("tenant access token is required")
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -119,20 +117,20 @@ func (c *Client) GetExportTask(ctx context.Context, token, ticket string) (larka
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
-		return larkapi.ExportTaskResult{}, err
+		return ExportTaskResult{}, err
 	}
 	if apiResp == nil {
-		return larkapi.ExportTaskResult{}, errors.New("get export task failed: empty response")
+		return ExportTaskResult{}, errors.New("get export task failed: empty response")
 	}
 	resp := &getExportTaskResponse{ApiResp: apiResp}
 	if err := json.Unmarshal(apiResp.RawBody, resp); err != nil {
-		return larkapi.ExportTaskResult{}, err
+		return ExportTaskResult{}, err
 	}
 	if !resp.Success() {
-		return larkapi.ExportTaskResult{}, fmt.Errorf("get export task failed: %s", resp.Msg)
+		return ExportTaskResult{}, fmt.Errorf("get export task failed: %s", resp.Msg)
 	}
 	if resp.Data == nil {
-		return larkapi.ExportTaskResult{}, nil
+		return ExportTaskResult{}, nil
 	}
 	return resp.Data.Result, nil
 }

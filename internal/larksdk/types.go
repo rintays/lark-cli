@@ -9,3 +9,7 @@ type ListChatsRequest = larkapi.ListChatsRequest
 type ListChatsResult = larkapi.ListChatsResult
 
 type MessageRequest = larkapi.MessageRequest
+
+type CreateExportTaskRequest = larkapi.CreateExportTaskRequest
+
+type ExportTaskResult = larkapi.ExportTaskResult
