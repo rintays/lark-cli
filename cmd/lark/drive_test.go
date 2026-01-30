@@ -80,6 +80,10 @@ func TestDriveSearchCommand(t *testing.T) {
 		if r.URL.Path != "/open-apis/drive/v1/files/search" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "application/json")
 		var payload map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode payload: %v", err)
@@ -101,6 +105,10 @@ func TestDriveSearchCommand(t *testing.T) {
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
+	legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("legacy client used for drive search")
+	})}}
+
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
@@ -111,7 +119,7 @@ func TestDriveSearchCommand(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+		Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {

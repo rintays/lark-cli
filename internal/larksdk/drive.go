@@ -66,6 +66,82 @@ func (c *Client) ListDriveFiles(ctx context.Context, token string, req larkapi.L
 	return result, nil
 }
 
+type searchDriveFilesResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *searchDriveFilesResponseData `json:"data"`
+}
+
+type searchDriveFilesResponseData struct {
+	Files     []*larkdrive.File `json:"files"`
+	PageToken *string           `json:"page_token"`
+	HasMore   *bool             `json:"has_more"`
+}
+
+func (r *searchDriveFilesResponse) Success() bool {
+	return r.Code == 0
+}
+
+func (c *Client) SearchDriveFiles(ctx context.Context, token string, req larkapi.SearchDriveFilesRequest) (larkapi.SearchDriveFilesResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return larkapi.SearchDriveFilesResult{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return larkapi.SearchDriveFilesResult{}, errors.New("tenant access token is required")
+	}
+
+	payload := map[string]any{
+		"query": req.Query,
+	}
+	if req.PageSize > 0 {
+		payload["page_size"] = req.PageSize
+	}
+	if req.PageToken != "" {
+		payload["page_token"] = req.PageToken
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/drive/v1/files/search",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+		Body:                      payload,
+	}
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return larkapi.SearchDriveFilesResult{}, err
+	}
+	if apiResp == nil {
+		return larkapi.SearchDriveFilesResult{}, errors.New("search drive files failed: empty response")
+	}
+	resp := &searchDriveFilesResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return larkapi.SearchDriveFilesResult{}, err
+	}
+	if !resp.Success() {
+		return larkapi.SearchDriveFilesResult{}, fmt.Errorf("search drive files failed: %s", resp.Msg)
+	}
+	result := larkapi.SearchDriveFilesResult{}
+	if resp.Data != nil {
+		if resp.Data.Files != nil {
+			result.Files = make([]larkapi.DriveFile, 0, len(resp.Data.Files))
+			for _, file := range resp.Data.Files {
+				result.Files = append(result.Files, mapDriveFile(file))
+			}
+		}
+		if resp.Data.PageToken != nil {
+			result.PageToken = *resp.Data.PageToken
+		}
+		if resp.Data.HasMore != nil {
+			result.HasMore = *resp.Data.HasMore
+		}
+	}
+	return result, nil
+}
+
 type getDriveFileResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
