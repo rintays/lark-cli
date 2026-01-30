@@ -40,7 +40,10 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			folders, err := state.Client.ListMailFolders(context.Background(), token, mailboxID)
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			folders, err := state.SDK.ListMailFolders(context.Background(), token, mailboxID)
 			if err != nil {
 				return err
 			}
