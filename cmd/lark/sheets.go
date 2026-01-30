@@ -9,7 +9,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"lark/internal/larkapi"
 	"lark/internal/larksdk"
 )
 
@@ -229,7 +228,7 @@ func formatSheetValues(valueRange larksdk.SheetValueRange) string {
 	return strings.Join(lines, "\n")
 }
 
-func formatSpreadsheetMetadata(metadata larkapi.SpreadsheetMetadata) string {
+func formatSpreadsheetMetadata(metadata larksdk.SpreadsheetMetadata) string {
 	lines := make([]string, 0, len(metadata.Sheets)+1)
 	if title := strings.TrimSpace(metadata.Properties.Title); title != "" {
 		lines = append(lines, title)
