@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 func newMeetingsCmd(state *appState) *cobra.Command {
@@ -50,7 +50,7 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			meeting, err := state.SDK.GetMeeting(context.Background(), token, larkapi.GetMeetingRequest{
+			meeting, err := state.SDK.GetMeeting(context.Background(), token, larksdk.GetMeetingRequest{
 				MeetingID:          meetingID,
 				WithParticipants:   withParticipants,
 				WithMeetingAbility: withMeetingAbility,
