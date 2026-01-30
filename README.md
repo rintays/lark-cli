@@ -240,6 +240,7 @@ Example:
 ./lark auth user login --help
 ./lark mail mailboxes list --help
 ./lark mail mailbox get --help
+./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ```
 
 ---
@@ -261,7 +262,7 @@ Planned switch:
 This README is written in the style of “what the CLI will look like once the backlog is complete”.
 Items not finished yet (high-level):
 
-- **Mail UX:** default mailbox selection + mailbox management commands
+- **Mail UX:** use configured default mailbox for mail commands + additional mailbox management commands
 - **Sheets:** row/col insert/delete commands
 - **Base (Bitable):** `base` top-level command tree (records CRUD, tables/fields/views)
 - **Wiki:** `wiki` command tree (v2 SDK endpoints + v1 search via `core.ApiReq`)
