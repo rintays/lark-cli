@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larkapi"
-	"lark/internal/larksdk"
 )
 
 const maxDrivePageSize = 200
@@ -48,15 +47,8 @@ func newDriveListCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			listDriveFiles := state.Client.ListDriveFiles
-			if state.SDK != nil {
-				listDriveFiles = func(ctx context.Context, token string, req larkapi.ListDriveFilesRequest) (larkapi.ListDriveFilesResult, error) {
-					result, err := state.SDK.ListDriveFiles(ctx, token, req)
-					if errors.Is(err, larksdk.ErrUnavailable) {
-						return state.Client.ListDriveFiles(ctx, token, req)
-					}
-					return result, err
-				}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
 			}
 			files := make([]larkapi.DriveFile, 0, limit)
 			pageToken := ""
@@ -66,7 +58,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
-				result, err := listDriveFiles(context.Background(), token, larkapi.ListDriveFilesRequest{
+				result, err := state.SDK.ListDriveFiles(context.Background(), token, larkapi.ListDriveFilesRequest{
 					FolderToken: folderID,
 					PageSize:    pageSize,
 					PageToken:   pageToken,
@@ -191,17 +183,10 @@ func newDriveGetCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			getDriveFile := state.Client.GetDriveFileMetadata
-			if state.SDK != nil {
-				getDriveFile = func(ctx context.Context, token, fileToken string) (larkapi.DriveFile, error) {
-					file, err := state.SDK.GetDriveFileMetadata(ctx, token, fileToken)
-					if errors.Is(err, larksdk.ErrUnavailable) {
-						return state.Client.GetDriveFileMetadata(ctx, token, fileToken)
-					}
-					return file, err
-				}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
 			}
-			file, err := getDriveFile(context.Background(), token, fileToken)
+			file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, fileToken)
 			if err != nil {
 				return err
 			}
