@@ -297,7 +297,10 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			reader, err := state.Client.DownloadDriveFile(context.Background(), token, fileToken)
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			reader, err := state.SDK.DownloadDriveFile(context.Background(), token, fileToken)
 			if err != nil {
 				return err
 			}
