@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -304,6 +306,7 @@ func TestMailSendCommandRequiresSDK(t *testing.T) {
 
 func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
 	state := &appState{
+		ConfigPath: filepath.Join(t.TempDir(), "config.json"),
 		Config: &config.Config{
 			AppID:                      "app",
 			AppSecret:                  "secret",
@@ -314,6 +317,7 @@ func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
 		Printer: output.Printer{Writer: &bytes.Buffer{}},
 		Client:  &larkapi.Client{},
 	}
+	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 
 	cmd := newMailCmd(state)
 	cmd.SetArgs([]string{
@@ -327,8 +331,111 @@ func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "mail send requires a user access token; pass --user-access-token or set LARK_USER_ACCESS_TOKEN" {
+	if err.Error() != "mail send requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`" {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func setupMailSendState(t *testing.T, expectedToken string) (*appState, *bytes.Buffer) {
+	t.Helper()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/send" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != fmt.Sprintf("Bearer %s", expectedToken) {
+			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"message_id": "msg_1",
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant-token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	return state, &buf
+}
+
+func TestMailSendCommandUsesFlagToken(t *testing.T) {
+	state, _ := setupMailSendState(t, "flag-token")
+	state.Config.UserAccessToken = "cached-token"
+	state.Config.UserAccessTokenExpiresAt = time.Now().Add(2 * time.Hour).Unix()
+	t.Setenv("LARK_USER_ACCESS_TOKEN", "env-token")
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--subject", "Hello",
+		"--to", "a@example.com",
+		"--text", "hi",
+		"--user-access-token", "flag-token",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail send error: %v", err)
+	}
+}
+
+func TestMailSendCommandUsesEnvToken(t *testing.T) {
+	state, _ := setupMailSendState(t, "env-token")
+	state.Config.UserAccessToken = "cached-token"
+	state.Config.UserAccessTokenExpiresAt = time.Now().Add(2 * time.Hour).Unix()
+	t.Setenv("LARK_USER_ACCESS_TOKEN", "env-token")
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--subject", "Hello",
+		"--to", "a@example.com",
+		"--text", "hi",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail send error: %v", err)
+	}
+}
+
+func TestMailSendCommandUsesCachedUserToken(t *testing.T) {
+	state, _ := setupMailSendState(t, "cached-token")
+	state.Config.UserAccessToken = "cached-token"
+	state.Config.UserAccessTokenExpiresAt = time.Now().Add(2 * time.Hour).Unix()
+	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--subject", "Hello",
+		"--to", "a@example.com",
+		"--text", "hi",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail send error: %v", err)
 	}
 }
 

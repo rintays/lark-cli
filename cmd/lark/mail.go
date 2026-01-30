@@ -191,6 +191,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 	var bodyHTML string
 	var headFrom string
 	var userAccessToken string
+	const userTokenHint = "mail send requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`"
 
 	cmd := &cobra.Command{
 		Use:   "send",
@@ -201,7 +202,11 @@ func newMailSendCmd(state *appState) *cobra.Command {
 				token = os.Getenv("LARK_USER_ACCESS_TOKEN")
 			}
 			if token == "" {
-				return errors.New("mail send requires a user access token; pass --user-access-token or set LARK_USER_ACCESS_TOKEN")
+				var err error
+				token, err = ensureUserToken(context.Background(), state)
+				if err != nil || token == "" {
+					return errors.New(userTokenHint)
+				}
 			}
 			if mailboxID == "" {
 				return errors.New("mailbox-id is required")
