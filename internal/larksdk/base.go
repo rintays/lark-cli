@@ -182,6 +182,78 @@ func (c *Client) ListBaseViews(ctx context.Context, token, appToken, tableID str
 	return ListBaseViewsResult{Items: resp.Data.Items, PageToken: resp.Data.PageToken, HasMore: resp.Data.HasMore}, nil
 }
 
+type createBaseRecordRequestBody struct {
+	Record createBaseRecordRequestRecord `json:"record"`
+}
+
+type createBaseRecordRequestRecord struct {
+	Fields map[string]any `json:"fields"`
+}
+
+type createBaseRecordResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *createBaseRecordResponseData `json:"data"`
+}
+
+type createBaseRecordResponseData struct {
+	Record BaseRecord `json:"record"`
+}
+
+func (r *createBaseRecordResponse) Success() bool { return r.Code == 0 }
+
+func (c *Client) CreateBaseRecord(ctx context.Context, token, appToken, tableID string, fields map[string]any) (BaseRecord, error) {
+	if !c.available() || c.coreConfig == nil {
+		return BaseRecord{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return BaseRecord{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return BaseRecord{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return BaseRecord{}, errors.New("table id is required")
+	}
+
+	body := createBaseRecordRequestBody{
+		Record: createBaseRecordRequestRecord{
+			Fields: fields,
+		},
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/records",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
+		Body:                      body,
+	}
+	apiReq.PathParams.Set("app_token", appToken)
+	apiReq.PathParams.Set("table_id", tableID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecord{}, err
+	}
+	if apiResp == nil {
+		return BaseRecord{}, errors.New("create base record failed: empty response")
+	}
+	resp := &createBaseRecordResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return BaseRecord{}, err
+	}
+	if !resp.Success() {
+		return BaseRecord{}, fmt.Errorf("create base record failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return BaseRecord{}, nil
+	}
+	return resp.Data.Record, nil
+}
+
 type getBaseRecordResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
