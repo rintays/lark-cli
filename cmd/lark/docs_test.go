@@ -12,6 +12,7 @@ import (
 
 	"lark/internal/config"
 	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 	"lark/internal/output"
 	"lark/internal/testutil"
 )
@@ -121,6 +122,7 @@ func TestDocsExportCommand(t *testing.T) {
 		}
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
+			w.Header().Set("Content-Type", "application/json")
 			var payload map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				t.Fatalf("decode payload: %v", err)
@@ -217,6 +219,7 @@ func TestDocsCatCommand(t *testing.T) {
 		}
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
+			w.Header().Set("Content-Type", "application/json")
 			var payload map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				t.Fatalf("decode payload: %v", err)
@@ -230,6 +233,7 @@ func TestDocsCatCommand(t *testing.T) {
 			if payload["file_extension"] != "txt" {
 				t.Fatalf("unexpected file_extension: %+v", payload)
 			}
+			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code": 0,
 				"msg":  "ok",
@@ -238,6 +242,7 @@ func TestDocsCatCommand(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1":
+			w.Header().Set("Content-Type", "application/json")
 			pollCount++
 			result := map[string]any{
 				"file_extension": "txt",
@@ -281,6 +286,11 @@ func TestDocsCatCommand(t *testing.T) {
 		Printer: output.Printer{Writer: &buf},
 		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
 	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
 
 	prevInterval := exportTaskPollInterval
 	exportTaskPollInterval = 0
