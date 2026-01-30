@@ -150,3 +150,54 @@ func TestSendMessageWithReceiveIDType(t *testing.T) {
 		t.Fatalf("SendMessage error: %v", err)
 	}
 }
+
+func TestListChats(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/im/v1/chats" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("page_size") != "2" {
+			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+		}
+		if r.URL.Query().Get("page_token") != "next" {
+			t.Fatalf("unexpected page_token: %s", r.URL.Query().Get("page_token"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"items": []map[string]any{
+					{"chat_id": "c1", "name": "Chat One"},
+					{"chat_id": "c2", "name": "Chat Two"},
+				},
+				"page_token": "token",
+				"has_more":   true,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	result, err := client.ListChats(context.Background(), "token", ListChatsRequest{
+		PageSize:  2,
+		PageToken: "next",
+	})
+	if err != nil {
+		t.Fatalf("ListChats error: %v", err)
+	}
+	if len(result.Items) != 2 {
+		t.Fatalf("expected 2 chats, got %d", len(result.Items))
+	}
+	if result.Items[0].ChatID != "c1" || result.Items[0].Name != "Chat One" {
+		t.Fatalf("unexpected chat: %+v", result.Items[0])
+	}
+	if !result.HasMore || result.PageToken != "token" {
+		t.Fatalf("unexpected pagination: %+v", result)
+	}
+}

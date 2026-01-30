@@ -200,3 +200,82 @@ func (c *Client) SendMessage(ctx context.Context, token string, req MessageReque
 	}
 	return parsed.Data.MessageID, nil
 }
+
+type Chat struct {
+	ChatID      string `json:"chat_id"`
+	Avatar      string `json:"avatar"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	OwnerID     string `json:"owner_id"`
+	OwnerIDType string `json:"owner_id_type"`
+	External    bool   `json:"external"`
+	TenantKey   string `json:"tenant_key"`
+}
+
+type ListChatsRequest struct {
+	PageSize   int
+	PageToken  string
+	UserIDType string
+}
+
+type listChatsResponse struct {
+	apiResponse
+	Data struct {
+		Items     []Chat `json:"items"`
+		PageToken string `json:"page_token"`
+		HasMore   bool   `json:"has_more"`
+	} `json:"data"`
+}
+
+type ListChatsResult struct {
+	Items     []Chat
+	PageToken string
+	HasMore   bool
+}
+
+func (c *Client) ListChats(ctx context.Context, token string, req ListChatsRequest) (ListChatsResult, error) {
+	query := url.Values{}
+	if req.PageSize > 0 {
+		query.Set("page_size", fmt.Sprintf("%d", req.PageSize))
+	}
+	if req.PageToken != "" {
+		query.Set("page_token", req.PageToken)
+	}
+	if req.UserIDType != "" {
+		query.Set("user_id_type", req.UserIDType)
+	}
+	endpoint, err := c.endpoint("/open-apis/im/v1/chats", query)
+	if err != nil {
+		return ListChatsResult{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return ListChatsResult{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return ListChatsResult{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ListChatsResult{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return ListChatsResult{}, fmt.Errorf("list chats failed: %s", resp.Status)
+	}
+	var parsed listChatsResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return ListChatsResult{}, err
+	}
+	if parsed.Code != 0 {
+		return ListChatsResult{}, fmt.Errorf("list chats failed: %s", parsed.Msg)
+	}
+	return ListChatsResult{
+		Items:     parsed.Data.Items,
+		PageToken: parsed.Data.PageToken,
+		HasMore:   parsed.Data.HasMore,
+	}, nil
+}
