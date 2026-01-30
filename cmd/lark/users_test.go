@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"lark/internal/config"
-	"lark/internal/larkapi"
 	"lark/internal/larksdk"
 	"lark/internal/output"
 	"lark/internal/testutil"
@@ -48,7 +47,6 @@ func TestUsersSearchByEmail(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
@@ -103,7 +101,6 @@ func TestUsersSearchByName(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
@@ -129,7 +126,7 @@ func TestUsersSearchRequiresSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected request: %s", r.URL.Path)
 	})
-	httpClient, baseURL := testutil.NewTestClient(handler)
+	_, baseURL := testutil.NewTestClient(handler)
 
 	var buf bytes.Buffer
 	state := &appState{
@@ -141,11 +138,10 @@ func TestUsersSearchRequiresSDK(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
 	}
 
 	cmd := newUsersCmd(state)
-	cmd.SetArgs([]string{"search", "--email", "dev@example.com"})
+	cmd.SetArgs([]string{"list", "--email", "dev@example.com"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatalf("expected error")
