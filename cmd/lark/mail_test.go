@@ -95,3 +95,33 @@ func TestMailFoldersCommandRequiresSDK(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    "http://example.com",
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+		Client:  &larkapi.Client{},
+	}
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--subject", "Hello",
+		"--to", "a@example.com",
+		"--text", "hi",
+	})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "mail send requires a user access token; pass --user-access-token or set LARK_USER_ACCESS_TOKEN" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

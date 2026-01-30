@@ -4,6 +4,13 @@ A Golang CLI for Feishu/Lark inspired by gog.
 
 ## Usage
 
+### Mail user OAuth token
+Some Mail actions (notably **mail send**) require a **user access token** (OAuth), not a tenant token.
+
+Provide it either via:
+- `--user-access-token <token>`
+- or environment variable `LARK_USER_ACCESS_TOKEN`
+
 Configure credentials (writes `~/.config/lark/config.json` by default):
 
 ```bash
