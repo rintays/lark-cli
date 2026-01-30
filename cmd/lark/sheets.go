@@ -18,6 +18,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
 	cmd.AddCommand(newSheetsMetadataCmd(state))
+	cmd.AddCommand(newSheetsClearCmd(state))
 	return cmd
 }
 
@@ -79,6 +80,38 @@ func newSheetsMetadataCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
+	return cmd
+}
+
+func newSheetsClearCmd(state *appState) *cobra.Command {
+	var spreadsheetID string
+	var sheetRange string
+
+	cmd := &cobra.Command{
+		Use:   "clear",
+		Short: "Clear a range in Sheets",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if sheetRange == "" {
+				return errors.New("range is required")
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			clearedRange, err := state.Client.ClearSheetRange(context.Background(), token, spreadsheetID, sheetRange)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"clearedRange": clearedRange}
+			return state.Printer.Print(payload, fmt.Sprintf("ok: cleared %s", clearedRange))
+		},
+	}
+
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
 	return cmd
 }
 
