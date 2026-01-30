@@ -40,14 +40,59 @@ func (r *getDocxDocumentResponse) Success() bool {
 }
 
 func (c *Client) CreateDocxDocument(ctx context.Context, token string, req CreateDocxDocumentRequest) (DocxDocument, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return DocxDocument{}, ErrUnavailable
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
 		return DocxDocument{}, errors.New("tenant access token is required")
 	}
+	if c.docxSDKAvailable() {
+		return c.createDocxDocumentSDK(ctx, tenantToken, req)
+	}
+	if c.coreConfig == nil {
+		return DocxDocument{}, ErrUnavailable
+	}
+	return c.createDocxDocumentCore(ctx, tenantToken, req)
+}
 
+func (c *Client) createDocxDocumentSDK(ctx context.Context, tenantToken string, req CreateDocxDocumentRequest) (DocxDocument, error) {
+	bodyBuilder := larkdocx.NewCreateDocumentReqBodyBuilder().Title(req.Title)
+	if req.FolderToken != "" {
+		bodyBuilder = bodyBuilder.FolderToken(req.FolderToken)
+	}
+	body := bodyBuilder.Build()
+	resp, err := c.sdk.Docx.V1.Document.Create(
+		ctx,
+		larkdocx.NewCreateDocumentReqBuilder().Body(body).Build(),
+		larkcore.WithTenantAccessToken(tenantToken),
+	)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	if resp == nil {
+		return DocxDocument{}, errors.New("create docx document failed: empty response")
+	}
+	if !resp.Success() {
+		return DocxDocument{}, fmt.Errorf("create docx document failed: %s", resp.Msg)
+	}
+	if resp.ApiResp != nil {
+		raw := &createDocxDocumentResponse{ApiResp: resp.ApiResp}
+		if err := json.Unmarshal(resp.ApiResp.RawBody, raw); err != nil {
+			return DocxDocument{}, err
+		}
+		if raw.Data == nil || raw.Data.Document == nil {
+			return DocxDocument{}, nil
+		}
+		return *raw.Data.Document, nil
+	}
+	if resp.Data == nil || resp.Data.Document == nil {
+		return DocxDocument{}, nil
+	}
+	return mapDocxDocument(resp.Data.Document), nil
+}
+
+func (c *Client) createDocxDocumentCore(ctx context.Context, tenantToken string, req CreateDocxDocumentRequest) (DocxDocument, error) {
 	payload := map[string]any{
 		"title": req.Title,
 	}
