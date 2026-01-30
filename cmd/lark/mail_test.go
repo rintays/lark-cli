@@ -850,6 +850,50 @@ func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
 	}
 }
 
+func TestMailSendMissingSubjectDoesNotCallHTTP(t *testing.T) {
+	var calls int
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant-token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--to", "a@example.com",
+		"--text", "hi",
+		"--user-access-token", "user-token",
+	})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"subject\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if calls != 0 {
+		t.Fatalf("unexpected request count: %d", calls)
+	}
+}
+
 func setupMailSendState(t *testing.T, expectedToken string) (*appState, *bytes.Buffer) {
 	t.Helper()
 

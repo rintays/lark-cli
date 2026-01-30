@@ -17,6 +17,13 @@ func derefString(s *string) string {
 	return *s
 }
 
+func optionalStringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 type listMailFoldersResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
@@ -426,7 +433,7 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 }
 
 func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req SendMailRequest) (string, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return "", ErrUnavailable
 	}
 	if token == "" {
@@ -445,55 +452,70 @@ func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req Send
 		return "", errors.New("body_html or body_plain_text is required")
 	}
 
-	payload := map[string]any{
-		"subject": req.Subject,
-		"to":      req.To,
+	to := make([]*larkmail.MailAddress, 0, len(req.To))
+	for _, addr := range req.To {
+		addr := addr
+		to = append(to, &larkmail.MailAddress{MailAddress: &addr.MailAddress, Name: optionalStringPtr(addr.Name)})
 	}
-	if len(req.CC) > 0 {
-		payload["cc"] = req.CC
+	cc := make([]*larkmail.MailAddress, 0, len(req.CC))
+	for _, addr := range req.CC {
+		addr := addr
+		cc = append(cc, &larkmail.MailAddress{MailAddress: &addr.MailAddress, Name: optionalStringPtr(addr.Name)})
 	}
-	if len(req.BCC) > 0 {
-		payload["bcc"] = req.BCC
+	bcc := make([]*larkmail.MailAddress, 0, len(req.BCC))
+	for _, addr := range req.BCC {
+		addr := addr
+		bcc = append(bcc, &larkmail.MailAddress{MailAddress: &addr.MailAddress, Name: optionalStringPtr(addr.Name)})
+	}
+
+	attachments := make([]*larkmail.Attachment, 0, len(req.Attachments))
+	for _, att := range req.Attachments {
+		att := att
+		attachments = append(attachments, &larkmail.Attachment{Body: &att.Body, Filename: &att.Filename})
+	}
+
+	body := larkmail.NewSendUserMailboxMessageReqBodyBuilder().
+		Subject(req.Subject).
+		To(to).
+		Build()
+	if len(cc) > 0 {
+		body.Cc = cc
+	}
+	if len(bcc) > 0 {
+		body.Bcc = bcc
 	}
 	if req.HeadFromName != "" {
-		payload["head_from"] = map[string]any{"name": req.HeadFromName}
+		name := req.HeadFromName
+		body.HeadFrom = &larkmail.MailAddress{MailAddress: nil, Name: &name}
 	}
 	if req.BodyHTML != "" {
-		payload["body_html"] = req.BodyHTML
+		val := req.BodyHTML
+		body.BodyHtml = &val
 	}
 	if req.BodyPlainText != "" {
-		payload["body_plain_text"] = req.BodyPlainText
+		val := req.BodyPlainText
+		body.BodyPlainText = &val
 	}
-	if len(req.Attachments) > 0 {
-		payload["attachments"] = req.Attachments
+	if len(attachments) > 0 {
+		body.Attachments = attachments
 	}
 
-	apiReq := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/send",
-		HttpMethod:                http.MethodPost,
-		PathParams:                larkcore.PathParams{},
-		QueryParams:               larkcore.QueryParams{},
-		Body:                      payload,
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser},
-	}
-	apiReq.PathParams.Set("mailbox_id", mailboxID)
-
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithUserAccessToken(token))
+	sendReq := larkmail.NewSendUserMailboxMessageReqBuilder().
+		UserMailboxId(mailboxID).
+		Body(body).
+		Build()
+	resp, err := c.sdk.Mail.V1.UserMailboxMessage.Send(ctx, sendReq, larkcore.WithUserAccessToken(token))
 	if err != nil {
 		return "", err
 	}
-	if apiResp == nil {
+	if resp == nil {
 		return "", errors.New("send mail failed: empty response")
-	}
-	resp := &sendMailResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return "", err
 	}
 	if !resp.Success() {
 		return "", fmt.Errorf("send mail failed: %s", resp.Msg)
 	}
-	if resp.Data == nil {
+	if resp.Data == nil || resp.Data.MessageId == nil {
 		return "", nil
 	}
-	return resp.Data.MessageID, nil
+	return *resp.Data.MessageId, nil
 }
