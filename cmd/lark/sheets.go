@@ -200,12 +200,11 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			clearedRange, err := state.SDK.ClearSheetRange(context.Background(), token, spreadsheetID, sheetRange)
+			result, err := state.SDK.ClearSheetRange(context.Background(), token, spreadsheetID, sheetRange)
 			if err != nil {
 				return err
 			}
-			payload := map[string]any{"clearedRange": clearedRange}
-			return state.Printer.Print(payload, fmt.Sprintf("ok: cleared %s", clearedRange))
+			return state.Printer.Print(result, fmt.Sprintf("ok: cleared %s", result.ClearedRange))
 		},
 	}
 

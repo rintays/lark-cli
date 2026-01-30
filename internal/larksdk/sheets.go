@@ -48,7 +48,12 @@ func (r *appendSheetRangeResponse) Success() bool {
 type clearSheetRangeResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
-	Data map[string]any `json:"data"`
+	Data *clearSheetRangeData `json:"data"`
+}
+
+type clearSheetRangeData struct {
+	ClearedRange       string `json:"clearedRange"`
+	ClearedRangeLegacy string `json:"cleared_range"`
 }
 
 func (r *clearSheetRangeResponse) Success() bool {
@@ -223,19 +228,19 @@ func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, 
 	return *resp.Data, nil
 }
 
-func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (string, error) {
+func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (ClearSheetRangeResult, error) {
 	if !c.available() || c.coreConfig == nil {
-		return "", ErrUnavailable
+		return ClearSheetRangeResult{}, ErrUnavailable
 	}
 	if spreadsheetToken == "" {
-		return "", errors.New("spreadsheet token is required")
+		return ClearSheetRangeResult{}, errors.New("spreadsheet token is required")
 	}
 	if sheetRange == "" {
-		return "", errors.New("range is required")
+		return ClearSheetRangeResult{}, errors.New("range is required")
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
-		return "", errors.New("tenant access token is required")
+		return ClearSheetRangeResult{}, errors.New("tenant access token is required")
 	}
 
 	req := &larkcore.ApiReq{
@@ -250,27 +255,27 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
-		return "", err
+		return ClearSheetRangeResult{}, err
 	}
 	if apiResp == nil {
-		return "", errors.New("clear sheet range failed: empty response")
+		return ClearSheetRangeResult{}, errors.New("clear sheet range failed: empty response")
 	}
 	resp := &clearSheetRangeResponse{ApiResp: apiResp}
 	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return "", err
+		return ClearSheetRangeResult{}, err
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("clear sheet range failed: %s", resp.Msg)
+		return ClearSheetRangeResult{}, fmt.Errorf("clear sheet range failed: %s", resp.Msg)
 	}
-	clearedRange := sheetRange
+	result := ClearSheetRangeResult{ClearedRange: sheetRange}
 	if resp.Data != nil {
-		if value, ok := resp.Data["clearedRange"].(string); ok && value != "" {
-			clearedRange = value
-		} else if value, ok := resp.Data["cleared_range"].(string); ok && value != "" {
-			clearedRange = value
+		if resp.Data.ClearedRange != "" {
+			result.ClearedRange = resp.Data.ClearedRange
+		} else if resp.Data.ClearedRangeLegacy != "" {
+			result.ClearedRange = resp.Data.ClearedRangeLegacy
 		}
 	}
-	return clearedRange, nil
+	return result, nil
 }
 
 func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (larkapi.SpreadsheetMetadata, error) {
