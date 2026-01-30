@@ -29,7 +29,11 @@ type ListChatsResult struct {
 	HasMore   bool
 }
 
-type MessageRequest = larkapi.MessageRequest
+type MessageRequest struct {
+	ReceiveID     string
+	ReceiveIDType string
+	Text          string
+}
 
 type CreateExportTaskRequest = larkapi.CreateExportTaskRequest
 
