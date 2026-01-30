@@ -32,6 +32,14 @@ type ListMinutesRequest = larkapi.ListMinutesRequest
 
 type ListMinutesResult = larkapi.ListMinutesResult
 
+type User = larkapi.User
+
+type BatchGetUserIDRequest = larkapi.BatchGetUserIDRequest
+
+type ListUsersByDepartmentRequest = larkapi.ListUsersByDepartmentRequest
+
+type ListUsersByDepartmentResult = larkapi.ListUsersByDepartmentResult
+
 type DriveFile struct {
 	Token     string `json:"token"`
 	Name      string `json:"name"`
