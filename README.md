@@ -105,6 +105,9 @@ lark users search --email user@example.com --json
 
 - `--config <path>`: override config path
 - `--json`: JSON output
+- `--verbose`: verbose output
+- `--platform feishu|lark`: runtime base URL selection (not saved)
+- `--base-url <url>`: runtime base URL override (not saved; wins over `--platform`)
 
 ---
 

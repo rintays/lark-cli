@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -16,13 +17,16 @@ import (
 )
 
 type appState struct {
-	ConfigPath string
-	Config     *config.Config
-	JSON       bool
-	Verbose    bool
-	Printer    output.Printer
-	Client     *larkapi.Client
-	SDK        *larksdk.Client
+	ConfigPath     string
+	Config         *config.Config
+	JSON           bool
+	Verbose        bool
+	Printer        output.Printer
+	Client         *larkapi.Client
+	SDK            *larksdk.Client
+	Platform       string
+	BaseURL        string
+	baseURLPersist string
 }
 
 func newRootCmd() *cobra.Command {
@@ -44,6 +48,9 @@ func newRootCmd() *cobra.Command {
 				return err
 			}
 			state.Config = cfg
+			if err := applyBaseURLOverrides(state, cfg); err != nil {
+				return err
+			}
 			state.Printer = output.Printer{Writer: cmd.OutOrStdout(), JSON: state.JSON}
 			state.Client = &larkapi.Client{
 				BaseURL:   cfg.BaseURL,
@@ -63,6 +70,8 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&state.ConfigPath, "config", "", "config path (default: ~/.config/lark/config.json)")
 	cmd.PersistentFlags().BoolVar(&state.JSON, "json", false, "output JSON")
 	cmd.PersistentFlags().BoolVar(&state.Verbose, "verbose", false, "verbose output")
+	cmd.PersistentFlags().StringVar(&state.Platform, "platform", "", "platform (feishu|lark)")
+	cmd.PersistentFlags().StringVar(&state.BaseURL, "base-url", "", "base URL override")
 
 	cmd.AddCommand(newVersionCmd(state))
 	cmd.AddCommand(newAuthCmd(state))
@@ -80,6 +89,45 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newMailCmd(state))
 
 	return cmd
+}
+
+func applyBaseURLOverrides(state *appState, cfg *config.Config) error {
+	state.baseURLPersist = cfg.BaseURL
+	if state.BaseURL != "" {
+		cfg.BaseURL = state.BaseURL
+		return nil
+	}
+	if state.Platform == "" {
+		return nil
+	}
+	baseURL, err := platformBaseURL(state.Platform)
+	if err != nil {
+		return err
+	}
+	cfg.BaseURL = baseURL
+	return nil
+}
+
+func platformBaseURL(platform string) (string, error) {
+	switch strings.ToLower(platform) {
+	case "feishu":
+		return "https://open.feishu.cn", nil
+	case "lark":
+		return "https://open.larksuite.com", nil
+	default:
+		return "", fmt.Errorf("unsupported platform %q (expected feishu or lark)", platform)
+	}
+}
+
+func (state *appState) saveConfig() error {
+	if state.Config == nil {
+		return errors.New("config is required")
+	}
+	cfg := *state.Config
+	if (state.BaseURL != "" || state.Platform != "") && state.baseURLPersist != "" {
+		cfg.BaseURL = state.baseURLPersist
+	}
+	return config.Save(state.ConfigPath, &cfg)
 }
 
 func requireCredentials(cfg *config.Config) error {
@@ -131,7 +179,7 @@ func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
 	}
 	state.Config.TenantAccessToken = token
 	state.Config.TenantAccessTokenExpiresAt = time.Now().Add(time.Duration(expiresIn) * time.Second).Unix()
-	if err := config.Save(state.ConfigPath, state.Config); err != nil {
+	if err := state.saveConfig(); err != nil {
 		return "", err
 	}
 	return token, nil
@@ -167,7 +215,7 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	if newRefreshToken != "" {
 		state.Config.RefreshToken = newRefreshToken
 	}
-	if err := config.Save(state.ConfigPath, state.Config); err != nil {
+	if err := state.saveConfig(); err != nil {
 		return "", err
 	}
 	return token, nil
@@ -177,7 +225,7 @@ func expireUserToken(state *appState, cause error) error {
 	state.Config.UserAccessToken = ""
 	state.Config.UserAccessTokenExpiresAt = 0
 	state.Config.RefreshToken = ""
-	saveErr := config.Save(state.ConfigPath, state.Config)
+	saveErr := state.saveConfig()
 	base := "user access token expired; run `lark auth user login`"
 	if saveErr != nil {
 		if cause != nil {

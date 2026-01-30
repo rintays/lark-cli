@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-
-	"lark/internal/config"
 )
 
 func newAuthCmd(state *appState) *cobra.Command {
@@ -46,8 +44,9 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 			state.Config.AppSecret = appSecret
 			if baseURL != "" {
 				state.Config.BaseURL = baseURL
+				state.baseURLPersist = baseURL
 			}
-			if err := config.Save(state.ConfigPath, state.Config); err != nil {
+			if err := state.saveConfig(); err != nil {
 				return err
 			}
 			payload := map[string]any{

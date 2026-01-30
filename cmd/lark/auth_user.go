@@ -19,8 +19,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-
-	"lark/internal/config"
 )
 
 const (
@@ -113,7 +111,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			state.Config.UserAccessToken = tokens.AccessToken
 			state.Config.RefreshToken = tokens.RefreshToken
 			state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()
-			if err := config.Save(state.ConfigPath, state.Config); err != nil {
+			if err := state.saveConfig(); err != nil {
 				return err
 			}
 
