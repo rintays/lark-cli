@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 func newSheetsCmd(state *appState) *cobra.Command {
@@ -43,7 +44,17 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			valueRange, err := state.Client.ReadSheetRange(context.Background(), token, spreadsheetID, sheetRange)
+			readSheetRange := state.Client.ReadSheetRange
+			if state.SDK != nil {
+				readSheetRange = func(ctx context.Context, token, spreadsheetToken, sheetRange string) (larkapi.SheetValueRange, error) {
+					valueRange, err := state.SDK.ReadSheetRange(ctx, token, spreadsheetToken, sheetRange)
+					if errors.Is(err, larksdk.ErrUnavailable) {
+						return state.Client.ReadSheetRange(ctx, token, spreadsheetToken, sheetRange)
+					}
+					return valueRange, err
+				}
+			}
+			valueRange, err := readSheetRange(context.Background(), token, spreadsheetID, sheetRange)
 			if err != nil {
 				return err
 			}

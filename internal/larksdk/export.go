@@ -3,6 +3,7 @@ package larksdk
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -83,7 +84,7 @@ func (c *Client) CreateExportTask(ctx context.Context, token string, req larkapi
 		return "", errors.New("create export task failed: empty response")
 	}
 	resp := &createExportTaskResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+	if err := json.Unmarshal(apiResp.RawBody, resp); err != nil {
 		return "", err
 	}
 	if !resp.Success() {
@@ -124,7 +125,7 @@ func (c *Client) GetExportTask(ctx context.Context, token, ticket string) (larka
 		return larkapi.ExportTaskResult{}, errors.New("get export task failed: empty response")
 	}
 	resp := &getExportTaskResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+	if err := json.Unmarshal(apiResp.RawBody, resp); err != nil {
 		return larkapi.ExportTaskResult{}, err
 	}
 	if !resp.Success() {
