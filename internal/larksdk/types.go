@@ -112,8 +112,20 @@ type BaseTable struct {
 	Name    string `json:"name"`
 }
 
+type BaseField struct {
+	FieldID   string `json:"field_id"`
+	FieldName string `json:"field_name"`
+	Type      int    `json:"type"`
+}
+
 type ListBaseTablesResult struct {
 	Items     []BaseTable `json:"items"`
+	PageToken string      `json:"page_token"`
+	HasMore   bool        `json:"has_more"`
+}
+
+type ListBaseFieldsResult struct {
+	Items     []BaseField `json:"items"`
 	PageToken string      `json:"page_token"`
 	HasMore   bool        `json:"has_more"`
 }

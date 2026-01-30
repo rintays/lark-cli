@@ -240,6 +240,7 @@ Example:
 ./lark auth user login --help
 ./lark mail mailboxes list --help
 ./lark base table list --help
+./lark base field list --help
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ```
