@@ -73,7 +73,10 @@ func TestMeetingGetCommand(t *testing.T) {
 	}
 	state.SDK = sdkClient
 
-	cmd := newMeetingCmd(state)
+	cmd := newMeetingsCmd(state)
+	if cmd.Use != "meetings" {
+		t.Fatalf("expected command name meetings, got %s", cmd.Use)
+	}
 	cmd.SetArgs([]string{
 		"get",
 		"meet_1",
@@ -83,7 +86,7 @@ func TestMeetingGetCommand(t *testing.T) {
 		"--query-mode", "1",
 	})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("meeting get error: %v", err)
+		t.Fatalf("meetings get error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "meet_1\tDemo\t2\t1700000000\t1700003600") {

@@ -10,10 +10,10 @@ import (
 	"lark/internal/larkapi"
 )
 
-func newMeetingCmd(state *appState) *cobra.Command {
+func newMeetingsCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "meeting",
-		Short: "Get meeting details",
+		Use:   "meetings",
+		Short: "Manage meetings",
 	}
 	cmd.AddCommand(newMeetingGetCmd(state))
 	return cmd
