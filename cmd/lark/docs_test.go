@@ -75,8 +75,17 @@ func TestDocsCreateCommand(t *testing.T) {
 
 func TestDocsGetCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
 		if r.URL.Path != "/open-apis/docx/v1/documents/doc1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.RawQuery != "" {
+			t.Fatalf("unexpected query: %q", r.URL.RawQuery)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -118,6 +127,41 @@ func TestDocsGetCommand(t *testing.T) {
 
 	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestDocsGetCommandMissingDocIDDoesNotCallHTTP(t *testing.T) {
+	called := false
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		t.Fatalf("unexpected http call: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"get"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if called {
+		t.Fatal("unexpected http call")
 	}
 }
 

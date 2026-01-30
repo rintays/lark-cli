@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
 )
 
 type createDocxDocumentResponse struct {
@@ -84,7 +85,7 @@ func (c *Client) CreateDocxDocument(ctx context.Context, token string, req Creat
 }
 
 func (c *Client) GetDocxDocument(ctx context.Context, token, documentID string) (DocxDocument, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return DocxDocument{}, ErrUnavailable
 	}
 	if documentID == "" {
@@ -94,7 +95,47 @@ func (c *Client) GetDocxDocument(ctx context.Context, token, documentID string) 
 	if tenantToken == "" {
 		return DocxDocument{}, errors.New("tenant access token is required")
 	}
+	if c.docxSDKAvailable() {
+		return c.getDocxDocumentSDK(ctx, tenantToken, documentID)
+	}
+	if c.coreConfig == nil {
+		return DocxDocument{}, ErrUnavailable
+	}
+	return c.getDocxDocumentCore(ctx, tenantToken, documentID)
+}
 
+func (c *Client) getDocxDocumentSDK(ctx context.Context, tenantToken, documentID string) (DocxDocument, error) {
+	resp, err := c.sdk.Docx.V1.Document.Get(
+		ctx,
+		larkdocx.NewGetDocumentReqBuilder().DocumentId(documentID).Build(),
+		larkcore.WithTenantAccessToken(tenantToken),
+	)
+	if err != nil {
+		return DocxDocument{}, err
+	}
+	if resp == nil {
+		return DocxDocument{}, errors.New("get docx document failed: empty response")
+	}
+	if !resp.Success() {
+		return DocxDocument{}, fmt.Errorf("get docx document failed: %s", resp.Msg)
+	}
+	if resp.ApiResp != nil {
+		raw := &getDocxDocumentResponse{ApiResp: resp.ApiResp}
+		if err := json.Unmarshal(resp.ApiResp.RawBody, raw); err != nil {
+			return DocxDocument{}, err
+		}
+		if raw.Data == nil || raw.Data.Document == nil {
+			return DocxDocument{}, nil
+		}
+		return *raw.Data.Document, nil
+	}
+	if resp.Data == nil || resp.Data.Document == nil {
+		return DocxDocument{}, nil
+	}
+	return mapDocxDocument(resp.Data.Document), nil
+}
+
+func (c *Client) getDocxDocumentCore(ctx context.Context, tenantToken, documentID string) (DocxDocument, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/docx/v1/documents/:document_id",
 		HttpMethod:                http.MethodGet,
@@ -122,4 +163,25 @@ func (c *Client) GetDocxDocument(ctx context.Context, token, documentID string) 
 		return DocxDocument{}, nil
 	}
 	return *resp.Data.Document, nil
+}
+
+func (c *Client) docxSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Docx != nil && c.sdk.Docx.V1 != nil && c.sdk.Docx.V1.Document != nil
+}
+
+func mapDocxDocument(document *larkdocx.Document) DocxDocument {
+	if document == nil {
+		return DocxDocument{}
+	}
+	doc := DocxDocument{}
+	if document.DocumentId != nil {
+		doc.DocumentID = *document.DocumentId
+	}
+	if document.Title != nil {
+		doc.Title = *document.Title
+	}
+	if document.RevisionId != nil {
+		doc.RevisionID = RevisionID(fmt.Sprintf("%d", *document.RevisionId))
+	}
+	return doc
 }
