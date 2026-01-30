@@ -1016,6 +1016,9 @@ func TestUpdateSheetRange(t *testing.T) {
 		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
+		if r.URL.Query().Get("valueInputOption") != "RAW" {
+			t.Fatalf("unexpected valueInputOption: %s", r.URL.Query().Get("valueInputOption"))
+		}
 		var payload map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode payload: %v", err)
@@ -1055,6 +1058,65 @@ func TestUpdateSheetRange(t *testing.T) {
 	}
 	if update.UpdatedRange != "Sheet1!A1:B2" || update.UpdatedCells != 4 {
 		t.Fatalf("unexpected update: %+v", update)
+	}
+}
+
+func TestAppendSheetRange(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values_append" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("insertDataOption") != "INSERT_ROWS" {
+			t.Fatalf("unexpected query: %s", r.URL.RawQuery)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		if values, ok := valueRange["values"].([]any); !ok || len(values) != 2 {
+			t.Fatalf("unexpected values: %#v", valueRange["values"])
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"tableRange":       "Sheet1!A1:B2",
+				"updates": map[string]any{
+					"updatedRange":   "Sheet1!A1:B2",
+					"updatedRows":    2,
+					"updatedColumns": 2,
+					"updatedCells":   4,
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	appendResult, err := client.AppendSheetRange(context.Background(), "token", "spreadsheet", "Sheet1!A1:B2", [][]any{
+		{"Name", "Amount"},
+		{"Ada", 42},
+	}, "INSERT_ROWS")
+	if err != nil {
+		t.Fatalf("AppendSheetRange error: %v", err)
+	}
+	if appendResult.TableRange != "Sheet1!A1:B2" || appendResult.Updates.UpdatedCells != 4 {
+		t.Fatalf("unexpected append result: %+v", appendResult)
 	}
 }
 

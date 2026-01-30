@@ -128,6 +128,18 @@ Read a Sheets range:
 lark sheets read --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
 ```
 
+Update a Sheets range:
+
+```bash
+lark sheets update --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+```
+
+Append rows to a Sheets range:
+
+```bash
+lark sheets append --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+```
+
 Clear a Sheets range:
 
 ```bash

@@ -1488,9 +1488,21 @@ type SheetValueUpdate struct {
 	Revision         int64  `json:"revision"`
 }
 
+type SheetValueAppend struct {
+	SpreadsheetToken string           `json:"spreadsheetToken"`
+	TableRange       string           `json:"tableRange"`
+	Revision         int64            `json:"revision"`
+	Updates          SheetValueUpdate `json:"updates"`
+}
+
 type updateSheetRangeResponse struct {
 	apiResponse
 	Data SheetValueUpdate `json:"data"`
+}
+
+type appendSheetRangeResponse struct {
+	apiResponse
+	Data SheetValueAppend `json:"data"`
 }
 
 type clearSheetRangeResponse struct {
@@ -1583,7 +1595,9 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 		return SheetValueUpdate{}, err
 	}
 	path := fmt.Sprintf("/open-apis/sheets/v2/spreadsheets/%s/values", url.PathEscape(spreadsheetToken))
-	endpoint, err := c.endpoint(path, nil)
+	query := url.Values{}
+	query.Set("valueInputOption", "RAW")
+	endpoint, err := c.endpoint(path, query)
 	if err != nil {
 		return SheetValueUpdate{}, err
 	}
@@ -1612,6 +1626,64 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 	}
 	if parsed.Code != 0 {
 		return SheetValueUpdate{}, fmt.Errorf("update sheet range failed: %s", parsed.Msg)
+	}
+	return parsed.Data, nil
+}
+
+func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any, insertDataOption string) (SheetValueAppend, error) {
+	if spreadsheetToken == "" {
+		return SheetValueAppend{}, fmt.Errorf("spreadsheet token is required")
+	}
+	if sheetRange == "" {
+		return SheetValueAppend{}, fmt.Errorf("range is required")
+	}
+	if len(values) == 0 {
+		return SheetValueAppend{}, fmt.Errorf("values are required")
+	}
+	payload := map[string]any{
+		"valueRange": SheetValueRangeInput{
+			Range:  sheetRange,
+			Values: values,
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return SheetValueAppend{}, err
+	}
+	path := fmt.Sprintf("/open-apis/sheets/v2/spreadsheets/%s/values_append", url.PathEscape(spreadsheetToken))
+	query := url.Values{}
+	if insertDataOption != "" {
+		query.Set("insertDataOption", insertDataOption)
+	}
+	endpoint, err := c.endpoint(path, query)
+	if err != nil {
+		return SheetValueAppend{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return SheetValueAppend{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return SheetValueAppend{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return SheetValueAppend{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return SheetValueAppend{}, fmt.Errorf("append sheet range failed: %s", resp.Status)
+	}
+	var parsed appendSheetRangeResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return SheetValueAppend{}, err
+	}
+	if parsed.Code != 0 {
+		return SheetValueAppend{}, fmt.Errorf("append sheet range failed: %s", parsed.Msg)
 	}
 	return parsed.Data, nil
 }

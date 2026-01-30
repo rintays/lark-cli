@@ -19,6 +19,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
 	cmd.AddCommand(newSheetsUpdateCmd(state))
+	cmd.AddCommand(newSheetsAppendCmd(state))
 	cmd.AddCommand(newSheetsMetadataCmd(state))
 	cmd.AddCommand(newSheetsClearCmd(state))
 	return cmd
@@ -113,7 +114,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"update": update}
-			text := formatSheetUpdate(update)
+			text := formatSheetUpdate(update, sheetRange)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -121,6 +122,47 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
 	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	return cmd
+}
+
+func newSheetsAppendCmd(state *appState) *cobra.Command {
+	var spreadsheetID string
+	var sheetRange string
+	var valuesRaw string
+	var insertDataOption string
+
+	cmd := &cobra.Command{
+		Use:   "append",
+		Short: "Append rows to Sheets",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if sheetRange == "" {
+				return errors.New("range is required")
+			}
+			values, err := parseSheetValues(valuesRaw)
+			if err != nil {
+				return err
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			appendResult, err := state.Client.AppendSheetRange(context.Background(), token, spreadsheetID, sheetRange, values, insertDataOption)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"append": appendResult}
+			text := formatSheetAppend(appendResult)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
+	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
 	return cmd
 }
 
@@ -201,10 +243,28 @@ func parseSheetValues(valuesRaw string) ([][]any, error) {
 	return values, nil
 }
 
-func formatSheetUpdate(update larkapi.SheetValueUpdate) string {
+func formatSheetUpdate(update larkapi.SheetValueUpdate, fallbackRange string) string {
 	rangeText := strings.TrimSpace(update.UpdatedRange)
 	if rangeText == "" {
-		rangeText = "updated"
+		rangeText = strings.TrimSpace(fallbackRange)
 	}
-	return fmt.Sprintf("%s\t%d\t%d\t%d", rangeText, update.UpdatedRows, update.UpdatedColumns, update.UpdatedCells)
+	if rangeText == "" {
+		rangeText = "range"
+	}
+	text := fmt.Sprintf("ok: updated %s", rangeText)
+	if update.UpdatedCells > 0 {
+		text = fmt.Sprintf("%s (updated_cells=%d)", text, update.UpdatedCells)
+	}
+	return text
+}
+
+func formatSheetAppend(appendResult larkapi.SheetValueAppend) string {
+	rangeText := strings.TrimSpace(appendResult.TableRange)
+	if rangeText == "" {
+		rangeText = strings.TrimSpace(appendResult.Updates.UpdatedRange)
+	}
+	if rangeText == "" {
+		rangeText = "appended"
+	}
+	return fmt.Sprintf("%s\t%d\t%d\t%d", rangeText, appendResult.Updates.UpdatedRows, appendResult.Updates.UpdatedColumns, appendResult.Updates.UpdatedCells)
 }
