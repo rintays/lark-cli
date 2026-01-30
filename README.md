@@ -128,6 +128,12 @@ Read a Sheets range:
 lark sheets read --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
 ```
 
+Clear a Sheets range:
+
+```bash
+lark sheets clear --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
+```
+
 Fetch spreadsheet metadata:
 
 ```bash

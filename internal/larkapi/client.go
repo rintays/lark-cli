@@ -1473,6 +1473,11 @@ type readSheetRangeResponse struct {
 	} `json:"data"`
 }
 
+type clearSheetRangeResponse struct {
+	apiResponse
+	Data map[string]any `json:"data"`
+}
+
 type SpreadsheetProperties struct {
 	Title      string `json:"title"`
 	OwnerUser  int64  `json:"ownerUser"`
@@ -1535,6 +1540,62 @@ func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sh
 		return SheetValueRange{}, fmt.Errorf("read sheet range failed: %s", parsed.Msg)
 	}
 	return parsed.Data.ValueRange, nil
+}
+
+func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (string, error) {
+	if spreadsheetToken == "" {
+		return "", fmt.Errorf("spreadsheet token is required")
+	}
+	if sheetRange == "" {
+		return "", fmt.Errorf("range is required")
+	}
+	payload := map[string]string{
+		"range": sheetRange,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	path := fmt.Sprintf("/open-apis/sheets/v2/spreadsheets/%s/values_clear", url.PathEscape(spreadsheetToken))
+	endpoint, err := c.endpoint(path, nil)
+	if err != nil {
+		return "", err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return "", fmt.Errorf("clear sheet range failed: %s", resp.Status)
+	}
+	var parsed clearSheetRangeResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return "", err
+	}
+	if parsed.Code != 0 {
+		return "", fmt.Errorf("clear sheet range failed: %s", parsed.Msg)
+	}
+	clearedRange := sheetRange
+	if parsed.Data != nil {
+		if value, ok := parsed.Data["clearedRange"].(string); ok && value != "" {
+			clearedRange = value
+		} else if value, ok := parsed.Data["cleared_range"].(string); ok && value != "" {
+			clearedRange = value
+		}
+	}
+	return clearedRange, nil
 }
 
 func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (SpreadsheetMetadata, error) {
