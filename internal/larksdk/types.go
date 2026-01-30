@@ -1,6 +1,10 @@
 package larksdk
 
-import "lark/internal/larkapi"
+import (
+	"io"
+
+	"lark/internal/larkapi"
+)
 
 type Chat = larkapi.Chat
 
@@ -28,21 +32,55 @@ type ListMinutesRequest = larkapi.ListMinutesRequest
 
 type ListMinutesResult = larkapi.ListMinutesResult
 
-type DriveFile = larkapi.DriveFile
+type DriveFile struct {
+	Token     string `json:"token"`
+	Name      string `json:"name"`
+	FileType  string `json:"type"`
+	URL       string `json:"url"`
+	ParentID  string `json:"parent_token"`
+	OwnerID   string `json:"owner_id"`
+	OwnerType string `json:"owner_id_type"`
+}
 
-type GetDriveFileRequest = larkapi.GetDriveFileRequest
+type GetDriveFileRequest struct {
+	FileToken string
+}
 
-type UploadDriveFileRequest = larkapi.UploadDriveFileRequest
+type UploadDriveFileRequest struct {
+	FileName    string
+	FolderToken string
+	Size        int64
+	File        io.Reader
+}
 
-type DriveUploadResult = larkapi.DriveUploadResult
+type DriveUploadResult struct {
+	FileToken string
+	File      DriveFile
+}
 
-type ListDriveFilesRequest = larkapi.ListDriveFilesRequest
+type ListDriveFilesRequest struct {
+	FolderToken string
+	PageSize    int
+	PageToken   string
+}
 
-type ListDriveFilesResult = larkapi.ListDriveFilesResult
+type ListDriveFilesResult struct {
+	Files     []DriveFile
+	PageToken string
+	HasMore   bool
+}
 
-type SearchDriveFilesRequest = larkapi.SearchDriveFilesRequest
+type SearchDriveFilesRequest struct {
+	Query     string
+	PageSize  int
+	PageToken string
+}
 
-type SearchDriveFilesResult = larkapi.SearchDriveFilesResult
+type SearchDriveFilesResult struct {
+	Files     []DriveFile
+	PageToken string
+	HasMore   bool
+}
 
 type SheetValueRange = larkapi.SheetValueRange
 

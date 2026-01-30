@@ -46,6 +46,10 @@ func TestDriveListCommandWithSDK(t *testing.T) {
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
+	legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("legacy client used for drive list")
+	})}}
+
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
@@ -56,7 +60,7 @@ func TestDriveListCommandWithSDK(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+		Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
