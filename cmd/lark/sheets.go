@@ -274,7 +274,7 @@ func formatSheetUpdate(update larksdk.SheetValueUpdate, fallbackRange string) st
 	return text
 }
 
-func formatSheetAppend(appendResult larkapi.SheetValueAppend) string {
+func formatSheetAppend(appendResult larksdk.SheetValueAppend) string {
 	rangeText := strings.TrimSpace(appendResult.TableRange)
 	if rangeText == "" {
 		rangeText = strings.TrimSpace(appendResult.Updates.UpdatedRange)
