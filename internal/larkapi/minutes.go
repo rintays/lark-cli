@@ -9,3 +9,15 @@ type Minute struct {
 	Duration   string `json:"duration,omitempty"`
 	URL        string `json:"url,omitempty"`
 }
+
+type ListMinutesRequest struct {
+	PageSize   int
+	PageToken  string
+	UserIDType string
+}
+
+type ListMinutesResult struct {
+	Items     []Minute
+	PageToken string
+	HasMore   bool
+}
