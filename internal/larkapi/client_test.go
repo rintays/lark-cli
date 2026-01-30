@@ -1005,6 +1005,59 @@ func TestReadSheetRange(t *testing.T) {
 	}
 }
 
+func TestUpdateSheetRange(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Fatalf("expected PUT, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		if values, ok := valueRange["values"].([]any); !ok || len(values) != 2 {
+			t.Fatalf("unexpected values: %#v", valueRange["values"])
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"updatedRange":     "Sheet1!A1:B2",
+				"updatedRows":      2,
+				"updatedColumns":   2,
+				"updatedCells":     4,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	update, err := client.UpdateSheetRange(context.Background(), "token", "spreadsheet", "Sheet1!A1:B2", [][]any{
+		{"Name", "Amount"},
+		{"Ada", 42},
+	})
+	if err != nil {
+		t.Fatalf("UpdateSheetRange error: %v", err)
+	}
+	if update.UpdatedRange != "Sheet1!A1:B2" || update.UpdatedCells != 4 {
+		t.Fatalf("unexpected update: %+v", update)
+	}
+}
+
 func TestClearSheetRange(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

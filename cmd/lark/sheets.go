@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,6 +18,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 		Short: "Read Sheets data",
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
+	cmd.AddCommand(newSheetsUpdateCmd(state))
 	cmd.AddCommand(newSheetsMetadataCmd(state))
 	cmd.AddCommand(newSheetsClearCmd(state))
 	return cmd
@@ -83,6 +85,45 @@ func newSheetsMetadataCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
+func newSheetsUpdateCmd(state *appState) *cobra.Command {
+	var spreadsheetID string
+	var sheetRange string
+	var valuesRaw string
+
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update a range in Sheets",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if sheetRange == "" {
+				return errors.New("range is required")
+			}
+			values, err := parseSheetValues(valuesRaw)
+			if err != nil {
+				return err
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			update, err := state.Client.UpdateSheetRange(context.Background(), token, spreadsheetID, sheetRange, values)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"update": update}
+			text := formatSheetUpdate(update)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
+	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	return cmd
+}
+
 func newSheetsClearCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 	var sheetRange string
@@ -144,4 +185,26 @@ func formatSpreadsheetMetadata(metadata larkapi.SpreadsheetMetadata) string {
 		return "no metadata found"
 	}
 	return strings.Join(lines, "\n")
+}
+
+func parseSheetValues(valuesRaw string) ([][]any, error) {
+	if strings.TrimSpace(valuesRaw) == "" {
+		return nil, errors.New("values is required")
+	}
+	var values [][]any
+	if err := json.Unmarshal([]byte(valuesRaw), &values); err != nil {
+		return nil, fmt.Errorf("values must be a JSON array of arrays: %w", err)
+	}
+	if len(values) == 0 {
+		return nil, errors.New("values must include at least one row")
+	}
+	return values, nil
+}
+
+func formatSheetUpdate(update larkapi.SheetValueUpdate) string {
+	rangeText := strings.TrimSpace(update.UpdatedRange)
+	if rangeText == "" {
+		rangeText = "updated"
+	}
+	return fmt.Sprintf("%s\t%d\t%d\t%d", rangeText, update.UpdatedRows, update.UpdatedColumns, update.UpdatedCells)
 }
