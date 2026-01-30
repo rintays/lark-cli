@@ -413,56 +413,84 @@ func TestDriveUploadCommand(t *testing.T) {
 }
 
 func TestDriveDownloadCommand(t *testing.T) {
-	content := []byte("downloaded bytes")
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			t.Fatalf("expected GET, got %s", r.Method)
-		}
-		if r.Header.Get("Authorization") != "Bearer token" {
-			t.Fatalf("missing auth header")
-		}
-		if r.URL.Path != "/open-apis/drive/v1/files/f1/download" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		_, _ = w.Write(content)
-	})
-	httpClient, baseURL := testutil.NewTestClient(handler)
-
-	outDir := t.TempDir()
-	outPath := filepath.Join(outDir, "download.txt")
-
-	var buf bytes.Buffer
-	state := &appState{
-		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
-			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-		},
-		Printer: output.Printer{Writer: &buf},
-	}
-	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
-	if err != nil {
-		t.Fatalf("sdk client error: %v", err)
-	}
-	state.SDK = sdkClient
-
-	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"download", "--file-token", "f1", "--out", outPath})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("drive download error: %v", err)
+	cases := []struct {
+		name    string
+		useJSON bool
+	}{
+		{name: "text"},
+		{name: "json", useJSON: true},
 	}
 
-	data, err := os.ReadFile(outPath)
-	if err != nil {
-		t.Fatalf("read downloaded file: %v", err)
-	}
-	if !bytes.Equal(data, content) {
-		t.Fatalf("unexpected file contents: %q", string(data))
-	}
-	if !strings.Contains(buf.String(), outPath) {
-		t.Fatalf("unexpected output: %q", buf.String())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			content := []byte("downloaded bytes")
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet {
+					t.Fatalf("expected GET, got %s", r.Method)
+				}
+				if r.Header.Get("Authorization") != "Bearer token" {
+					t.Fatalf("missing auth header")
+				}
+				if r.URL.Path != "/open-apis/drive/v1/files/f1/download" {
+					t.Fatalf("unexpected path: %s", r.URL.Path)
+				}
+				_, _ = w.Write(content)
+			})
+			httpClient, baseURL := testutil.NewTestClient(handler)
+
+			outDir := t.TempDir()
+			outPath := filepath.Join(outDir, "download.txt")
+
+			var buf bytes.Buffer
+			state := &appState{
+				Config: &config.Config{
+					AppID:                      "app",
+					AppSecret:                  "secret",
+					BaseURL:                    baseURL,
+					TenantAccessToken:          "token",
+					TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+				JSON:    tc.useJSON,
+				Printer: output.Printer{Writer: &buf, JSON: tc.useJSON},
+			}
+			sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+			if err != nil {
+				t.Fatalf("sdk client error: %v", err)
+			}
+			state.SDK = sdkClient
+
+			cmd := newDriveCmd(state)
+			cmd.SetArgs([]string{"download", "--file-token", "f1", "--out", outPath})
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("drive download error: %v", err)
+			}
+
+			data, err := os.ReadFile(outPath)
+			if err != nil {
+				t.Fatalf("read downloaded file: %v", err)
+			}
+			if !bytes.Equal(data, content) {
+				t.Fatalf("unexpected file contents: %q", string(data))
+			}
+
+			if tc.useJSON {
+				var payload map[string]any
+				if err := json.NewDecoder(bytes.NewReader(buf.Bytes())).Decode(&payload); err != nil {
+					t.Fatalf("decode output: %v", err)
+				}
+				if payload["file_token"] != "f1" {
+					t.Fatalf("unexpected file_token: %+v", payload["file_token"])
+				}
+				if payload["output_path"] != outPath {
+					t.Fatalf("unexpected output_path: %+v", payload["output_path"])
+				}
+				if payload["bytes_written"] != float64(len(content)) {
+					t.Fatalf("unexpected bytes_written: %+v", payload["bytes_written"])
+				}
+			} else if !strings.Contains(buf.String(), outPath) {
+				t.Fatalf("unexpected output: %q", buf.String())
+			}
+		})
 	}
 }
 

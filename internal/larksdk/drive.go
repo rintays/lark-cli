@@ -1,7 +1,6 @@
 package larksdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkdrive "github.com/larksuite/oapi-sdk-go/v3/service/drive/v1"
@@ -396,7 +394,7 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDr
 }
 
 func (c *Client) DownloadDriveFile(ctx context.Context, token, fileToken string) (io.ReadCloser, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return nil, ErrUnavailable
 	}
 	if fileToken == "" {
@@ -406,32 +404,21 @@ func (c *Client) DownloadDriveFile(ctx context.Context, token, fileToken string)
 	if tenantToken == "" {
 		return nil, errors.New("tenant access token is required")
 	}
-	endpoint, err := c.endpoint("/open-apis/drive/v1/files/" + url.PathEscape(fileToken) + "/download")
+	builder := larkdrive.NewDownloadFileReqBuilder().FileToken(fileToken)
+	resp, err := c.sdk.Drive.V1.File.Download(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return nil, err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
+	if resp == nil {
+		return nil, errors.New("drive download failed: empty response")
 	}
-	request.Header.Set("Authorization", "Bearer "+tenantToken)
-
-	resp, err := c.httpClient().Do(request)
-	if err != nil {
-		return nil, err
+	if !resp.Success() {
+		return nil, fmt.Errorf("drive download failed: %s", resp.Msg)
 	}
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		data, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr != nil {
-			return nil, fmt.Errorf("drive download failed: %s", resp.Status)
-		}
-		if len(data) == 0 {
-			return nil, fmt.Errorf("drive download failed: %s", resp.Status)
-		}
-		return nil, fmt.Errorf("drive download failed: %s: %s", resp.Status, string(bytes.TrimSpace(data)))
+	if resp.File == nil {
+		return nil, errors.New("drive download failed: empty file")
 	}
-	return resp.Body, nil
+	return io.NopCloser(resp.File), nil
 }
 
 func mapDriveFile(file *larkdrive.File) DriveFile {
