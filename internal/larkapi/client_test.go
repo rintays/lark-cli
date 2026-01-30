@@ -78,6 +78,97 @@ func TestWhoAmI(t *testing.T) {
 	}
 }
 
+func TestPrimaryCalendar(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/calendar/v4/calendars/primary" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"calendar": map[string]any{
+					"calendar_id": "cal_1",
+					"summary":     "Primary",
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	cal, err := client.PrimaryCalendar(context.Background(), "token")
+	if err != nil {
+		t.Fatalf("PrimaryCalendar error: %v", err)
+	}
+	if cal.CalendarID != "cal_1" || cal.Summary != "Primary" {
+		t.Fatalf("unexpected calendar: %+v", cal)
+	}
+}
+
+func TestListCalendarEvents(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/calendar/v4/calendars/cal_1/events" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("start_time") != "1700000000" {
+			t.Fatalf("unexpected start_time: %s", r.URL.Query().Get("start_time"))
+		}
+		if r.URL.Query().Get("end_time") != "1700003600" {
+			t.Fatalf("unexpected end_time: %s", r.URL.Query().Get("end_time"))
+		}
+		if r.URL.Query().Get("page_size") != "2" {
+			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"items": []map[string]any{
+					{
+						"event_id": "evt_1",
+						"summary":  "Standup",
+						"start_time": map[string]any{
+							"timestamp": "1700000000",
+						},
+						"end_time": map[string]any{
+							"timestamp": "1700003600",
+						},
+					},
+				},
+				"has_more": false,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	result, err := client.ListCalendarEvents(context.Background(), "token", ListCalendarEventsRequest{
+		CalendarID: "cal_1",
+		StartTime:  "1700000000",
+		EndTime:    "1700003600",
+		PageSize:   2,
+	})
+	if err != nil {
+		t.Fatalf("ListCalendarEvents error: %v", err)
+	}
+	if len(result.Items) != 1 || result.Items[0].EventID != "evt_1" {
+		t.Fatalf("unexpected events: %+v", result.Items)
+	}
+}
+
 func TestSendMessage(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -521,7 +612,7 @@ func TestReadSheetRange(t *testing.T) {
 			"msg":  "ok",
 			"data": map[string]any{
 				"valueRange": map[string]any{
-					"range":          "Sheet1!A1:B2",
+					"range":           "Sheet1!A1:B2",
 					"major_dimension": "ROWS",
 					"values": [][]any{
 						{"Name", "Amount"},

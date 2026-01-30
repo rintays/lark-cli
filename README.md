@@ -91,6 +91,12 @@ Read a Sheets range:
 lark sheets read --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
 ```
 
+List calendar events in a time range:
+
+```bash
+lark calendar list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+```
+
 ### Global flags
 
 - `--config` override the config path.

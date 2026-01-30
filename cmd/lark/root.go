@@ -65,6 +65,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newDriveCmd(state))
 	cmd.AddCommand(newDocsCmd(state))
 	cmd.AddCommand(newSheetsCmd(state))
+	cmd.AddCommand(newCalendarCmd(state))
 
 	return cmd
 }

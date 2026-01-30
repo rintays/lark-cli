@@ -136,6 +136,160 @@ func (c *Client) WhoAmI(ctx context.Context, token string) (TenantInfo, error) {
 	return parsed.Data.Tenant, nil
 }
 
+type Calendar struct {
+	CalendarID string `json:"calendar_id"`
+	Summary    string `json:"summary"`
+}
+
+type calendarPrimaryResponse struct {
+	apiResponse
+	Data struct {
+		CalendarID string   `json:"calendar_id"`
+		Calendar   Calendar `json:"calendar"`
+	} `json:"data"`
+}
+
+func (c *Client) PrimaryCalendar(ctx context.Context, token string) (Calendar, error) {
+	endpoint, err := c.endpoint("/open-apis/calendar/v4/calendars/primary", nil)
+	if err != nil {
+		return Calendar{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
+	if err != nil {
+		return Calendar{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return Calendar{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return Calendar{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return Calendar{}, fmt.Errorf("primary calendar request failed: %s", resp.Status)
+	}
+	var parsed calendarPrimaryResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return Calendar{}, err
+	}
+	if parsed.Code != 0 {
+		return Calendar{}, fmt.Errorf("primary calendar request failed: %s", parsed.Msg)
+	}
+	if parsed.Data.Calendar.CalendarID == "" && parsed.Data.CalendarID == "" {
+		return Calendar{}, fmt.Errorf("primary calendar response missing calendar_id")
+	}
+	if parsed.Data.Calendar.CalendarID == "" {
+		parsed.Data.Calendar.CalendarID = parsed.Data.CalendarID
+	}
+	return parsed.Data.Calendar, nil
+}
+
+type CalendarEventTime struct {
+	Date      string `json:"date"`
+	Timestamp string `json:"timestamp"`
+	Timezone  string `json:"timezone"`
+}
+
+type CalendarEvent struct {
+	EventID     string            `json:"event_id"`
+	Summary     string            `json:"summary"`
+	Description string            `json:"description"`
+	StartTime   CalendarEventTime `json:"start_time"`
+	EndTime     CalendarEventTime `json:"end_time"`
+}
+
+type ListCalendarEventsRequest struct {
+	CalendarID string
+	StartTime  string
+	EndTime    string
+	PageSize   int
+	PageToken  string
+	SyncToken  string
+}
+
+type listCalendarEventsResponse struct {
+	apiResponse
+	Data struct {
+		Items     []CalendarEvent `json:"items"`
+		Events    []CalendarEvent `json:"events"`
+		PageToken string          `json:"page_token"`
+		HasMore   bool            `json:"has_more"`
+		SyncToken string          `json:"sync_token"`
+	} `json:"data"`
+}
+
+type ListCalendarEventsResult struct {
+	Items     []CalendarEvent
+	PageToken string
+	HasMore   bool
+	SyncToken string
+}
+
+func (c *Client) ListCalendarEvents(ctx context.Context, token string, req ListCalendarEventsRequest) (ListCalendarEventsResult, error) {
+	if req.CalendarID == "" {
+		return ListCalendarEventsResult{}, fmt.Errorf("calendar id is required")
+	}
+	query := url.Values{}
+	if req.StartTime != "" {
+		query.Set("start_time", req.StartTime)
+	}
+	if req.EndTime != "" {
+		query.Set("end_time", req.EndTime)
+	}
+	if req.PageSize > 0 {
+		query.Set("page_size", fmt.Sprintf("%d", req.PageSize))
+	}
+	if req.PageToken != "" {
+		query.Set("page_token", req.PageToken)
+	}
+	if req.SyncToken != "" {
+		query.Set("sync_token", req.SyncToken)
+	}
+	endpoint, err := c.endpoint("/open-apis/calendar/v4/calendars/"+url.PathEscape(req.CalendarID)+"/events", query)
+	if err != nil {
+		return ListCalendarEventsResult{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return ListCalendarEventsResult{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return ListCalendarEventsResult{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ListCalendarEventsResult{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return ListCalendarEventsResult{}, fmt.Errorf("list calendar events failed: %s", resp.Status)
+	}
+	var parsed listCalendarEventsResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return ListCalendarEventsResult{}, err
+	}
+	if parsed.Code != 0 {
+		return ListCalendarEventsResult{}, fmt.Errorf("list calendar events failed: %s", parsed.Msg)
+	}
+	items := parsed.Data.Items
+	if len(items) == 0 {
+		items = parsed.Data.Events
+	}
+	return ListCalendarEventsResult{
+		Items:     items,
+		PageToken: parsed.Data.PageToken,
+		HasMore:   parsed.Data.HasMore,
+		SyncToken: parsed.Data.SyncToken,
+	}, nil
+}
+
 type MessageRequest struct {
 	ReceiveID     string
 	ReceiveIDType string
@@ -717,9 +871,9 @@ func (c *Client) GetDocxDocument(ctx context.Context, token, documentID string) 
 }
 
 type SheetValueRange struct {
-	Range          string        `json:"range"`
-	MajorDimension string        `json:"major_dimension"`
-	Values         [][]any       `json:"values"`
+	Range          string  `json:"range"`
+	MajorDimension string  `json:"major_dimension"`
+	Values         [][]any `json:"values"`
 }
 
 type readSheetRangeResponse struct {
