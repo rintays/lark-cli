@@ -75,7 +75,10 @@ func newSheetsMetadataCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			metadata, err := state.Client.GetSpreadsheetMetadata(context.Background(), token, spreadsheetID)
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			metadata, err := state.SDK.GetSpreadsheetMetadata(context.Background(), token, spreadsheetID)
 			if err != nil {
 				return err
 			}

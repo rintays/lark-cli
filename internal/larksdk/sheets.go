@@ -55,6 +55,16 @@ func (r *clearSheetRangeResponse) Success() bool {
 	return r.Code == 0
 }
 
+type spreadsheetMetadataResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *larkapi.SpreadsheetMetadata `json:"data"`
+}
+
+func (r *spreadsheetMetadataResponse) Success() bool {
+	return r.Code == 0
+}
+
 func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (larkapi.SheetValueRange, error) {
 	if !c.available() || c.coreConfig == nil {
 		return larkapi.SheetValueRange{}, ErrUnavailable
@@ -261,4 +271,45 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 		}
 	}
 	return clearedRange, nil
+}
+
+func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (larkapi.SpreadsheetMetadata, error) {
+	if !c.available() || c.coreConfig == nil {
+		return larkapi.SpreadsheetMetadata{}, ErrUnavailable
+	}
+	if spreadsheetToken == "" {
+		return larkapi.SpreadsheetMetadata{}, errors.New("spreadsheet token is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return larkapi.SpreadsheetMetadata{}, errors.New("tenant access token is required")
+	}
+
+	req := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/metainfo",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
+
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return larkapi.SpreadsheetMetadata{}, err
+	}
+	if apiResp == nil {
+		return larkapi.SpreadsheetMetadata{}, errors.New("get spreadsheet metadata failed: empty response")
+	}
+	resp := &spreadsheetMetadataResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return larkapi.SpreadsheetMetadata{}, err
+	}
+	if !resp.Success() {
+		return larkapi.SpreadsheetMetadata{}, fmt.Errorf("get spreadsheet metadata failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return larkapi.SpreadsheetMetadata{}, nil
+	}
+	return *resp.Data, nil
 }
