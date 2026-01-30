@@ -185,7 +185,10 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ticket, err := state.Client.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
 				Token:         documentID,
 				Type:          "docx",
 				FileExtension: format,
@@ -193,11 +196,11 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(context.Background(), state.Client, token, ticket)
+			result, err := pollExportTask(context.Background(), state.SDK, token, ticket)
 			if err != nil {
 				return err
 			}
-			reader, err := state.Client.DownloadExportedFile(context.Background(), token, result.FileToken)
+			reader, err := state.SDK.DownloadExportedFile(context.Background(), token, result.FileToken)
 			if err != nil {
 				return err
 			}
@@ -226,7 +229,11 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func pollExportTask(ctx context.Context, client *larkapi.Client, token, ticket string) (larkapi.ExportTaskResult, error) {
+type exportTaskClient interface {
+	GetExportTask(ctx context.Context, token, ticket string) (larkapi.ExportTaskResult, error)
+}
+
+func pollExportTask(ctx context.Context, client exportTaskClient, token, ticket string) (larkapi.ExportTaskResult, error) {
 	var lastResult larkapi.ExportTaskResult
 	for attempt := 0; attempt < exportTaskMaxAttempts; attempt++ {
 		result, err := client.GetExportTask(ctx, token, ticket)
