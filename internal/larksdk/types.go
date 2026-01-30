@@ -6,11 +6,28 @@ import (
 	"lark/internal/larkapi"
 )
 
-type Chat = larkapi.Chat
+type Chat struct {
+	ChatID      string `json:"chat_id"`
+	Avatar      string `json:"avatar"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	OwnerID     string `json:"owner_id"`
+	OwnerIDType string `json:"owner_id_type"`
+	External    bool   `json:"external"`
+	TenantKey   string `json:"tenant_key"`
+}
 
-type ListChatsRequest = larkapi.ListChatsRequest
+type ListChatsRequest struct {
+	PageSize   int
+	PageToken  string
+	UserIDType string
+}
 
-type ListChatsResult = larkapi.ListChatsResult
+type ListChatsResult struct {
+	Items     []Chat
+	PageToken string
+	HasMore   bool
+}
 
 type MessageRequest = larkapi.MessageRequest
 

@@ -45,6 +45,7 @@ cd lark
 go build -o lark ./cmd/lark
 
 ./lark --help
+./lark chats list --help
 ./lark users list --help
 ./lark users get --help
 ```
