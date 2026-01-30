@@ -48,6 +48,7 @@ go build -o lark ./cmd/lark
 ./lark chats list --help
 ./lark users list --help
 ./lark users get --help
+./lark msg send --help
 ```
 
 ---

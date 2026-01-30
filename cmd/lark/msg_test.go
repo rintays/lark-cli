@@ -9,10 +9,35 @@ import (
 	"time"
 
 	"lark/internal/config"
+	"lark/internal/larkapi"
 	"lark/internal/larksdk"
 	"lark/internal/output"
 	"lark/internal/testutil"
 )
+
+func TestMsgSendCommandRequiresSDK(t *testing.T) {
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    "http://example.com",
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+		Client:  &larkapi.Client{},
+	}
+
+	cmd := newMsgCmd(state)
+	cmd.SetArgs([]string{"send", "--receive-id", "ou_123", "--text", "hello"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "sdk client is required" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
 
 func TestMsgSendCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
