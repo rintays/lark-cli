@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 const maxUsersPageSize = 50
@@ -29,8 +29,9 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 	var departmentID string
 
 	cmd := &cobra.Command{
-		Use:   "search",
-		Short: "Search users by email, mobile, or name",
+		Use:     "search",
+		Aliases: []string{"list"},
+		Short:   "Search users by email, mobile, or name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			criteria := 0
 			if email != "" {
@@ -55,10 +56,10 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			var users []larkapi.User
+			var users []larksdk.User
 			switch {
 			case email != "" || mobile != "":
-				result, err := state.SDK.BatchGetUserIDs(context.Background(), token, larkapi.BatchGetUserIDRequest{
+				result, err := state.SDK.BatchGetUserIDs(context.Background(), token, larksdk.BatchGetUserIDRequest{
 					Emails:  nonEmptyList(email),
 					Mobiles: nonEmptyList(mobile),
 				})
@@ -101,12 +102,12 @@ func nonEmptyList(value string) []string {
 	return []string{value}
 }
 
-func searchUsersByName(ctx context.Context, listUsersByDepartment func(context.Context, string, larkapi.ListUsersByDepartmentRequest) (larkapi.ListUsersByDepartmentResult, error), token, departmentID, name string) ([]larkapi.User, error) {
+func searchUsersByName(ctx context.Context, listUsersByDepartment func(context.Context, string, larksdk.ListUsersByDepartmentRequest) (larksdk.ListUsersByDepartmentResult, error), token, departmentID, name string) ([]larksdk.User, error) {
 	pageToken := ""
-	matches := []larkapi.User{}
+	matches := []larksdk.User{}
 	needle := strings.ToLower(name)
 	for {
-		result, err := listUsersByDepartment(ctx, token, larkapi.ListUsersByDepartmentRequest{
+		result, err := listUsersByDepartment(ctx, token, larksdk.ListUsersByDepartmentRequest{
 			DepartmentID: departmentID,
 			PageSize:     maxUsersPageSize,
 			PageToken:    pageToken,
@@ -127,7 +128,7 @@ func searchUsersByName(ctx context.Context, listUsersByDepartment func(context.C
 	return matches, nil
 }
 
-func formatUserLine(user larkapi.User) string {
+func formatUserLine(user larksdk.User) string {
 	id := user.UserID
 	if id == "" {
 		id = user.OpenID
