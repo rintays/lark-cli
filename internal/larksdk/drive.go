@@ -2,11 +2,9 @@ package larksdk
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -285,17 +283,8 @@ func hasDrivePermissionPublicUpdate(req UpdateDrivePermissionPublicRequest) bool
 	return false
 }
 
-type uploadDriveFileResponse struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-	Data struct {
-		FileToken string          `json:"file_token"`
-		File      *larkdrive.File `json:"file"`
-	} `json:"data"`
-}
-
 func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDriveFileRequest) (DriveUploadResult, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return DriveUploadResult{}, ErrUnavailable
 	}
 	if req.File == nil {
@@ -311,81 +300,35 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDr
 	if tenantToken == "" {
 		return DriveUploadResult{}, errors.New("tenant access token is required")
 	}
-	endpoint, err := c.endpoint("/open-apis/drive/v1/files/upload_all")
+
+	parentNode := req.FolderToken
+	if parentNode == "" {
+		parentNode = "root"
+	}
+
+	body := larkdrive.NewUploadAllFileReqBodyBuilder().
+		FileName(req.FileName).
+		ParentType("explorer").
+		ParentNode(parentNode).
+		Size(int(req.Size)).
+		File(req.File).
+		Build()
+	builder := larkdrive.NewUploadAllFileReqBuilder().Body(body)
+
+	resp, err := c.sdk.Drive.V1.File.UploadAll(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return DriveUploadResult{}, err
 	}
+	if resp == nil {
+		return DriveUploadResult{}, errors.New("drive upload failed: empty response")
+	}
+	if !resp.Success() {
+		return DriveUploadResult{}, fmt.Errorf("drive upload failed: %s", resp.Msg)
+	}
 
-	pipeReader, pipeWriter := io.Pipe()
-	writer := multipart.NewWriter(pipeWriter)
-	contentType := writer.FormDataContentType()
-
-	go func() {
-		defer pipeWriter.Close()
-		defer writer.Close()
-		if err := writer.WriteField("file_name", req.FileName); err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-		parentNode := req.FolderToken
-		if parentNode == "" {
-			parentNode = "root"
-		}
-		if err := writer.WriteField("parent_type", "explorer"); err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-		if err := writer.WriteField("parent_node", parentNode); err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-		if err := writer.WriteField("size", fmt.Sprintf("%d", req.Size)); err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-		part, err := writer.CreateFormFile("file", req.FileName)
-		if err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-		if _, err := io.Copy(part, req.File); err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-	}()
-
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, pipeReader)
-	if err != nil {
-		return DriveUploadResult{}, err
-	}
-	request.Header.Set("Authorization", "Bearer "+tenantToken)
-	request.Header.Set("Content-Type", contentType)
-
-	resp, err := c.httpClient().Do(request)
-	if err != nil {
-		return DriveUploadResult{}, err
-	}
-	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return DriveUploadResult{}, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return DriveUploadResult{}, fmt.Errorf("drive upload failed: %s", resp.Status)
-	}
-	var parsed uploadDriveFileResponse
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return DriveUploadResult{}, err
-	}
-	if parsed.Code != 0 {
-		return DriveUploadResult{}, fmt.Errorf("drive upload failed: %s", parsed.Msg)
-	}
-	result := DriveUploadResult{
-		FileToken: parsed.Data.FileToken,
-		File:      mapDriveFile(parsed.Data.File),
-	}
-	if result.FileToken == "" {
-		result.FileToken = result.File.Token
+	result := DriveUploadResult{}
+	if resp.Data != nil && resp.Data.FileToken != nil {
+		result.FileToken = *resp.Data.FileToken
 	}
 	if result.FileToken == "" {
 		return DriveUploadResult{}, fmt.Errorf("drive upload response missing file token")

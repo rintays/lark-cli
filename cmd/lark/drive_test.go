@@ -387,6 +387,7 @@ func TestDriveUploadCommand(t *testing.T) {
 			if string(data) != string(content) {
 				t.Fatalf("unexpected file content: %q", string(data))
 			}
+			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code": 0,
 				"msg":  "ok",
@@ -439,6 +440,56 @@ func TestDriveUploadCommand(t *testing.T) {
 
 	if !strings.Contains(buf.String(), "file_123\treport.txt\tfile\thttps://example.com/file") {
 		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestDriveUploadRequiresFileBeforeHTTP(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "lark-upload-req-*.txt")
+	if err != nil {
+		t.Fatalf("create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("close temp file: %v", err)
+	}
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s", r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: io.Discard},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDriveUploadCmd(state)
+	fileFlag := cmd.Flags().Lookup("file")
+	if fileFlag == nil {
+		t.Fatal("missing file flag")
+	}
+	if err := fileFlag.Value.Set(tmpFile.Name()); err != nil {
+		t.Fatalf("set file flag: %v", err)
+	}
+	fileFlag.Changed = false
+
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"file\" not set" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
