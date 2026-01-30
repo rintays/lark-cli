@@ -80,6 +80,12 @@ Get Drive file URLs:
 lark drive urls <FILE_ID> [FILE_ID...]
 ```
 
+Update Drive share permissions:
+
+```bash
+lark drive share <FILE_TOKEN> --type docx --link-share tenant_readable --external-access
+```
+
 Create a Docs (docx) document:
 
 ```bash

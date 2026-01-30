@@ -682,6 +682,62 @@ func TestGetDriveFile(t *testing.T) {
 	}
 }
 
+func TestUpdateDrivePermissionPublic(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/drive/v1/permissions/f1/public" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("type") != "docx" {
+			t.Fatalf("unexpected type: %s", r.URL.Query().Get("type"))
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["link_share_entity"] != "tenant_readable" {
+			t.Fatalf("unexpected link_share_entity: %+v", payload)
+		}
+		if payload["external_access"] != true {
+			t.Fatalf("unexpected external_access: %+v", payload)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"permission_public": map[string]any{
+					"link_share_entity": "tenant_readable",
+					"external_access":   true,
+					"invite_external":   false,
+					"share_entity":      "tenant_editable",
+					"security_entity":   "tenant_editable",
+					"comment_entity":    "tenant_editable",
+					"lock_switch":       false,
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	client := &Client{BaseURL: baseURL, HTTPClient: httpClient}
+	allow := true
+	permission, err := client.UpdateDrivePermissionPublic(context.Background(), "token", "f1", "docx", UpdateDrivePermissionPublicRequest{
+		LinkShareEntity: "tenant_readable",
+		ExternalAccess:  &allow,
+	})
+	if err != nil {
+		t.Fatalf("UpdateDrivePermissionPublic error: %v", err)
+	}
+	if !permission.ExternalAccess || permission.LinkShareEntity != "tenant_readable" {
+		t.Fatalf("unexpected permission: %+v", permission)
+	}
+}
+
 func TestCreateDocxDocument(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

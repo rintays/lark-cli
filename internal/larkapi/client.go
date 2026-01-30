@@ -970,6 +970,91 @@ func (c *Client) GetDriveFile(ctx context.Context, token, fileToken string) (Dri
 	return c.GetDriveFileMetadata(ctx, token, fileToken)
 }
 
+type DrivePermissionPublic struct {
+	ExternalAccess  bool   `json:"external_access"`
+	SecurityEntity  string `json:"security_entity"`
+	CommentEntity   string `json:"comment_entity"`
+	ShareEntity     string `json:"share_entity"`
+	LinkShareEntity string `json:"link_share_entity"`
+	InviteExternal  bool   `json:"invite_external"`
+	LockSwitch      bool   `json:"lock_switch"`
+}
+
+type UpdateDrivePermissionPublicRequest struct {
+	ExternalAccess  *bool  `json:"external_access,omitempty"`
+	SecurityEntity  string `json:"security_entity,omitempty"`
+	CommentEntity   string `json:"comment_entity,omitempty"`
+	ShareEntity     string `json:"share_entity,omitempty"`
+	LinkShareEntity string `json:"link_share_entity,omitempty"`
+	InviteExternal  *bool  `json:"invite_external,omitempty"`
+}
+
+type updateDrivePermissionPublicResponse struct {
+	apiResponse
+	Data struct {
+		Permission DrivePermissionPublic `json:"permission_public"`
+	} `json:"data"`
+}
+
+func (c *Client) UpdateDrivePermissionPublic(ctx context.Context, token, fileToken, fileType string, req UpdateDrivePermissionPublicRequest) (DrivePermissionPublic, error) {
+	if fileToken == "" {
+		return DrivePermissionPublic{}, fmt.Errorf("file token is required")
+	}
+	if fileType == "" {
+		return DrivePermissionPublic{}, fmt.Errorf("file type is required")
+	}
+	if !hasDrivePermissionPublicUpdate(req) {
+		return DrivePermissionPublic{}, fmt.Errorf("permission update requires at least one field")
+	}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return DrivePermissionPublic{}, err
+	}
+	query := url.Values{}
+	query.Set("type", fileType)
+	endpoint, err := c.endpoint("/open-apis/drive/v1/permissions/"+url.PathEscape(fileToken)+"/public", query)
+	if err != nil {
+		return DrivePermissionPublic{}, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return DrivePermissionPublic{}, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient().Do(request)
+	if err != nil {
+		return DrivePermissionPublic{}, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return DrivePermissionPublic{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return DrivePermissionPublic{}, fmt.Errorf("update drive permission failed: %s", resp.Status)
+	}
+	var parsed updateDrivePermissionPublicResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return DrivePermissionPublic{}, err
+	}
+	if parsed.Code != 0 {
+		return DrivePermissionPublic{}, fmt.Errorf("update drive permission failed: %s", parsed.Msg)
+	}
+	return parsed.Data.Permission, nil
+}
+
+func hasDrivePermissionPublicUpdate(req UpdateDrivePermissionPublicRequest) bool {
+	if req.ExternalAccess != nil || req.InviteExternal != nil {
+		return true
+	}
+	if req.SecurityEntity != "" || req.CommentEntity != "" || req.ShareEntity != "" || req.LinkShareEntity != "" {
+		return true
+	}
+	return false
+}
+
 type DocxDocument struct {
 	DocumentID string `json:"document_id"`
 	Title      string `json:"title"`

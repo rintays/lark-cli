@@ -22,6 +22,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newDriveSearchCmd(state))
 	cmd.AddCommand(newDriveGetCmd(state))
 	cmd.AddCommand(newDriveURLsCmd(state))
+	cmd.AddCommand(newDriveShareCmd(state))
 	return cmd
 }
 
@@ -214,5 +215,81 @@ func newDriveURLsCmd(state *appState) *cobra.Command {
 		},
 	}
 
+	return cmd
+}
+
+func newDriveShareCmd(state *appState) *cobra.Command {
+	var fileToken string
+	var fileType string
+	var linkShare string
+	var externalAccess bool
+	var inviteExternal bool
+	var shareEntity string
+	var securityEntity string
+	var commentEntity string
+
+	cmd := &cobra.Command{
+		Use:   "share <file-token>",
+		Short: "Update Drive file sharing permissions",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				if fileToken != "" && fileToken != args[0] {
+					return errors.New("file-token provided twice")
+				}
+				fileToken = args[0]
+			}
+			if fileToken == "" {
+				return errors.New("file-token is required")
+			}
+			if fileType == "" {
+				return errors.New("type is required")
+			}
+			if linkShare == "" &&
+				!cmd.Flags().Changed("external-access") &&
+				!cmd.Flags().Changed("invite-external") &&
+				shareEntity == "" &&
+				securityEntity == "" &&
+				commentEntity == "" {
+				return errors.New("at least one permission field is required")
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			req := larkapi.UpdateDrivePermissionPublicRequest{
+				LinkShareEntity: linkShare,
+				ShareEntity:     shareEntity,
+				SecurityEntity:  securityEntity,
+				CommentEntity:   commentEntity,
+			}
+			if cmd.Flags().Changed("external-access") {
+				req.ExternalAccess = &externalAccess
+			}
+			if cmd.Flags().Changed("invite-external") {
+				req.InviteExternal = &inviteExternal
+			}
+			permission, err := state.Client.UpdateDrivePermissionPublic(context.Background(), token, fileToken, fileType, req)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"permission": permission,
+				"file_token": fileToken,
+				"type":       fileType,
+			}
+			text := fmt.Sprintf("%s\t%s\t%s\t%t\t%t", fileToken, fileType, permission.LinkShareEntity, permission.ExternalAccess, permission.InviteExternal)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (or provide as positional argument)")
+	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: doc, docx, sheet, bitable, file)")
+	cmd.Flags().StringVar(&linkShare, "link-share", "", "link share permission (for example: tenant_readable, anyone_readable)")
+	cmd.Flags().BoolVar(&externalAccess, "external-access", false, "allow external access")
+	cmd.Flags().BoolVar(&inviteExternal, "invite-external", false, "allow external invite")
+	cmd.Flags().StringVar(&shareEntity, "share-entity", "", "share permission scope (for example: tenant_editable)")
+	cmd.Flags().StringVar(&securityEntity, "security-entity", "", "security permission scope (for example: tenant_editable)")
+	cmd.Flags().StringVar(&commentEntity, "comment-entity", "", "comment permission scope (for example: tenant_editable)")
 	return cmd
 }

@@ -224,3 +224,62 @@ func TestDriveURLsCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", output)
 	}
 }
+
+func TestDriveShareCommand(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/drive/v1/permissions/f1/public" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("type") != "docx" {
+			t.Fatalf("unexpected type: %s", r.URL.Query().Get("type"))
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["link_share_entity"] != "tenant_readable" {
+			t.Fatalf("unexpected link_share_entity: %+v", payload)
+		}
+		if payload["external_access"] != true {
+			t.Fatalf("unexpected external_access: %+v", payload)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"permission_public": map[string]any{
+					"link_share_entity": "tenant_readable",
+					"external_access":   true,
+					"invite_external":   false,
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+	}
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"share", "f1", "--type", "docx", "--link-share", "tenant_readable", "--external-access"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("drive share error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "f1\tdocx\ttenant_readable\ttrue\tfalse") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
