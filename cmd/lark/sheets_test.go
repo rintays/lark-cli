@@ -434,6 +434,7 @@ func TestSheetsAppendCommand(t *testing.T) {
 		if values, ok := valueRange["values"].([]any); !ok || len(values) != 2 {
 			t.Fatalf("unexpected values: %#v", valueRange["values"])
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
@@ -463,6 +464,172 @@ func TestSheetsAppendCommand(t *testing.T) {
 		},
 		Printer: output.Printer{Writer: &buf},
 		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+	}
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"append",
+		"--spreadsheet-id", "spreadsheet",
+		"--range", "Sheet1!A1:B2",
+		"--values", `[["Name","Amount"],["Ada",42]]`,
+		"--insert-data-option", "INSERT_ROWS",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets append error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Sheet1!A1:B2") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestSheetsAppendCommandWithSDK(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values_append" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("insertDataOption") != "INSERT_ROWS" {
+			t.Fatalf("unexpected insertDataOption: %s", r.URL.RawQuery)
+		}
+		if r.URL.Query().Get("valueInputOption") != "RAW" {
+			t.Fatalf("unexpected valueInputOption: %s", r.URL.RawQuery)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		if values, ok := valueRange["values"].([]any); !ok || len(values) != 2 {
+			t.Fatalf("unexpected values: %#v", valueRange["values"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"tableRange":       "Sheet1!A1:B2",
+				"updates": map[string]any{
+					"updatedRange":   "Sheet1!A1:B2",
+					"updatedRows":    2,
+					"updatedColumns": 2,
+					"updatedCells":   4,
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("legacy client used for sheets append")
+	})}}
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"append",
+		"--spreadsheet-id", "spreadsheet",
+		"--range", "Sheet1!A1:B2",
+		"--values", `[["Name","Amount"],["Ada",42]]`,
+		"--insert-data-option", "INSERT_ROWS",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets append error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Sheet1!A1:B2") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestSheetsAppendCommandFallbackToAPI(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values_append" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("insertDataOption") != "INSERT_ROWS" {
+			t.Fatalf("unexpected query: %s", r.URL.RawQuery)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		if values, ok := valueRange["values"].([]any); !ok || len(values) != 2 {
+			t.Fatalf("unexpected values: %#v", valueRange["values"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"tableRange":       "Sheet1!A1:B2",
+				"updates": map[string]any{
+					"updatedRange":   "Sheet1!A1:B2",
+					"updatedRows":    2,
+					"updatedColumns": 2,
+					"updatedCells":   4,
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+		SDK:     &larksdk.Client{},
 	}
 
 	cmd := newSheetsCmd(state)

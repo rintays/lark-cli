@@ -170,7 +170,17 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			appendResult, err := state.Client.AppendSheetRange(context.Background(), token, spreadsheetID, sheetRange, values, insertDataOption)
+			appendSheetRange := state.Client.AppendSheetRange
+			if state.SDK != nil {
+				appendSheetRange = func(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any, insertDataOption string) (larkapi.SheetValueAppend, error) {
+					appendResult, err := state.SDK.AppendSheetRange(ctx, token, spreadsheetToken, sheetRange, values, insertDataOption)
+					if errors.Is(err, larksdk.ErrUnavailable) {
+						return state.Client.AppendSheetRange(ctx, token, spreadsheetToken, sheetRange, values, insertDataOption)
+					}
+					return appendResult, err
+				}
+			}
+			appendResult, err := appendSheetRange(context.Background(), token, spreadsheetID, sheetRange, values, insertDataOption)
 			if err != nil {
 				return err
 			}
