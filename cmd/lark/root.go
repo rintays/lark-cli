@@ -80,6 +80,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newMinutesCmd(state))
 	cmd.AddCommand(newContactsCmd(state))
 	cmd.AddCommand(newMailCmd(state))
+	cmd.AddCommand(newBaseCmd(state))
 
 	return cmd
 }

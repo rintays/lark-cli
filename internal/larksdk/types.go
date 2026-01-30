@@ -106,3 +106,14 @@ type SheetValueAppend struct {
 type ClearSheetRangeResult struct {
 	ClearedRange string `json:"clearedRange"`
 }
+
+type BaseTable struct {
+	TableID string `json:"table_id"`
+	Name    string `json:"name"`
+}
+
+type ListBaseTablesResult struct {
+	Items     []BaseTable `json:"items"`
+	PageToken string      `json:"page_token"`
+	HasMore   bool        `json:"has_more"`
+}

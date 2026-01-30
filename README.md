@@ -238,7 +238,8 @@ Example:
 
 ```bash
 ./lark auth user login --help
-./lark mail public-mailboxes list --help
+./lark mail mailboxes list --help
+./lark base table list --help
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ```
