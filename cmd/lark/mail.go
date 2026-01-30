@@ -215,7 +215,10 @@ func newMailSendCmd(state *appState) *cobra.Command {
 			if bodyText == "" && bodyHTML == "" {
 				return errors.New("text or html body is required")
 			}
-			request := larkapi.SendMailRequest{
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			request := larksdk.SendMailRequest{
 				Subject:       subject,
 				To:            buildMailAddressInputs(to),
 				CC:            buildMailAddressInputs(cc),
@@ -224,7 +227,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 				BodyPlainText: bodyText,
 				BodyHTML:      bodyHTML,
 			}
-			messageID, err := state.Client.SendMail(context.Background(), token, mailboxID, request)
+			messageID, err := state.SDK.SendMail(context.Background(), token, mailboxID, request)
 			if err != nil {
 				return err
 			}
@@ -261,17 +264,17 @@ func formatMailMessageLine(messageID, subject string) string {
 	return fmt.Sprintf("%s\t%s", messageID, subject)
 }
 
-func buildMailAddressInputs(values []string) []larkapi.MailAddressInput {
+func buildMailAddressInputs(values []string) []larksdk.MailAddressInput {
 	if len(values) == 0 {
 		return nil
 	}
-	addresses := make([]larkapi.MailAddressInput, 0, len(values))
+	addresses := make([]larksdk.MailAddressInput, 0, len(values))
 	for _, value := range values {
 		value = strings.TrimSpace(value)
 		if value == "" {
 			continue
 		}
-		addresses = append(addresses, larkapi.MailAddressInput{MailAddress: value})
+		addresses = append(addresses, larksdk.MailAddressInput{MailAddress: value})
 	}
 	return addresses
 }

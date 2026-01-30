@@ -30,6 +30,16 @@ type MailAddress struct {
 	Name        string `json:"name,omitempty"`
 }
 
+type MailAddressInput struct {
+	MailAddress string `json:"mail_address"`
+	Name        string `json:"name,omitempty"`
+}
+
+type MailAttachment struct {
+	Body     string `json:"body"`
+	Filename string `json:"filename"`
+}
+
 type MailMessage struct {
 	MessageID    string        `json:"message_id"`
 	ThreadID     string        `json:"thread_id"`
@@ -84,6 +94,31 @@ type getMailMessageResponseData struct {
 }
 
 func (r *getMailMessageResponse) Success() bool {
+	return r.Code == 0
+}
+
+type SendMailRequest struct {
+	Subject       string
+	To            []MailAddressInput
+	CC            []MailAddressInput
+	BCC           []MailAddressInput
+	HeadFromName  string
+	BodyHTML      string
+	BodyPlainText string
+	Attachments   []MailAttachment
+}
+
+type sendMailResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *sendMailResponseData `json:"data"`
+}
+
+type sendMailResponseData struct {
+	MessageID string `json:"message_id"`
+}
+
+func (r *sendMailResponse) Success() bool {
 	return r.Code == 0
 }
 
@@ -229,4 +264,77 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 		return MailMessage{}, nil
 	}
 	return *resp.Data.Message, nil
+}
+
+func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req SendMailRequest) (string, error) {
+	if !c.available() || c.coreConfig == nil {
+		return "", ErrUnavailable
+	}
+	if token == "" {
+		return "", errors.New("user access token is required")
+	}
+	if mailboxID == "" {
+		return "", errors.New("mailbox id is required")
+	}
+	if len(req.To) == 0 {
+		return "", errors.New("to is required")
+	}
+	if req.Subject == "" {
+		return "", errors.New("subject is required")
+	}
+	if req.BodyHTML == "" && req.BodyPlainText == "" {
+		return "", errors.New("body_html or body_plain_text is required")
+	}
+
+	payload := map[string]any{
+		"subject": req.Subject,
+		"to":      req.To,
+	}
+	if len(req.CC) > 0 {
+		payload["cc"] = req.CC
+	}
+	if len(req.BCC) > 0 {
+		payload["bcc"] = req.BCC
+	}
+	if req.HeadFromName != "" {
+		payload["head_from"] = map[string]any{"name": req.HeadFromName}
+	}
+	if req.BodyHTML != "" {
+		payload["body_html"] = req.BodyHTML
+	}
+	if req.BodyPlainText != "" {
+		payload["body_plain_text"] = req.BodyPlainText
+	}
+	if len(req.Attachments) > 0 {
+		payload["attachments"] = req.Attachments
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/send",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		Body:                      payload,
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser},
+	}
+	apiReq.PathParams.Set("mailbox_id", mailboxID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithUserAccessToken(token))
+	if err != nil {
+		return "", err
+	}
+	if apiResp == nil {
+		return "", errors.New("send mail failed: empty response")
+	}
+	resp := &sendMailResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return "", err
+	}
+	if !resp.Success() {
+		return "", fmt.Errorf("send mail failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return "", nil
+	}
+	return resp.Data.MessageID, nil
 }
