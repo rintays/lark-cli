@@ -174,6 +174,9 @@ func TestDocsExportCommand(t *testing.T) {
 		}
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
+	legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("legacy client used for docs export")
+	})}}
 
 	var buf bytes.Buffer
 	state := &appState{
@@ -185,8 +188,13 @@ func TestDocsExportCommand(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+		Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
 	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
 
 	outDir := t.TempDir()
 	outPath := filepath.Join(outDir, "export.pdf")
@@ -305,5 +313,32 @@ func TestDocsCatCommand(t *testing.T) {
 
 	if got := buf.String(); got != string(exported) {
 		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestDocsExportCommandRequiresSDK(t *testing.T) {
+	outDir := t.TempDir()
+	outPath := filepath.Join(outDir, "export.pdf")
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    "http://example.com",
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+		Client:  &larkapi.Client{},
+	}
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "sdk client is required" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

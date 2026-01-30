@@ -113,11 +113,14 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("output path is a directory: %s", outPath)
 			}
 			format = strings.ToLower(format)
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
 			}
-			ticket, err := state.Client.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
+			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
 				Token:         documentID,
 				Type:          "docx",
 				FileExtension: format,
@@ -125,11 +128,11 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(context.Background(), state.Client, token, ticket)
+			result, err := pollExportTask(context.Background(), state.SDK, token, ticket)
 			if err != nil {
 				return err
 			}
-			reader, err := state.Client.DownloadExportedFile(context.Background(), token, result.FileToken)
+			reader, err := state.SDK.DownloadExportedFile(context.Background(), token, result.FileToken)
 			if err != nil {
 				return err
 			}
