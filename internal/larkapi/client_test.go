@@ -865,6 +865,7 @@ func TestCreateDocxDocument(t *testing.T) {
 					"document_id": "doc1",
 					"title":       "Specs",
 					"url":         "https://example.com/doc",
+					"revision_id": 123,
 				},
 			},
 		})
@@ -879,7 +880,7 @@ func TestCreateDocxDocument(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateDocxDocument error: %v", err)
 	}
-	if doc.DocumentID != "doc1" || doc.Title != "Specs" {
+	if doc.DocumentID != "doc1" || doc.Title != "Specs" || string(doc.RevisionID) != "123" {
 		t.Fatalf("unexpected doc: %+v", doc)
 	}
 }
@@ -915,7 +916,7 @@ func TestGetDocxDocument(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDocxDocument error: %v", err)
 	}
-	if doc.DocumentID != "doc1" || doc.RevisionID != "rev1" {
+	if doc.DocumentID != "doc1" || string(doc.RevisionID) != "rev1" {
 		t.Fatalf("unexpected doc: %+v", doc)
 	}
 }

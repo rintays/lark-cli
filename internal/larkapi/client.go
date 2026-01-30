@@ -1315,11 +1315,34 @@ func hasDrivePermissionPublicUpdate(req UpdateDrivePermissionPublicRequest) bool
 	return false
 }
 
+type RevisionID string
+
+func (r *RevisionID) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || string(data) == "null" {
+		*r = ""
+		return nil
+	}
+	if data[0] == '"' {
+		var value string
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		*r = RevisionID(value)
+		return nil
+	}
+	var value json.Number
+	if err := json.Unmarshal(data, &value); err == nil {
+		*r = RevisionID(value.String())
+		return nil
+	}
+	return fmt.Errorf("revision_id must be a string or number, got %s", string(data))
+}
+
 type DocxDocument struct {
-	DocumentID string `json:"document_id"`
-	Title      string `json:"title"`
-	URL        string `json:"url"`
-	RevisionID string `json:"revision_id"`
+	DocumentID string     `json:"document_id"`
+	Title      string     `json:"title"`
+	URL        string     `json:"url"`
+	RevisionID RevisionID `json:"revision_id"`
 }
 
 type CreateDocxDocumentRequest struct {
