@@ -309,7 +309,7 @@ func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailb
 }
 
 func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMailMessagesRequest) (ListMailMessagesResponse, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return ListMailMessagesResponse{}, ErrUnavailable
 	}
 	if req.MailboxID == "" {
