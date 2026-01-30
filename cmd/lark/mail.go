@@ -20,10 +20,63 @@ func newMailCmd(state *appState) *cobra.Command {
 		Use:   "mail",
 		Short: "Manage Mail messages",
 	}
+	cmd.AddCommand(newMailMailboxesCmd(state))
 	cmd.AddCommand(newMailFoldersCmd(state))
 	cmd.AddCommand(newMailListCmd(state))
 	cmd.AddCommand(newMailGetCmd(state))
 	cmd.AddCommand(newMailSendCmd(state))
+	return cmd
+}
+
+func newMailMailboxesCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "mailboxes",
+		Short: "Manage mailboxes",
+	}
+	cmd.AddCommand(newMailMailboxesListCmd(state))
+	return cmd
+}
+
+func newMailMailboxesListCmd(state *appState) *cobra.Command {
+	var userAccessToken string
+	const userTokenHint = "mail mailboxes list requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`"
+
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List mailboxes",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			token := userAccessToken
+			if token == "" {
+				token = os.Getenv("LARK_USER_ACCESS_TOKEN")
+			}
+			if token == "" {
+				var err error
+				token, err = ensureUserToken(context.Background(), state)
+				if err != nil || token == "" {
+					return errors.New(userTokenHint)
+				}
+			}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			mailboxes, err := state.SDK.ListMailboxes(context.Background(), token)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"mailboxes": mailboxes}
+			lines := make([]string, 0, len(mailboxes))
+			for _, mailbox := range mailboxes {
+				lines = append(lines, formatMailMailboxLine(mailbox))
+			}
+			text := "no mailboxes found"
+			if len(lines) > 0 {
+				text = strings.Join(lines, "\n")
+			}
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 	return cmd
 }
 
@@ -258,6 +311,35 @@ func formatMailMessageLine(messageID, subject string) string {
 		subject = "(no subject)"
 	}
 	return fmt.Sprintf("%s\t%s", messageID, subject)
+}
+
+func formatMailMailboxLine(mailbox larksdk.Mailbox) string {
+	primary := mailbox.DisplayName
+	if primary == "" {
+		primary = mailbox.Name
+	}
+	address := mailbox.PrimaryEmail
+	if address == "" {
+		address = mailbox.MailAddress
+	}
+	if address == "" {
+		address = mailbox.Email
+	}
+	id := mailbox.MailboxID
+	if id == "" {
+		id = address
+	}
+	parts := []string{}
+	if id != "" {
+		parts = append(parts, id)
+	}
+	if primary != "" && primary != id {
+		parts = append(parts, primary)
+	}
+	if address != "" && address != id && address != primary {
+		parts = append(parts, address)
+	}
+	return strings.Join(parts, "\t")
 }
 
 func buildMailAddressInputs(values []string) []larksdk.MailAddressInput {

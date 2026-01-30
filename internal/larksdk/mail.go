@@ -25,6 +25,17 @@ func (r *listMailFoldersResponse) Success() bool {
 	return r.Code == 0
 }
 
+type Mailbox struct {
+	MailboxID     string `json:"mailbox_id"`
+	Name          string `json:"name,omitempty"`
+	DisplayName   string `json:"display_name,omitempty"`
+	MailAddress   string `json:"mail_address,omitempty"`
+	PrimaryEmail  string `json:"primary_email,omitempty"`
+	Email         string `json:"email,omitempty"`
+	UserID        string `json:"user_id,omitempty"`
+	MailboxStatus string `json:"mailbox_status,omitempty"`
+}
+
 type MailAddress struct {
 	MailAddress string `json:"mail_address"`
 	Name        string `json:"name,omitempty"`
@@ -80,6 +91,20 @@ type listMailMessagesResponseData struct {
 }
 
 func (r *listMailMessagesResponse) Success() bool {
+	return r.Code == 0
+}
+
+type listMailboxesResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *listMailboxesResponseData `json:"data"`
+}
+
+type listMailboxesResponseData struct {
+	Items []Mailbox `json:"items"`
+}
+
+func (r *listMailboxesResponse) Success() bool {
 	return r.Code == 0
 }
 
@@ -156,6 +181,42 @@ func (c *Client) ListMailFolders(ctx context.Context, token, mailboxID string) (
 	}
 	if !resp.Success() {
 		return nil, fmt.Errorf("list mail folders failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Items == nil {
+		return nil, nil
+	}
+	return resp.Data.Items, nil
+}
+
+func (c *Client) ListMailboxes(ctx context.Context, token string) ([]Mailbox, error) {
+	if !c.available() || c.coreConfig == nil {
+		return nil, ErrUnavailable
+	}
+	if token == "" {
+		return nil, errors.New("user access token is required")
+	}
+
+	req := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/mail/v1/user_mailboxes",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser},
+	}
+
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithUserAccessToken(token))
+	if err != nil {
+		return nil, err
+	}
+	if apiResp == nil {
+		return nil, errors.New("list mailboxes failed: empty response")
+	}
+	resp := &listMailboxesResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return nil, err
+	}
+	if !resp.Success() {
+		return nil, fmt.Errorf("list mailboxes failed: %s", resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Items == nil {
 		return nil, nil
