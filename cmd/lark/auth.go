@@ -1,0 +1,68 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"lark/internal/config"
+)
+
+func newAuthCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "auth",
+		Short: "Fetch and cache a tenant access token",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"tenant_access_token": token,
+				"expires_at":          state.Config.TenantAccessTokenExpiresAt,
+			}
+			return state.Printer.Print(
+				payload,
+				fmt.Sprintf("tenant_access_token: %s\nexpires_at: %d", token, state.Config.TenantAccessTokenExpiresAt),
+			)
+		},
+	}
+	cmd.AddCommand(newAuthLoginCmd(state))
+	return cmd
+}
+
+func newAuthLoginCmd(state *appState) *cobra.Command {
+	var appID string
+	var appSecret string
+	var baseURL string
+
+	cmd := &cobra.Command{
+		Use:   "login",
+		Short: "Save app credentials to config",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			state.Config.AppID = appID
+			state.Config.AppSecret = appSecret
+			if baseURL != "" {
+				state.Config.BaseURL = baseURL
+			}
+			if err := config.Save(state.ConfigPath, state.Config); err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"config_path": state.ConfigPath,
+				"app_id":      state.Config.AppID,
+				"base_url":    state.Config.BaseURL,
+			}
+			return state.Printer.Print(payload, fmt.Sprintf("saved config to %s", state.ConfigPath))
+		},
+	}
+
+	cmd.Flags().StringVar(&appID, "app-id", "", "app ID")
+	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret")
+	cmd.Flags().StringVar(&baseURL, "base-url", "", "base URL (default: https://open.feishu.cn)")
+	_ = cmd.MarkFlagRequired("app-id")
+	_ = cmd.MarkFlagRequired("app-secret")
+
+	return cmd
+}

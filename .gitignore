@@ -1,0 +1,12 @@
+# Build artifacts
+/lark
+
+# Accidental files from CLI help redirects
+/--help
+
+# Go build/test
+*.test
+*.out
+
+# macOS
+.DS_Store
