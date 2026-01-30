@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 const maxUsersPageSize = 50
@@ -52,10 +53,30 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var batchGetUserIDs func(context.Context, string, larkapi.BatchGetUserIDRequest) ([]larkapi.User, error)
+			var listUsersByDepartment func(context.Context, string, larkapi.ListUsersByDepartmentRequest) (larkapi.ListUsersByDepartmentResult, error)
+			batchGetUserIDs = state.Client.BatchGetUserIDs
+			listUsersByDepartment = state.Client.ListUsersByDepartment
+			if state.SDK != nil {
+				batchGetUserIDs = func(ctx context.Context, token string, req larkapi.BatchGetUserIDRequest) ([]larkapi.User, error) {
+					users, err := state.SDK.BatchGetUserIDs(ctx, token, req)
+					if errors.Is(err, larksdk.ErrUnavailable) {
+						return state.Client.BatchGetUserIDs(ctx, token, req)
+					}
+					return users, err
+				}
+				listUsersByDepartment = func(ctx context.Context, token string, req larkapi.ListUsersByDepartmentRequest) (larkapi.ListUsersByDepartmentResult, error) {
+					result, err := state.SDK.ListUsersByDepartment(ctx, token, req)
+					if errors.Is(err, larksdk.ErrUnavailable) {
+						return state.Client.ListUsersByDepartment(ctx, token, req)
+					}
+					return result, err
+				}
+			}
 			var users []larkapi.User
 			switch {
 			case email != "" || mobile != "":
-				result, err := state.Client.BatchGetUserIDs(context.Background(), token, larkapi.BatchGetUserIDRequest{
+				result, err := batchGetUserIDs(context.Background(), token, larkapi.BatchGetUserIDRequest{
 					Emails:  nonEmptyList(email),
 					Mobiles: nonEmptyList(mobile),
 				})
@@ -64,7 +85,7 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 				}
 				users = result
 			case name != "":
-				matches, err := searchUsersByName(context.Background(), state, token, departmentID, name)
+				matches, err := searchUsersByName(context.Background(), listUsersByDepartment, token, departmentID, name)
 				if err != nil {
 					return err
 				}
@@ -98,12 +119,12 @@ func nonEmptyList(value string) []string {
 	return []string{value}
 }
 
-func searchUsersByName(ctx context.Context, state *appState, token, departmentID, name string) ([]larkapi.User, error) {
+func searchUsersByName(ctx context.Context, listUsersByDepartment func(context.Context, string, larkapi.ListUsersByDepartmentRequest) (larkapi.ListUsersByDepartmentResult, error), token, departmentID, name string) ([]larkapi.User, error) {
 	pageToken := ""
 	matches := []larkapi.User{}
 	needle := strings.ToLower(name)
 	for {
-		result, err := state.Client.ListUsersByDepartment(ctx, token, larkapi.ListUsersByDepartmentRequest{
+		result, err := listUsersByDepartment(ctx, token, larkapi.ListUsersByDepartmentRequest{
 			DepartmentID: departmentID,
 			PageSize:     maxUsersPageSize,
 			PageToken:    pageToken,
