@@ -100,6 +100,12 @@ Get Drive file URLs:
 lark drive urls <FILE_ID> [FILE_ID...]
 ```
 
+Show drive urls help:
+
+```bash
+./lark drive urls --help
+```
+
 Update Drive share permissions:
 
 ```bash

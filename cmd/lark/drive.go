@@ -424,19 +424,22 @@ func newDriveURLsCmd(state *appState) *cobra.Command {
 		Use:   "urls <file-id> [file-id...]",
 		Short: "Print web URLs for Drive file IDs",
 		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		token, err := ensureTenantToken(context.Background(), state)
+		if err != nil {
+			return err
+		}
+		if state.SDK == nil {
+			return errors.New("sdk client is required")
+		}
+		files := make([]larksdk.DriveFile, 0, len(args))
+		for _, fileID := range args {
+			file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{FileToken: fileID})
 			if err != nil {
 				return err
 			}
-			files := make([]larkapi.DriveFile, 0, len(args))
-			for _, fileID := range args {
-				file, err := state.Client.GetDriveFile(context.Background(), token, fileID)
-				if err != nil {
-					return err
-				}
-				files = append(files, file)
-			}
+			files = append(files, file)
+		}
 			payload := map[string]any{"files": files}
 			lines := make([]string, 0, len(files))
 			for _, file := range files {

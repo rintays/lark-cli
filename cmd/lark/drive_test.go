@@ -179,6 +179,7 @@ func TestDriveGetCommandWithSDK(t *testing.T) {
 
 func TestDriveURLsCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/open-apis/drive/v1/files/f1":
 			_ = json.NewEncoder(w).Encode(map[string]any{
@@ -212,8 +213,12 @@ func TestDriveURLsCommand(t *testing.T) {
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
-		Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
 	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
 	cmd.SetArgs([]string{"urls", "f1", "f2"})
