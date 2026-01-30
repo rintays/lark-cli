@@ -57,6 +57,13 @@ type SheetValueUpdate struct {
 	Revision         int64  `json:"revision"`
 }
 
+type SheetValueAppend struct {
+	SpreadsheetToken string           `json:"spreadsheetToken"`
+	TableRange       string           `json:"tableRange"`
+	Revision         int64            `json:"revision"`
+	Updates          SheetValueUpdate `json:"updates"`
+}
+
 type ClearSheetRangeResult struct {
 	ClearedRange string `json:"clearedRange"`
 }

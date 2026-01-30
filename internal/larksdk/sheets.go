@@ -38,7 +38,7 @@ func (r *updateSheetRangeResponse) Success() bool {
 type appendSheetRangeResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
-	Data *larkapi.SheetValueAppend `json:"data"`
+	Data *SheetValueAppend `json:"data"`
 }
 
 func (r *appendSheetRangeResponse) Success() bool {
@@ -170,22 +170,22 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 	return *resp.Data, nil
 }
 
-func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any, insertDataOption string) (larkapi.SheetValueAppend, error) {
+func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any, insertDataOption string) (SheetValueAppend, error) {
 	if !c.available() || c.coreConfig == nil {
-		return larkapi.SheetValueAppend{}, ErrUnavailable
+		return SheetValueAppend{}, ErrUnavailable
 	}
 	if spreadsheetToken == "" {
-		return larkapi.SheetValueAppend{}, errors.New("spreadsheet token is required")
+		return SheetValueAppend{}, errors.New("spreadsheet token is required")
 	}
 	if sheetRange == "" {
-		return larkapi.SheetValueAppend{}, errors.New("range is required")
+		return SheetValueAppend{}, errors.New("range is required")
 	}
 	if len(values) == 0 {
-		return larkapi.SheetValueAppend{}, errors.New("values are required")
+		return SheetValueAppend{}, errors.New("values are required")
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
-		return larkapi.SheetValueAppend{}, errors.New("tenant access token is required")
+		return SheetValueAppend{}, errors.New("tenant access token is required")
 	}
 
 	req := &larkcore.ApiReq{
@@ -202,7 +202,7 @@ func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, 
 		req.QueryParams.Set("insertDataOption", insertDataOption)
 	}
 	req.Body = map[string]any{
-		"valueRange": larkapi.SheetValueRangeInput{
+		"valueRange": SheetValueRangeInput{
 			Range:  sheetRange,
 			Values: values,
 		},
@@ -210,20 +210,20 @@ func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, 
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
-		return larkapi.SheetValueAppend{}, err
+		return SheetValueAppend{}, err
 	}
 	if apiResp == nil {
-		return larkapi.SheetValueAppend{}, errors.New("append sheet range failed: empty response")
+		return SheetValueAppend{}, errors.New("append sheet range failed: empty response")
 	}
 	resp := &appendSheetRangeResponse{ApiResp: apiResp}
 	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return larkapi.SheetValueAppend{}, err
+		return SheetValueAppend{}, err
 	}
 	if !resp.Success() {
-		return larkapi.SheetValueAppend{}, fmt.Errorf("append sheet range failed: %s", resp.Msg)
+		return SheetValueAppend{}, fmt.Errorf("append sheet range failed: %s", resp.Msg)
 	}
 	if resp.Data == nil {
-		return larkapi.SheetValueAppend{}, nil
+		return SheetValueAppend{}, nil
 	}
 	return *resp.Data, nil
 }
