@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larkapi"
+	"lark/internal/larksdk"
 )
 
 const maxMailPageSize = 200
@@ -80,11 +81,14 @@ func newMailListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
 			token, err := ensureTenantToken(context.Background(), state)
 			if err != nil {
 				return err
 			}
-			messages := make([]larkapi.MailMessage, 0, limit)
+			messages := make([]larksdk.MailMessage, 0, limit)
 			pageToken := ""
 			remaining := limit
 			for {
@@ -92,7 +96,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 				if pageSize > maxMailPageSize {
 					pageSize = maxMailPageSize
 				}
-				result, err := state.Client.ListMailMessages(context.Background(), token, larkapi.ListMailMessagesRequest{
+				result, err := state.SDK.ListMailMessages(context.Background(), token, larksdk.ListMailMessagesRequest{
 					MailboxID:  mailboxID,
 					FolderID:   folderID,
 					PageSize:   pageSize,
@@ -118,7 +122,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 			payload := map[string]any{"messages": messages}
 			lines := make([]string, 0, len(messages))
 			for _, message := range messages {
-				lines = append(lines, formatMailMessageLine(message))
+				lines = append(lines, formatMailMessageLine(message.MessageID, message.Subject))
 			}
 			text := "no messages found"
 			if len(lines) > 0 {
@@ -165,7 +169,7 @@ func newMailGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"message": message}
-			return state.Printer.Print(payload, formatMailMessageLine(message))
+			return state.Printer.Print(payload, formatMailMessageLine(message.MessageID, message.Subject))
 		},
 	}
 
@@ -246,12 +250,12 @@ func formatMailFolderLine(folder larkapi.MailFolder) string {
 	return strings.Join(parts, "\t")
 }
 
-func formatMailMessageLine(message larkapi.MailMessage) string {
-	subject := strings.TrimSpace(message.Subject)
+func formatMailMessageLine(messageID, subject string) string {
+	subject = strings.TrimSpace(subject)
 	if subject == "" {
 		subject = "(no subject)"
 	}
-	return fmt.Sprintf("%s\t%s", message.MessageID, subject)
+	return fmt.Sprintf("%s\t%s", messageID, subject)
 }
 
 func buildMailAddressInputs(values []string) []larkapi.MailAddressInput {
