@@ -40,6 +40,18 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 		Use:   "login",
 		Short: "Save app credentials to config",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Allow env/config fallback so `lark auth login` works with
+			// LARK_APP_ID/LARK_APP_SECRET without forcing flags.
+			if appID == "" {
+				appID = state.Config.AppID
+			}
+			if appSecret == "" {
+				appSecret = state.Config.AppSecret
+			}
+			if appID == "" || appSecret == "" {
+				return fmt.Errorf("missing credentials: provide --app-id/--app-secret or set LARK_APP_ID/LARK_APP_SECRET")
+			}
+
 			state.Config.AppID = appID
 			state.Config.AppSecret = appSecret
 			if baseURL != "" {
@@ -58,11 +70,9 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&appID, "app-id", "", "app ID")
-	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret")
+	cmd.Flags().StringVar(&appID, "app-id", "", "app ID (fallback: LARK_APP_ID)")
+	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret (fallback: LARK_APP_SECRET)")
 	cmd.Flags().StringVar(&baseURL, "base-url", "", "base URL (default: https://open.feishu.cn)")
-	_ = cmd.MarkFlagRequired("app-id")
-	_ = cmd.MarkFlagRequired("app-secret")
 
 	return cmd
 }
