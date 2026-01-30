@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
 )
 
 type listBaseTablesResponse struct {
@@ -313,6 +315,135 @@ func (c *Client) GetBaseRecord(ctx context.Context, token, appToken, tableID, re
 		return BaseRecord{}, nil
 	}
 	return resp.Data.Record, nil
+}
+
+type updateBaseRecordRequestBody struct {
+	Fields map[string]any `json:"fields"`
+}
+
+type updateBaseRecordResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *updateBaseRecordResponseData `json:"data"`
+}
+
+type updateBaseRecordResponseData struct {
+	Record BaseRecord `json:"record"`
+}
+
+func (r *updateBaseRecordResponse) Success() bool { return r.Code == 0 }
+
+func (c *Client) UpdateBaseRecord(ctx context.Context, token, appToken, tableID, recordID string, fields map[string]any) (BaseRecord, error) {
+	if !c.available() || c.coreConfig == nil {
+		return BaseRecord{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return BaseRecord{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return BaseRecord{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return BaseRecord{}, errors.New("table id is required")
+	}
+	if recordID == "" {
+		return BaseRecord{}, errors.New("record id is required")
+	}
+	if fields == nil {
+		return BaseRecord{}, errors.New("fields are required")
+	}
+	if c.bitableRecordUpdateSDKAvailable() {
+		return c.updateBaseRecordSDK(ctx, tenantToken, appToken, tableID, recordID, fields)
+	}
+	return c.updateBaseRecordCore(ctx, tenantToken, appToken, tableID, recordID, fields)
+}
+
+func (c *Client) bitableRecordUpdateSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.AppTableRecord != nil
+}
+
+func (c *Client) updateBaseRecordSDK(ctx context.Context, tenantToken, appToken, tableID, recordID string, fields map[string]any) (BaseRecord, error) {
+	record := larkbitable.NewAppTableRecordBuilder().Fields(fields).Build()
+	req := larkbitable.NewUpdateAppTableRecordReqBuilder().
+		AppToken(appToken).
+		TableId(tableID).
+		RecordId(recordID).
+		AppTableRecord(record).
+		Build()
+	resp, err := c.sdk.Bitable.V1.AppTableRecord.Update(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecord{}, err
+	}
+	if resp == nil {
+		return BaseRecord{}, errors.New("update base record failed: empty response")
+	}
+	if !resp.Success() {
+		return BaseRecord{}, fmt.Errorf("update base record failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Record == nil {
+		return BaseRecord{}, nil
+	}
+	result := mapBaseRecordFromSDK(resp.Data.Record)
+	if result.RecordID == "" {
+		result.RecordID = recordID
+	}
+	return result, nil
+}
+
+func (c *Client) updateBaseRecordCore(ctx context.Context, tenantToken, appToken, tableID, recordID string, fields map[string]any) (BaseRecord, error) {
+	body := updateBaseRecordRequestBody{
+		Fields: fields,
+	}
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/records/:record_id",
+		HttpMethod:                http.MethodPut,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
+		Body:                      body,
+	}
+	apiReq.PathParams.Set("app_token", appToken)
+	apiReq.PathParams.Set("table_id", tableID)
+	apiReq.PathParams.Set("record_id", recordID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecord{}, err
+	}
+	if apiResp == nil {
+		return BaseRecord{}, errors.New("update base record failed: empty response")
+	}
+	resp := &updateBaseRecordResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return BaseRecord{}, err
+	}
+	if !resp.Success() {
+		return BaseRecord{}, fmt.Errorf("update base record failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return BaseRecord{}, nil
+	}
+	return resp.Data.Record, nil
+}
+
+func mapBaseRecordFromSDK(record *larkbitable.AppTableRecord) BaseRecord {
+	if record == nil {
+		return BaseRecord{}
+	}
+	result := BaseRecord{
+		Fields: record.Fields,
+	}
+	if record.RecordId != nil {
+		result.RecordID = *record.RecordId
+	}
+	if record.CreatedTime != nil {
+		result.CreatedTime = strconv.FormatInt(*record.CreatedTime, 10)
+	}
+	if record.LastModifiedTime != nil {
+		result.LastModifiedTime = strconv.FormatInt(*record.LastModifiedTime, 10)
+	}
+	return result
 }
 
 type searchBaseRecordsRequestBody struct {
