@@ -242,7 +242,13 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 
 func TestSheetsMetadataCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/metainfo" {
+		if r.Method != http.MethodGet {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets/spreadsheet" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -250,12 +256,10 @@ func TestSheetsMetadataCommand(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"properties": map[string]any{
+				"spreadsheet": map[string]any{
 					"title": "Budget Q1",
-				},
-				"sheets": []map[string]any{
-					{"sheetId": "s1", "title": "Summary", "index": 0},
-					{"sheetId": "s2", "title": "Details", "index": 1},
+					"token": "spreadsheet",
+					"url":   "https://example.test/spreadsheet",
 				},
 			},
 		})
@@ -289,8 +293,39 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	if !strings.Contains(output, "Budget Q1") {
 		t.Fatalf("unexpected output: %q", output)
 	}
-	if !strings.Contains(output, "Summary") || !strings.Contains(output, "Details") {
-		t.Fatalf("unexpected output: %q", output)
+}
+
+func TestSheetsMetadataCommandRequiresSpreadsheetID(t *testing.T) {
+	requests := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"metadata"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected error for missing spreadsheet-id")
+	}
+	if requests != 0 {
+		t.Fatalf("expected no HTTP requests, got %d", requests)
 	}
 }
 

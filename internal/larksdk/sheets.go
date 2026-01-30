@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larksheets "github.com/larksuite/oapi-sdk-go/v3/service/sheets/v3"
 )
 
 type readSheetRangeResponse struct {
@@ -55,16 +56,6 @@ type clearSheetRangeData struct {
 }
 
 func (r *clearSheetRangeResponse) Success() bool {
-	return r.Code == 0
-}
-
-type spreadsheetMetadataResponse struct {
-	*larkcore.ApiResp `json:"-"`
-	larkcore.CodeError
-	Data *SpreadsheetMetadata `json:"data"`
-}
-
-func (r *spreadsheetMetadataResponse) Success() bool {
 	return r.Code == 0
 }
 
@@ -277,7 +268,7 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 }
 
 func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (SpreadsheetMetadata, error) {
-	if !c.available() || c.coreConfig == nil {
+	if !c.available() {
 		return SpreadsheetMetadata{}, ErrUnavailable
 	}
 	if spreadsheetToken == "" {
@@ -288,31 +279,25 @@ func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetT
 		return SpreadsheetMetadata{}, errors.New("tenant access token is required")
 	}
 
-	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/metainfo",
-		HttpMethod:                http.MethodGet,
-		PathParams:                larkcore.PathParams{},
-		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
-	}
-	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
-
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	req := larksheets.NewGetSpreadsheetReqBuilder().
+		SpreadsheetToken(spreadsheetToken).
+		Build()
+	resp, err := c.sdk.Sheets.V3.Spreadsheet.Get(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return SpreadsheetMetadata{}, err
 	}
-	if apiResp == nil {
+	if resp == nil {
 		return SpreadsheetMetadata{}, errors.New("get spreadsheet metadata failed: empty response")
-	}
-	resp := &spreadsheetMetadataResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return SpreadsheetMetadata{}, err
 	}
 	if !resp.Success() {
 		return SpreadsheetMetadata{}, fmt.Errorf("get spreadsheet metadata failed: %s", resp.Msg)
 	}
-	if resp.Data == nil {
-		return SpreadsheetMetadata{}, nil
+	metadata := SpreadsheetMetadata{}
+	if resp.Data == nil || resp.Data.Spreadsheet == nil {
+		return metadata, nil
 	}
-	return *resp.Data, nil
+	if resp.Data.Spreadsheet.Title != nil {
+		metadata.Properties.Title = *resp.Data.Spreadsheet.Title
+	}
+	return metadata, nil
 }
