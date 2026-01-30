@@ -369,7 +369,10 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ticket, err := state.Client.CreateExportTask(context.Background(), token, larkapi.CreateExportTaskRequest{
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larksdk.CreateExportTaskRequest{
 				Token:         fileToken,
 				Type:          fileType,
 				FileExtension: format,
@@ -377,11 +380,11 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(context.Background(), state.Client, token, ticket)
+			result, err := pollExportTask(context.Background(), state.SDK, token, ticket)
 			if err != nil {
 				return err
 			}
-			reader, err := state.Client.DownloadExportedFile(context.Background(), token, result.FileToken)
+			reader, err := state.SDK.DownloadExportedFile(context.Background(), token, result.FileToken)
 			if err != nil {
 				return err
 			}

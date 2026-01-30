@@ -516,6 +516,9 @@ func TestDriveExportCommand(t *testing.T) {
 				}
 			})
 			httpClient, baseURL := testutil.NewTestClient(handler)
+			legacyClient := &http.Client{Transport: testutil.HandlerRoundTripper{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				t.Fatalf("legacy client used for drive export")
+			})}}
 
 			outDir := t.TempDir()
 			outPath := filepath.Join(outDir, "export.pdf")
@@ -531,8 +534,13 @@ func TestDriveExportCommand(t *testing.T) {
 				},
 				JSON:    tc.useJSON,
 				Printer: output.Printer{Writer: &buf, JSON: tc.useJSON},
-				Client:  &larkapi.Client{BaseURL: baseURL, HTTPClient: httpClient},
+				Client:  &larkapi.Client{BaseURL: "http://legacy.test", HTTPClient: legacyClient},
 			}
+			sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+			if err != nil {
+				t.Fatalf("sdk client error: %v", err)
+			}
+			state.SDK = sdkClient
 
 			prevInterval := exportTaskPollInterval
 			exportTaskPollInterval = 0
