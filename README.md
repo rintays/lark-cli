@@ -223,10 +223,15 @@ lark calendar create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --en
 Some Mail actions (notably **`mail send`**) require a **user access token** (OAuth), not a tenant token.
 
 Current behavior:
+- Run `lark auth user login` to launch OAuth and store tokens locally
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
 
-Planned (see TODO): `lark auth user login` will handle browser OAuth and automatically refresh/store user tokens.
+Example:
+
+```bash
+./lark auth user login --help
+```
 
 ---
 
@@ -247,7 +252,6 @@ Planned switch:
 This README is written in the style of “what the CLI will look like once the backlog is complete”.
 Items not finished yet (high-level):
 
-- **User OAuth flow:** `lark auth user login` + `ensureUserToken()` (auto refresh)
 - **Mail UX:** default mailbox selection + mailbox management commands
 - **Sheets:** row/col insert/delete commands
 - **Base (Bitable):** `base` top-level command tree (records CRUD, tables/fields/views)

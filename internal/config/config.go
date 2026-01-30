@@ -13,6 +13,9 @@ type Config struct {
 	BaseURL                    string `json:"base_url"`
 	TenantAccessToken          string `json:"tenant_access_token"`
 	TenantAccessTokenExpiresAt int64  `json:"tenant_access_token_expires_at"`
+	UserAccessToken            string `json:"user_access_token"`
+	RefreshToken               string `json:"refresh_token"`
+	UserAccessTokenExpiresAt   int64  `json:"user_access_token_expires_at"`
 }
 
 func Default() *Config {
