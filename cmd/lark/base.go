@@ -57,6 +57,7 @@ func newBaseRecordCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newBaseRecordSearchCmd(state))
 	cmd.AddCommand(newBaseRecordGetCmd(state))
 	cmd.AddCommand(newBaseRecordUpdateCmd(state))
+	cmd.AddCommand(newBaseRecordDeleteCmd(state))
 	return cmd
 }
 

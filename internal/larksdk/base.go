@@ -333,6 +333,19 @@ type updateBaseRecordResponseData struct {
 
 func (r *updateBaseRecordResponse) Success() bool { return r.Code == 0 }
 
+type deleteBaseRecordResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *deleteBaseRecordResponseData `json:"data"`
+}
+
+type deleteBaseRecordResponseData struct {
+	Deleted  bool   `json:"deleted"`
+	RecordID string `json:"record_id"`
+}
+
+func (r *deleteBaseRecordResponse) Success() bool { return r.Code == 0 }
+
 func (c *Client) UpdateBaseRecord(ctx context.Context, token, appToken, tableID, recordID string, fields map[string]any) (BaseRecord, error) {
 	if !c.available() || c.coreConfig == nil {
 		return BaseRecord{}, ErrUnavailable
@@ -425,6 +438,97 @@ func (c *Client) updateBaseRecordCore(ctx context.Context, tenantToken, appToken
 		return BaseRecord{}, nil
 	}
 	return resp.Data.Record, nil
+}
+
+func (c *Client) DeleteBaseRecord(ctx context.Context, token, appToken, tableID, recordID string) (BaseRecordDeleteResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return BaseRecordDeleteResult{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return BaseRecordDeleteResult{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return BaseRecordDeleteResult{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return BaseRecordDeleteResult{}, errors.New("table id is required")
+	}
+	if recordID == "" {
+		return BaseRecordDeleteResult{}, errors.New("record id is required")
+	}
+	if c.bitableRecordDeleteSDKAvailable() {
+		return c.deleteBaseRecordSDK(ctx, tenantToken, appToken, tableID, recordID)
+	}
+	return c.deleteBaseRecordCore(ctx, tenantToken, appToken, tableID, recordID)
+}
+
+func (c *Client) bitableRecordDeleteSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.AppTableRecord != nil
+}
+
+func (c *Client) deleteBaseRecordSDK(ctx context.Context, tenantToken, appToken, tableID, recordID string) (BaseRecordDeleteResult, error) {
+	req := larkbitable.NewDeleteAppTableRecordReqBuilder().
+		AppToken(appToken).
+		TableId(tableID).
+		RecordId(recordID).
+		Build()
+	resp, err := c.sdk.Bitable.V1.AppTableRecord.Delete(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecordDeleteResult{}, err
+	}
+	if resp == nil {
+		return BaseRecordDeleteResult{}, errors.New("delete base record failed: empty response")
+	}
+	if !resp.Success() {
+		return BaseRecordDeleteResult{}, fmt.Errorf("delete base record failed: %s", resp.Msg)
+	}
+	result := BaseRecordDeleteResult{RecordID: recordID, Deleted: true}
+	if resp.Data != nil {
+		if resp.Data.RecordId != nil && *resp.Data.RecordId != "" {
+			result.RecordID = *resp.Data.RecordId
+		}
+		if resp.Data.Deleted != nil {
+			result.Deleted = *resp.Data.Deleted
+		}
+	}
+	return result, nil
+}
+
+func (c *Client) deleteBaseRecordCore(ctx context.Context, tenantToken, appToken, tableID, recordID string) (BaseRecordDeleteResult, error) {
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/records/:record_id",
+		HttpMethod:                http.MethodDelete,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
+	}
+	apiReq.PathParams.Set("app_token", appToken)
+	apiReq.PathParams.Set("table_id", tableID)
+	apiReq.PathParams.Set("record_id", recordID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecordDeleteResult{}, err
+	}
+	if apiResp == nil {
+		return BaseRecordDeleteResult{}, errors.New("delete base record failed: empty response")
+	}
+	resp := &deleteBaseRecordResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return BaseRecordDeleteResult{}, err
+	}
+	if !resp.Success() {
+		return BaseRecordDeleteResult{}, fmt.Errorf("delete base record failed: %s", resp.Msg)
+	}
+	result := BaseRecordDeleteResult{RecordID: recordID, Deleted: true}
+	if resp.Data != nil {
+		if resp.Data.RecordID != "" {
+			result.RecordID = resp.Data.RecordID
+		}
+		result.Deleted = resp.Data.Deleted
+	}
+	return result, nil
 }
 
 func mapBaseRecordFromSDK(record *larkbitable.AppTableRecord) BaseRecord {

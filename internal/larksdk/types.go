@@ -134,6 +134,11 @@ type BaseRecord struct {
 	LastModifiedTime string         `json:"last_modified_time"`
 }
 
+type BaseRecordDeleteResult struct {
+	RecordID string `json:"record_id"`
+	Deleted  bool   `json:"deleted"`
+}
+
 type SearchBaseRecordsRequest struct {
 	ViewID   string          `json:"view_id,omitempty"`
 	Filter   json.RawMessage `json:"filter,omitempty"`
