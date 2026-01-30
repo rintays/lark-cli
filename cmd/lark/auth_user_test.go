@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -37,6 +38,20 @@ func TestBuildUserAuthorizeURL(t *testing.T) {
 	}
 	if query.Get("scope") != "offline_access" {
 		t.Fatalf("unexpected scope: %s", query.Get("scope"))
+	}
+}
+
+func TestUserOAuthScopeDefaultsToOfflineAccess(t *testing.T) {
+	scope := userOAuthScope("", false)
+	if scope != defaultUserOAuthScope {
+		t.Fatalf("expected default scope %q, got %q", defaultUserOAuthScope, scope)
+	}
+}
+
+func TestUserOAuthScopeRespectsExplicitScope(t *testing.T) {
+	scope := userOAuthScope("contact:contact.base:readonly", true)
+	if scope != "contact:contact.base:readonly" {
+		t.Fatalf("expected explicit scope, got %q", scope)
 	}
 }
 
@@ -88,5 +103,25 @@ func TestExchangeUserAccessToken(t *testing.T) {
 	}
 	if token.ExpiresIn != 3600 {
 		t.Fatalf("unexpected expires_in: %d", token.ExpiresIn)
+	}
+}
+
+func TestRequireUserRefreshToken(t *testing.T) {
+	err := requireUserRefreshToken("")
+	if err == nil {
+		t.Fatalf("expected error for missing refresh_token")
+	}
+	if !strings.Contains(err.Error(), "offline access was not granted") {
+		t.Fatalf("expected offline access hint, got %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "lark auth user login --scope offline_access") {
+		t.Fatalf("expected re-run instruction, got %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "redirect URL/config") {
+		t.Fatalf("expected redirect URL/config hint, got %q", err.Error())
+	}
+
+	if err := requireUserRefreshToken("refresh-token"); err != nil {
+		t.Fatalf("unexpected error for refresh token: %v", err)
 	}
 }

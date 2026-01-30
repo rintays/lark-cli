@@ -27,6 +27,7 @@ const (
 	userOAuthListenAddr   = "localhost:17653"
 	userOAuthCallbackPath = "/oauth/callback"
 	userOAuthRedirectURL  = "http://localhost:17653/oauth/callback"
+	defaultUserOAuthScope = "offline_access"
 )
 
 type userOAuthToken struct {
@@ -68,7 +69,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			authorizeURL, err := buildUserAuthorizeURL(state.Config.BaseURL, state.Config.AppID, userOAuthRedirectURL, authState, scope)
+			authorizeURL, err := buildUserAuthorizeURL(state.Config.BaseURL, state.Config.AppID, userOAuthRedirectURL, authState, userOAuthScope(scope, cmd.Flags().Changed("scope")))
 			if err != nil {
 				return err
 			}
@@ -106,6 +107,9 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := requireUserRefreshToken(tokens.RefreshToken); err != nil {
+				return err
+			}
 			state.Config.UserAccessToken = tokens.AccessToken
 			state.Config.RefreshToken = tokens.RefreshToken
 			state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()
@@ -133,6 +137,20 @@ func newOAuthState() (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+func userOAuthScope(scope string, scopeSet bool) string {
+	if !scopeSet {
+		return defaultUserOAuthScope
+	}
+	return scope
+}
+
+func requireUserRefreshToken(refreshToken string) error {
+	if refreshToken != "" {
+		return nil
+	}
+	return errors.New("offline access was not granted: refresh_token missing from OAuth response; re-run with: lark auth user login --scope offline_access; check console redirect URL/config")
 }
 
 func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope string) (string, error) {
