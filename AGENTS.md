@@ -45,4 +45,4 @@
 - Never commit real credentials or tokens.
 
 ## Agent Notes
-- 2026-01-30: CLI 命令命名统一（messages/contacts users），必填 flag 校验改为 Cobra 标注与 Args 校验，补充命令参数校验测试，更新 README 示例。
+- 2026-01-30: Unified CLI command naming (messages/contacts users), moved required flag validation to Cobra MarkFlagRequired/Args, added CLI flag validation tests, updated README examples.
