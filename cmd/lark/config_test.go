@@ -182,3 +182,46 @@ func TestConfigSetPlatformLarkPersistsConfig(t *testing.T) {
 		t.Fatalf("expected base_url saved, got %s", saved.BaseURL)
 	}
 }
+
+func TestConfigSetAppCredentialsPersistsConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--app-id", "app", "--app-secret", "secret"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config set error: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	var saved config.Config
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if saved.AppID != "app" {
+		t.Fatalf("expected app_id saved, got %s", saved.AppID)
+	}
+	if saved.AppSecret != "secret" {
+		t.Fatalf("expected app_secret saved")
+	}
+}
+
+func TestConfigSetAppCredentialsMutuallyExclusiveWithBaseURL(t *testing.T) {
+	state := &appState{
+		Config:  config.Default(),
+		Printer: output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--app-id", "app", "--base-url", "https://open.feishu.cn"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected error")
+	}
+}

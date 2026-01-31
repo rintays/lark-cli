@@ -41,6 +41,8 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	var baseURL string
 	var platform string
 	var defaultMailboxID string
+	var appID string
+	var appSecret string
 
 	cmd := &cobra.Command{
 		Use:   "set",
@@ -53,8 +55,56 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 			useBaseURL := cmd.Flags().Changed("base-url")
 			usePlatform := cmd.Flags().Changed("platform")
 			useDefaultMailboxID := cmd.Flags().Changed("default-mailbox-id")
-			if !useBaseURL && !usePlatform && !useDefaultMailboxID {
-				return errors.New("either --base-url, --platform, or --default-mailbox-id is required")
+			useAppID := cmd.Flags().Changed("app-id")
+			useAppSecret := cmd.Flags().Changed("app-secret")
+
+			usedBaseURLGroup := useBaseURL || usePlatform
+			usedMailboxGroup := useDefaultMailboxID
+			usedAppCredsGroup := useAppID || useAppSecret
+
+			groupsUsed := 0
+			if usedBaseURLGroup {
+				groupsUsed++
+			}
+			if usedMailboxGroup {
+				groupsUsed++
+			}
+			if usedAppCredsGroup {
+				groupsUsed++
+			}
+			if groupsUsed == 0 {
+				return errors.New("one of --base-url, --platform, --default-mailbox-id, --app-id, or --app-secret is required")
+			}
+			if groupsUsed > 1 {
+				return errors.New("flags are mutually exclusive; choose one of: (--base-url|--platform), --default-mailbox-id, or (--app-id/--app-secret)")
+			}
+
+			if usedAppCredsGroup {
+				payload := map[string]any{
+					"config_path": state.ConfigPath,
+				}
+
+				if useAppID {
+					appID = strings.TrimSpace(appID)
+					if appID == "" {
+						return errors.New("app-id must not be empty")
+					}
+					state.Config.AppID = appID
+					payload["app_id"] = appID
+				}
+				if useAppSecret {
+					appSecret = strings.TrimSpace(appSecret)
+					if appSecret == "" {
+						return errors.New("app-secret must not be empty")
+					}
+					state.Config.AppSecret = appSecret
+					payload["app_secret_set"] = true
+				}
+
+				if err := state.saveConfig(); err != nil {
+					return err
+				}
+				return state.Printer.Print(payload, fmt.Sprintf("saved app credentials to %s", state.ConfigPath))
 			}
 
 			if useDefaultMailboxID {
@@ -113,8 +163,10 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&baseURL, "base-url", "", "base URL to persist")
 	cmd.Flags().StringVar(&platform, "platform", "", "platform to persist (feishu or lark)")
 	cmd.Flags().StringVar(&defaultMailboxID, "default-mailbox-id", "", "default mailbox id to persist (or 'me')")
+	cmd.Flags().StringVar(&appID, "app-id", "", "app ID to persist")
+	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret to persist (stored in plain text)")
 	cmd.MarkFlagsMutuallyExclusive("base-url", "platform", "default-mailbox-id")
-	cmd.MarkFlagsOneRequired("base-url", "platform", "default-mailbox-id")
+	cmd.MarkFlagsOneRequired("base-url", "platform", "default-mailbox-id", "app-id", "app-secret")
 
 	return cmd
 }

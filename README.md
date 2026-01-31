@@ -63,6 +63,12 @@ Store credentials in config (default: `~/.config/lark/config.json`):
 lark auth login --app-id <APP_ID> --app-secret <APP_SECRET>
 ```
 
+Or (equivalent):
+
+```bash
+lark config set --app-id <APP_ID> --app-secret <APP_SECRET>
+```
+
 Set the default platform base URL (optional):
 
 ```bash
