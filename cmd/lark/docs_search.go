@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -41,10 +40,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 			for _, file := range files {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", file.Token, file.Name, file.FileType, file.URL))
 			}
-			text := "no files found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"token", "name", "type", "url"}, lines, "no files found")
 			return state.Printer.Print(payload, text)
 		},
 	}

@@ -15,7 +15,7 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
 - **Auth**
   - Tenant token fetch + caching
   - Config file support + env fallback
-- **Users / Chats / Msg (IM)**
+- **Users / Chats / Messages (IM)**
   - search users
   - list chats
   - send messages (supports `--receive-id-type`)
@@ -48,7 +48,7 @@ go build -o lark ./cmd/lark
 ./lark chats list --help
 ./lark users list --help
 ./lark users info --help
-./lark msg send --help
+./lark messages send --help  # alias: msg
 ```
 
 ---
@@ -245,6 +245,12 @@ List:
 lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
 ```
 
+Create:
+
+```bash
+lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
+```
+
 Read:
 
 ```bash
@@ -310,13 +316,13 @@ lark sheets cols delete --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_I
 List events:
 
 ```bash
-lark calendar list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+lark calendars list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
 ```
 
 Create event:
 
 ```bash
-lark calendar create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
+lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
 ---
@@ -415,10 +421,16 @@ Behavior:
 
 ## Integration tests
 
-Integration tests run only when explicitly enabled (real network + credentials):
+Integration tests run only when explicitly enabled (real network + credentials). `LARK_INTEGRATION` must be exactly `1`:
 
 ```bash
 export LARK_INTEGRATION=1
+```
+
+Recommended (all integration tests):
+
+```bash
+make it
 ```
 
 Run the Wiki SpaceMember.Create role-upsert verification test:

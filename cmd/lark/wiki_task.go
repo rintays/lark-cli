@@ -60,10 +60,11 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 				}
 				lines = append(lines, fmt.Sprintf("%d\t%s\t%s\t%s\t%s\t%s", mr.Status, mr.StatusMsg, nodeToken, objType, title, objToken))
 			}
-			text := "no task results"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText(
+				[]string{"status", "status_msg", "node_token", "obj_type", "title", "obj_token"},
+				lines,
+				"no task results",
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

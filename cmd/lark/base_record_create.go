@@ -35,7 +35,10 @@ func newBaseRecordCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"record": record}
-			text := fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime, record.LastModifiedTime)
+			text := tableTextRow(
+				[]string{"record_id", "created_time", "last_modified_time"},
+				[]string{record.RecordID, record.CreatedTime, record.LastModifiedTime},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

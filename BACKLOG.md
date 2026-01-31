@@ -302,6 +302,7 @@ Discovery coverage (list/search) gaps to close for “CLI-only” workflows:
 - [x] Sheets: add list/search commands so users can find spreadsheet tokens without leaving CLI
   - [x] `sheets search --query ...` (filters drive search results to sheet)
   - [x] `sheets list --folder-id ...` (filters drive list results to sheet)
+  - [x] `sheets create --title ... [--folder-id ...]` (creates a spreadsheet; returns spreadsheet_token)
   - Fallback (documented): `drive search --type sheet --query ...`
 - [x] Meetings: add `meetings list` (so users can find meeting_id without leaving CLI)
   - [x] Research API availability and required token type
@@ -339,7 +340,9 @@ Deliverables:
 - [ ] Audit naming: singular vs plural
   - [x] `contacts users` renamed to `contacts user` (avoid overlap with top-level `users`)
   - `meeting` → `meetings` already done
-  - decide policy for `calendar`, `msg`, etc.
+  - [x] Policy: top-level resource collections use plural canonical names; abbreviations are aliases; keep backward-compatible aliases when renaming. Rationale: consistent help discovery and stable scripts.
+  - [x] `calendar` → `calendars` (keep `calendar` as alias)
+  - [x] `msg` → `messages` (keep `msg` as alias)
   - [x] `msg` short help clarified to "Send chat messages"
 - [ ] Align help text and examples.
   - [x] `users` top-level Short changed to "Manage users"
@@ -519,3 +522,4 @@ Deliverables:
 - 2026-01-31: Marked `lark config list-keys` complete.
 - 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
+- 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).

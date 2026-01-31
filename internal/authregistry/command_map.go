@@ -15,6 +15,7 @@ var commandServiceMap = map[string][]string{
 	"base":     {"base"},
 	"calendar": {"calendar"},
 	"chats":    {"im"},
+	"messages": {"im"},
 	"msg":      {"im"},
 
 	// Internal aliases (not currently exposed as CLI roots).

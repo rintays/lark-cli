@@ -18,6 +18,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 		Short: "Read Sheets data",
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
+	cmd.AddCommand(newSheetsCreateCmd(state))
 	cmd.AddCommand(newSheetsUpdateCmd(state))
 	cmd.AddCommand(newSheetsAppendCmd(state))
 	cmd.AddCommand(newSheetsInfoCmd(state))
@@ -205,15 +206,26 @@ func formatSheetValues(valueRange larksdk.SheetValueRange) string {
 	if len(values) == 0 {
 		return "no values found"
 	}
-	lines := make([]string, 0, len(values))
+	rows := make([][]string, 0, len(values))
+	maxCols := 0
 	for _, row := range values {
 		cells := make([]string, 0, len(row))
 		for _, cell := range row {
 			cells = append(cells, fmt.Sprint(cell))
 		}
-		lines = append(lines, strings.Join(cells, "\t"))
+		if len(cells) > maxCols {
+			maxCols = len(cells)
+		}
+		rows = append(rows, cells)
 	}
-	return strings.Join(lines, "\n")
+	if maxCols == 0 {
+		return "no values found"
+	}
+	headers := make([]string, maxCols)
+	for i := 0; i < maxCols; i++ {
+		headers[i] = fmt.Sprintf("col%d", i+1)
+	}
+	return tableTextFromRows(headers, rows, "no values found")
 }
 
 func formatSpreadsheetMetadata(metadata larksdk.SpreadsheetMetadata) string {
@@ -269,5 +281,13 @@ func formatSheetAppend(appendResult larksdk.SheetValueAppend) string {
 	if rangeText == "" {
 		rangeText = "appended"
 	}
-	return fmt.Sprintf("%s\t%d\t%d\t%d", rangeText, appendResult.Updates.UpdatedRows, appendResult.Updates.UpdatedColumns, appendResult.Updates.UpdatedCells)
+	return tableTextRow(
+		[]string{"range", "updated_rows", "updated_columns", "updated_cells"},
+		[]string{
+			rangeText,
+			fmt.Sprintf("%d", appendResult.Updates.UpdatedRows),
+			fmt.Sprintf("%d", appendResult.Updates.UpdatedColumns),
+			fmt.Sprintf("%d", appendResult.Updates.UpdatedCells),
+		},
+	)
 }

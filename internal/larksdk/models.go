@@ -278,9 +278,57 @@ type SpreadsheetMetadata struct {
 	Sheets     []SpreadsheetSheet    `json:"sheets"`
 }
 
+type MailFolderType string
+
+func (t *MailFolderType) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || string(data) == "null" {
+		*t = ""
+		return nil
+	}
+	if data[0] == '"' {
+		var value string
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		*t = MailFolderType(value)
+		return nil
+	}
+	var value json.Number
+	if err := json.Unmarshal(data, &value); err == nil {
+		*t = MailFolderType(value.String())
+		return nil
+	}
+	return fmt.Errorf("folder_type must be a string or number, got %s", string(data))
+}
+
+func (t MailFolderType) String() string {
+	return string(t)
+}
+
 type MailFolder struct {
-	FolderID       string `json:"folder_id"`
-	Name           string `json:"name"`
-	ParentFolderID string `json:"parent_folder_id,omitempty"`
-	FolderType     string `json:"folder_type,omitempty"`
+	FolderID       string         `json:"folder_id"`
+	Name           string         `json:"name"`
+	ParentFolderID string         `json:"parent_folder_id,omitempty"`
+	FolderType     MailFolderType `json:"folder_type,omitempty"`
+}
+
+func (f *MailFolder) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		ID             string         `json:"id"`
+		FolderID       string         `json:"folder_id"`
+		Name           string         `json:"name"`
+		ParentFolderID string         `json:"parent_folder_id"`
+		FolderType     MailFolderType `json:"folder_type"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	f.FolderID = aux.FolderID
+	if f.FolderID == "" {
+		f.FolderID = aux.ID
+	}
+	f.Name = aux.Name
+	f.ParentFolderID = aux.ParentFolderID
+	f.FolderType = aux.FolderType
+	return nil
 }
