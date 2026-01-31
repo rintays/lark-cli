@@ -1,0 +1,108 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"lark/internal/config"
+	"lark/internal/larksdk"
+	"lark/internal/output"
+	"lark/internal/testutil"
+)
+
+func TestBaseAppCreateCommand(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/bitable/v1/apps" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer tenant-token" {
+			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+		}
+		query := r.URL.Query()
+		if query.Get("customized_config") != "true" {
+			t.Fatalf("unexpected customized_config: %q", query.Get("customized_config"))
+		}
+		if query.Get("source_app_token") != "app_src" {
+			t.Fatalf("unexpected source_app_token: %q", query.Get("source_app_token"))
+		}
+		if got := query["copy_types"]; !reflect.DeepEqual(got, []string{"roles", "advanced"}) {
+			t.Fatalf("unexpected copy_types: %#v", got)
+		}
+		if query.Get("api_type") != "new" {
+			t.Fatalf("unexpected api_type: %q", query.Get("api_type"))
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read body: %v", err)
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if payload["name"] != "MyApp" {
+			t.Fatalf("unexpected app name: %#v", payload["name"])
+		}
+		if payload["folder_token"] != "fld_1" {
+			t.Fatalf("unexpected folder token: %#v", payload["folder_token"])
+		}
+		if payload["time_zone"] != "Asia/Shanghai" {
+			t.Fatalf("unexpected time zone: %#v", payload["time_zone"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"app": map[string]any{
+					"app_token": "app_1",
+					"name":      "MyApp",
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant-token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newBaseCmd(state)
+	cmd.SetArgs([]string{
+		"app", "create",
+		"--name", "MyApp",
+		"--folder-token", "fld_1",
+		"--time-zone", "Asia/Shanghai",
+		"--customized-config",
+		"--source-app-token", "app_src",
+		"--copy-types", "roles,advanced",
+		"--api-type", "new",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("base app create error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "app_1\tMyApp") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}

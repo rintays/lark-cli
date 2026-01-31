@@ -196,31 +196,31 @@ lark messages send --chat-id <CHAT_ID> --image-key <IMAGE_KEY>
 Reply in thread:
 
 ```bash
-lark messages reply --message-id <MESSAGE_ID> --text "reply" --reply-in-thread
+lark messages reply <MESSAGE_ID> --text "reply" --reply-in-thread
 ```
 
 Search messages (user token required):
 
 ```bash
-lark messages search --query "hello" --chat-id <CHAT_ID>
+lark messages search "hello" --chat-id <CHAT_ID>
 ```
 
 List recent messages:
 
 ```bash
-lark messages list --container-id <CHAT_ID> --limit 20
+lark messages list <CHAT_ID> --limit 20
 ```
 
 Add a reaction:
 
 ```bash
-lark messages reactions add --message-id <MESSAGE_ID> --emoji SMILE
+lark messages reactions add <MESSAGE_ID> SMILE
 ```
 
 Pin a message:
 
 ```bash
-lark messages pin --message-id <MESSAGE_ID>
+lark messages pin <MESSAGE_ID>
 ```
 
 ### Chats
@@ -403,6 +403,30 @@ Create event:
 lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
+Search events:
+
+```bash
+lark calendars search --query "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+```
+
+Get event:
+
+```bash
+lark calendars get --event-id <EVENT_ID>
+```
+
+Update event:
+
+```bash
+lark calendars update --event-id <EVENT_ID> --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z"
+```
+
+Delete event:
+
+```bash
+lark calendars delete --event-id <EVENT_ID> --notify=false
+```
+
 ---
 
 ## User OAuth scopes (important)
@@ -462,6 +486,10 @@ Example:
 ```bash
 ./lark auth user login --help
 ./lark mail public-mailboxes list --help
+./lark bases app create --help
+./lark bases app copy --help
+./lark bases app info --help
+./lark bases app update --help
 ./lark bases table list --help  # alias: base
 ./lark bases field list --help
 ./lark bases view list --help

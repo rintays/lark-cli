@@ -87,9 +87,12 @@ type createSpreadsheetResponseData struct {
 }
 
 type SpreadsheetInfo struct {
-	SpreadsheetToken string `json:"spreadsheet_token"`
-	Title            string `json:"title"`
-	FolderToken      string `json:"folder_token"`
+	SpreadsheetToken string `json:"spreadsheet_token,omitempty"`
+	Title            string `json:"title,omitempty"`
+	FolderToken      string `json:"folder_token,omitempty"`
+	URL              string `json:"url,omitempty"`
+	WithoutMount     *bool  `json:"without_mount,omitempty"`
+	OwnerID          string `json:"owner_id,omitempty"`
 }
 
 func (r *createSpreadsheetResponse) Success() bool { return r.Code == 0 }

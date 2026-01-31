@@ -17,7 +17,7 @@ func newMsgReplyCmd(state *appState) *cobra.Command {
 	var contentOpts messageContentOptions
 
 	cmd := &cobra.Command{
-		Use:   "reply",
+		Use:   "reply <message-id>",
 		Short: "Reply to a message",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
@@ -30,6 +30,10 @@ func newMsgReplyCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(messageID) == "" {
+				return errors.New("message-id is required")
 			}
 			return nil
 		},
@@ -64,6 +68,5 @@ func newMsgReplyCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID to reply to (or provide as positional argument)")
 	cmd.Flags().BoolVar(&replyInThread, "reply-in-thread", false, "reply in thread")
 	addMessageContentFlags(cmd, &contentOpts)
-	_ = cmd.MarkFlagRequired("message-id")
 	return cmd
 }
