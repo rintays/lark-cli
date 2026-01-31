@@ -164,7 +164,7 @@ func (fx integrationFixtures) CreateTempBaseTable(t *testing.T, appToken string)
 
 	ctx := t.Context()
 	tableName := fmt.Sprintf("%stable-%s-%d", integrationBaseTablePrefix, sanitizeForFixtureName(t.Name()), time.Now().UnixNano())
-	table, err := fx.SDK.CreateBaseTable(ctx, fx.Token, appToken, tableName, "")
+	table, err := fx.SDK.CreateBaseTable(ctx, fx.Token, appToken, tableName)
 	if err != nil {
 		t.Fatalf("create base table: %v", err)
 	}
