@@ -56,3 +56,4 @@
 - 2026-01-31: Mail user mailbox operations now use user access tokens (list/get/folders/mailbox get) to avoid field validation errors; public mailboxes remain tenant-token.
 - 2026-01-31: Mail list now resolves folder_id (defaults to Inbox) to satisfy API validation; SDK enforces folder_id requirement.
 - 2026-01-31: Mail folder_type now accepts string/number responses; inbox resolution also checks a zh-CN inbox name fallback.
+- 2026-01-31: Mail folders now accept `id` in API responses, mail list resolves system folder aliases, and the folder-id hint text is more explicit.
