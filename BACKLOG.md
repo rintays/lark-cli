@@ -342,6 +342,7 @@ Deliverables:
   - `meeting` → `meetings` already done
   - [x] Policy: top-level resource collections use plural canonical names; abbreviations are aliases; keep backward-compatible aliases when renaming. Rationale: consistent help discovery and stable scripts.
   - [x] `calendar` → `calendars` (keep `calendar` as alias)
+  - [x] `base` → `bases` (keep `base` as alias)
   - [x] `msg` → `messages` (keep `msg` as alias)
   - [x] `msg` short help clarified to "Send chat messages"
 - [ ] Align help text and examples.
