@@ -4,7 +4,7 @@
 **Where:** `<workspace>/lark/BACKLOG.md` (single source of truth)  
 **Repo:** `<workspace>/lark`  
 **Branch policy:** default development branch is **`main`** and changes must land on **`origin/main`** (unless Master explicitly requests a branch/PR flow).  
-**Last updated:** 2026-02-01 (Asia/Shanghai)
+**Last updated:** 2026-01-31 (Asia/Shanghai)
 
 ---
 
@@ -146,7 +146,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [ ] Implement keychain backend (actual secure storage; today `keychain` errors with a clear message)
   - [x] Env > config precedence for keyring backend (`LARK_KEYRING_BACKEND` > config `keyring_backend`)
   - [ ] Define whether we need `LARK_KEYRING_PASSWORD` (and/or config knob) for headless secure storage (design TBD)
-  - [ ] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
+  - [x] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
 - [ ] **Multi-profile / multi-account / multi-app isolation**
   - [x] `--profile` / `LARK_PROFILE` selection + default
   - [ ] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials

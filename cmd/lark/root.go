@@ -264,7 +264,8 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	if cachedUserTokenValid(state.Config, time.Now()) {
 		return state.Config.UserAccessToken, nil
 	}
-	if state.Config.RefreshToken == "" {
+	refreshToken := state.Config.UserRefreshToken()
+	if refreshToken == "" {
 		return "", expireUserToken(state, errors.New("refresh token missing"))
 	}
 	if state.Verbose {
@@ -279,7 +280,7 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 		}
 		state.SDK = sdk
 	}
-	token, newRefreshToken, expiresIn, err := sdk.RefreshUserAccessToken(ctx, state.Config.RefreshToken)
+	token, newRefreshToken, expiresIn, err := sdk.RefreshUserAccessToken(ctx, refreshToken)
 	if err != nil {
 		return "", expireUserToken(state, err)
 	}
@@ -287,6 +288,10 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(expiresIn) * time.Second).Unix()
 	if newRefreshToken != "" {
 		state.Config.RefreshToken = newRefreshToken
+		if state.Config.UserRefreshTokenPayload != nil {
+			state.Config.UserRefreshTokenPayload.RefreshToken = newRefreshToken
+			state.Config.UserRefreshTokenPayload.CreatedAt = time.Now().Unix()
+		}
 	}
 	if err := state.saveConfig(); err != nil {
 		return "", err
@@ -298,6 +303,7 @@ func expireUserToken(state *appState, cause error) error {
 	state.Config.UserAccessToken = ""
 	state.Config.UserAccessTokenExpiresAt = 0
 	state.Config.RefreshToken = ""
+	state.Config.UserRefreshTokenPayload = nil
 	saveErr := state.saveConfig()
 
 	reloginCmd, note := userOAuthReloginRecommendation(state)
