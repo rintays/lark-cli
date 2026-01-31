@@ -53,6 +53,22 @@ func TestWithUserScopeHintForCommand_UnchangedWhenNoScopes(t *testing.T) {
 	}
 }
 
+func TestWithUserScopeHintForCommand_MessageSearchScopes(t *testing.T) {
+	state := &appState{Command: "messages search"}
+	err := errors.New("permission denied")
+	got := withUserScopeHintForCommand(state, err)
+	if got == nil {
+		t.Fatalf("expected error")
+	}
+	msg := got.Error()
+	if !strings.Contains(msg, "im:message:get_as_user") {
+		t.Fatalf("expected message get scope, got: %s", msg)
+	}
+	if !strings.Contains(msg, "search:message") {
+		t.Fatalf("expected search scope, got: %s", msg)
+	}
+}
+
 func TestWithUserScopeHintForCommand_SkipsNonPermissionErrors(t *testing.T) {
 	state := &appState{Command: "drive search"}
 	err := errors.New("search drive files failed (code=99991400): request trigger frequency limit")
