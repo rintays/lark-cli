@@ -333,7 +333,7 @@ Deliverables:
   - [x] `msg` short help clarified to "Send chat messages"
 - [ ] Align help text and examples.
   - [x] `users` top-level Short changed to "Manage users"
-  - [x] `mail mailbox get` no longer requires `--mailbox-id` (defaults to config or `me`)
+  - [x] `mail mailbox get` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
 - [x] Fix: `docs` command no longer registers `list` twice.
 
