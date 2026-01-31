@@ -22,6 +22,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newSheetsUpdateCmd(state))
 	cmd.AddCommand(newSheetsAppendCmd(state))
 	cmd.AddCommand(newSheetsInfoCmd(state))
+	cmd.AddCommand(newSheetsDeleteCmd(state))
 	cmd.AddCommand(newSheetsClearCmd(state))
 	cmd.AddCommand(newSheetsColsCmd(state))
 	cmd.AddCommand(newSheetsRowsCmd(state))
@@ -125,6 +126,58 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 			}
 			payload := map[string]any{"metadata": metadata}
 			text := formatSpreadsheetMetadata(metadata)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	return cmd
+}
+
+func newSheetsDeleteCmd(state *appState) *cobra.Command {
+	var spreadsheetID string
+
+	cmd := &cobra.Command{
+		Use:   "delete <spreadsheet-id>",
+		Short: "Delete a spreadsheet",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if spreadsheetID != "" && spreadsheetID != args[0] {
+					return errors.New("spreadsheet-id provided twice")
+				}
+				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spreadsheetID) == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+			if err != nil {
+				return err
+			}
+			result, err := state.SDK.DeleteDriveFile(context.Background(), token, spreadsheetID, "sheet")
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"delete":            result,
+				"spreadsheet_token": spreadsheetID,
+				"type":              "sheet",
+			}
+			text := tableTextRow(
+				[]string{"spreadsheet_token", "type", "task_id"},
+				[]string{spreadsheetID, "sheet", result.TaskID},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

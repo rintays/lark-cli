@@ -28,7 +28,7 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
 - **Docs (docx)**
   - create/info/export/cat
 - **Sheets**
-  - read/update/append/clear/info
+  - read/update/append/clear/info/delete/list/search
 - **Calendar**
   - list/create events
 - **Contacts**
@@ -369,6 +369,12 @@ Info:
 
 ```bash
 lark sheets info <SPREADSHEET_TOKEN>
+```
+
+Delete:
+
+```bash
+lark sheets delete <SPREADSHEET_TOKEN>
 ```
 
 Insert rows:
