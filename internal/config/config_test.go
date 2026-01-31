@@ -103,6 +103,35 @@ func TestLoadUsesEnvFallbackForKeyringBackendWhenMissing(t *testing.T) {
 	}
 }
 
+func TestLoadUsesEnvFallbackForKeyringBackendAutoWhenMissing(t *testing.T) {
+	t.Setenv("LARK_KEYRING_BACKEND", "auto")
+
+	path := filepath.Join(t.TempDir(), "missing.json")
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.KeyringBackend != "auto" {
+		t.Fatalf("expected env keyring backend auto, got %q", cfg.KeyringBackend)
+	}
+}
+
+func TestLoadKeepsKeyringBackendAutoWhenSetInConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	data := []byte(`{"keyring_backend":"auto"}`)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.KeyringBackend != "auto" {
+		t.Fatalf("expected keyring_backend auto, got %q", cfg.KeyringBackend)
+	}
+}
+
 func TestLoadDefaultsKeyringBackendToFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "missing.json")
 	cfg, err := Load(path)

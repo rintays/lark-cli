@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"lark/internal/config"
@@ -27,10 +28,23 @@ func userTokenBackend(cfg *config.Config) string {
 		return "file"
 	}
 	backend := strings.ToLower(strings.TrimSpace(cfg.KeyringBackend))
-	if backend == "" || backend == "auto" {
+	switch backend {
+	case "", "file":
 		return "file"
+	case "keychain":
+		return "keychain"
+	case "auto":
+		// Prefer keychain on platforms where go-keyring is expected to work out of
+		// the box.
+		switch runtime.GOOS {
+		case "darwin", "windows":
+			return "keychain"
+		default:
+			return "file"
+		}
+	default:
+		return backend
 	}
-	return backend
 }
 
 func loadUserToken(state *appState, account string) (userToken, bool, error) {

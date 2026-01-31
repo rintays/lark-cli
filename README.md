@@ -91,6 +91,7 @@ export LARK_APP_SECRET=<APP_SECRET>
 export LARK_PROFILE=<profile>
 
 # Token storage backend: env wins over config.keyring_backend.
+# auto prefers keychain on macOS/Windows; otherwise falls back to file.
 export LARK_KEYRING_BACKEND=file  # or: keychain|auto
 ```
 

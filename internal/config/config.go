@@ -20,8 +20,9 @@ type Config struct {
 	// KeyringBackend controls where OAuth tokens are stored.
 	// Supported values: auto|file|keychain.
 	//
-	// NOTE: only `file` is implemented today; other values are validated but may
-	// error at runtime.
+	// - file: store user OAuth tokens in the config file.
+	// - keychain: store user OAuth tokens in the OS keychain (via go-keyring).
+	// - auto: prefer keychain when supported; otherwise fall back to file.
 	KeyringBackend string `json:"keyring_backend,omitempty"`
 
 	UserScopes                 []string `json:"user_scopes,omitempty"`
@@ -157,10 +158,10 @@ func normalizeDefaults(cfg *Config) {
 	}
 
 	switch strings.ToLower(strings.TrimSpace(cfg.KeyringBackend)) {
-	case "", "auto":
+	case "":
 		// Keep behavior backward-compatible: default to file storage.
 		cfg.KeyringBackend = "file"
-	case "file", "keychain":
+	case "auto", "file", "keychain":
 		cfg.KeyringBackend = strings.ToLower(strings.TrimSpace(cfg.KeyringBackend))
 	default:
 		// Invalid values should not silently change behavior.

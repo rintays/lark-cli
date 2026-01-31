@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"testing"
 
 	"lark/internal/config"
@@ -92,5 +93,16 @@ func TestLegacyKeyringUsername_DoesNotIsolateAcrossApps(t *testing.T) {
 	}
 	if keyringUsername(a, "acct") == keyringUsername(b, "acct") {
 		t.Fatalf("expected different keyring username for different app_id")
+	}
+}
+
+func TestUserTokenBackend_AutoResolvesToExpectedConcreteBackend(t *testing.T) {
+	cfg := &config.Config{KeyringBackend: "auto"}
+	want := "file"
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+		want = "keychain"
+	}
+	if got := userTokenBackend(cfg); got != want {
+		t.Fatalf("expected %q, got %q", want, got)
 	}
 }
