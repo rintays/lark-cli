@@ -90,7 +90,8 @@ func (c *Client) SearchWikiNodesV1(ctx context.Context, userAccessToken string, 
 		return WikiNodeSearchV1Result{}, err
 	}
 	if !resp.Success() {
-		return WikiNodeSearchV1Result{}, fmt.Errorf("wiki node search failed: %s", resp.Msg)
+		baseErr := fmt.Errorf("wiki node search failed: %s", resp.Msg)
+		return WikiNodeSearchV1Result{}, withInsufficientScopeRemediation(baseErr, resp.Msg)
 	}
 
 	result := WikiNodeSearchV1Result{}
