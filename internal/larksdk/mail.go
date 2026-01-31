@@ -179,12 +179,11 @@ func (c *Client) ListMailFolders(ctx context.Context, token, mailboxID string) (
 	if !c.available() || c.coreConfig == nil {
 		return nil, ErrUnavailable
 	}
+	if token == "" {
+		return nil, errors.New("user access token is required")
+	}
 	if mailboxID == "" {
 		return nil, errors.New("mailbox id is required")
-	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
 	}
 
 	req := &larkcore.ApiReq{
@@ -196,7 +195,7 @@ func (c *Client) ListMailFolders(ctx context.Context, token, mailboxID string) (
 	}
 	req.PathParams.Set("mailbox_id", mailboxID)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithUserAccessToken(token))
 	if err != nil {
 		return nil, err
 	}
@@ -265,12 +264,11 @@ func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailb
 	if !c.available() || c.coreConfig == nil {
 		return Mailbox{}, ErrUnavailable
 	}
+	if token == "" {
+		return Mailbox{}, errors.New("user access token is required")
+	}
 	if mailboxID == "" {
 		return Mailbox{}, errors.New("mailbox id is required")
-	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return Mailbox{}, errors.New("tenant access token is required")
 	}
 
 	req := &larkcore.ApiReq{
@@ -282,7 +280,7 @@ func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailb
 	}
 	req.PathParams.Set("user_mailbox_id", mailboxID)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithUserAccessToken(token))
 	if err != nil {
 		return Mailbox{}, err
 	}
@@ -313,15 +311,14 @@ func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMai
 	if !c.available() {
 		return ListMailMessagesResponse{}, ErrUnavailable
 	}
+	if token == "" {
+		return ListMailMessagesResponse{}, errors.New("user access token is required")
+	}
 	if req.MailboxID == "" {
 		return ListMailMessagesResponse{}, errors.New("mailbox id is required")
 	}
 	if req.PageSize <= 0 {
 		return ListMailMessagesResponse{}, errors.New("page size must be greater than 0")
-	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return ListMailMessagesResponse{}, errors.New("tenant access token is required")
 	}
 
 	reqBuilder := larkmail.NewListUserMailboxMessageReqBuilder().
@@ -337,7 +334,7 @@ func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMai
 		reqBuilder.OnlyUnread(true)
 	}
 	listReq := reqBuilder.Build()
-	resp, err := c.sdk.Mail.V1.UserMailboxMessage.List(ctx, listReq, larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Mail.V1.UserMailboxMessage.List(ctx, listReq, larkcore.WithUserAccessToken(token))
 	if err != nil {
 		return ListMailMessagesResponse{}, err
 	}
@@ -378,22 +375,21 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 	if !c.available() {
 		return MailMessage{}, ErrUnavailable
 	}
+	if token == "" {
+		return MailMessage{}, errors.New("user access token is required")
+	}
 	if mailboxID == "" {
 		return MailMessage{}, errors.New("mailbox id is required")
 	}
 	if messageID == "" {
 		return MailMessage{}, errors.New("message id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return MailMessage{}, errors.New("tenant access token is required")
-	}
 
 	req := larkmail.NewGetUserMailboxMessageReqBuilder().
 		UserMailboxId(mailboxID).
 		MessageId(messageID).
 		Build()
-	resp, err := c.sdk.Mail.V1.UserMailboxMessage.Get(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Mail.V1.UserMailboxMessage.Get(ctx, req, larkcore.WithUserAccessToken(token))
 	if err != nil {
 		return MailMessage{}, err
 	}
