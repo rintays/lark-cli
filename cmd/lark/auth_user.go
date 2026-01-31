@@ -51,6 +51,7 @@ func newAuthUserCmd(state *appState) *cobra.Command {
 		Short: "Manage user OAuth credentials",
 	}
 	cmd.AddCommand(newAuthUserLoginCmd(state))
+	cmd.AddCommand(newAuthUserStatusCmd(state))
 	return cmd
 }
 
