@@ -192,6 +192,63 @@ func (c *Client) CreateBaseField(ctx context.Context, token, appToken, tableID, 
 		return BaseField{}, errors.New("field type is required")
 	}
 
+	// SDK-first for the minimal field create use-case. If the typed SDK service is
+	// not available (or if advanced property/description payloads are used), fall
+	// back to a core.ApiReq wrapper.
+	if property == nil && description == nil && c.bitableFieldCreateSDKAvailable() {
+		field, err := c.createBaseFieldSDK(ctx, tenantToken, appToken, tableID, fieldName, fieldType)
+		if err == nil {
+			return field, nil
+		}
+	}
+	return c.createBaseFieldCore(ctx, tenantToken, appToken, tableID, fieldName, fieldType, property, description)
+}
+
+func (c *Client) bitableFieldCreateSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.AppTableField != nil
+}
+
+func (c *Client) createBaseFieldSDK(ctx context.Context, tenantToken, appToken, tableID, fieldName string, fieldType int) (BaseField, error) {
+	field := larkbitable.NewAppTableFieldBuilder().FieldName(fieldName).Type(fieldType).Build()
+	req := larkbitable.NewCreateAppTableFieldReqBuilder().
+		AppToken(appToken).
+		TableId(tableID).
+		AppTableField(field).
+		Build()
+	resp, err := c.sdk.Bitable.V1.AppTableField.Create(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseField{}, err
+	}
+	if resp == nil {
+		return BaseField{}, errors.New("create base field failed: empty response")
+	}
+	if !resp.Success() {
+		return BaseField{}, formatCodeError("create base field failed", resp.CodeError, resp.ApiResp)
+	}
+	if resp.Data == nil || resp.Data.Field == nil {
+		return BaseField{}, nil
+	}
+	return mapBaseFieldFromSDK(resp.Data.Field), nil
+}
+
+func mapBaseFieldFromSDK(field *larkbitable.AppTableField) BaseField {
+	if field == nil {
+		return BaseField{}
+	}
+	result := BaseField{}
+	if field.FieldId != nil {
+		result.FieldID = *field.FieldId
+	}
+	if field.FieldName != nil {
+		result.FieldName = *field.FieldName
+	}
+	if field.Type != nil {
+		result.Type = *field.Type
+	}
+	return result
+}
+
+func (c *Client) createBaseFieldCore(ctx context.Context, tenantToken, appToken, tableID, fieldName string, fieldType int, property, description map[string]any) (BaseField, error) {
 	body := createBaseFieldRequestBody{
 		FieldName:   fieldName,
 		Type:        fieldType,

@@ -48,15 +48,23 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 			if strings.TrimSpace(fieldName) == "" {
 				return errors.New("name is required")
 			}
-			if fieldTypeName != "" {
+			fieldTypeNameSet := cmd.Flags().Changed("field-type")
+			fieldTypeIDSet := cmd.Flags().Changed("type")
+			if fieldTypeNameSet && fieldTypeIDSet {
+				return errors.New("--field-type and --type are mutually exclusive")
+			}
+			if fieldTypeNameSet {
 				v, err := parseBaseFieldType(fieldTypeName)
 				if err != nil {
 					return err
 				}
 				fieldType = v
 			}
-			if fieldType == 0 {
-				return errors.New("field type is required (use --field-type or --type)")
+			if !fieldTypeNameSet && !fieldTypeIDSet {
+				fieldType = 1 // default to text
+			}
+			if fieldType <= 0 {
+				return fmt.Errorf("invalid field type: %d", fieldType)
 			}
 			return nil
 		},
@@ -81,7 +89,7 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"field": field}
-			text := tableTextRow([]string{"field_id", "name", "type"}, []string{field.FieldID, field.FieldName, fmt.Sprintf("%d", field.Type)})
+			text := tableTextRow([]string{"field_id", "field_name", "type"}, []string{field.FieldID, field.FieldName, fmt.Sprintf("%d", field.Type)})
 			return state.Printer.Print(payload, text)
 		},
 	}

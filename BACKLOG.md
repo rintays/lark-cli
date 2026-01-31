@@ -282,6 +282,7 @@ P1:
 - [ ] schema/view management
   - [ ] `base field create/update/delete`
     - [x] `base field create`
+      - Supports `--field-type <name|id>` (default: `text`); output includes `field_id/field_name/type`.
     - [x] `base field delete`
   - [ ] `base view create/update/delete`
 
