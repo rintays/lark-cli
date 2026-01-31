@@ -107,6 +107,12 @@ Clear the default mailbox id:
 lark config unset --default-mailbox-id
 ```
 
+Clear user access tokens:
+
+```bash
+lark config unset --user-tokens
+```
+
 ### 2) Get tenant token
 
 ```bash

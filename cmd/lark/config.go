@@ -103,6 +103,7 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 func newConfigUnsetCmd(state *appState) *cobra.Command {
 	var unsetBaseURL bool
 	var unsetDefaultMailboxID bool
+	var unsetUserTokens bool
 
 	cmd := &cobra.Command{
 		Use:   "unset",
@@ -114,8 +115,9 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 
 			useBaseURL := cmd.Flags().Changed("base-url")
 			useDefaultMailboxID := cmd.Flags().Changed("default-mailbox-id")
-			if !useBaseURL && !useDefaultMailboxID {
-				return errors.New("either --base-url or --default-mailbox-id is required")
+			useUserTokens := cmd.Flags().Changed("user-tokens")
+			if !useBaseURL && !useDefaultMailboxID && !useUserTokens {
+				return errors.New("one of --base-url, --default-mailbox-id, or --user-tokens is required")
 			}
 
 			if useBaseURL {
@@ -134,24 +136,42 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 				return state.Printer.Print(payload, fmt.Sprintf("cleared base_url in %s", state.ConfigPath))
 			}
 
-			if !unsetDefaultMailboxID {
-				return errors.New("--default-mailbox-id must be true")
+			if useDefaultMailboxID {
+				if !unsetDefaultMailboxID {
+					return errors.New("--default-mailbox-id must be true")
+				}
+				state.Config.DefaultMailboxID = ""
+				if err := state.saveConfig(); err != nil {
+					return err
+				}
+				payload := map[string]any{
+					"config_path":        state.ConfigPath,
+					"default_mailbox_id": "",
+				}
+				return state.Printer.Print(payload, fmt.Sprintf("cleared default_mailbox_id in %s", state.ConfigPath))
 			}
-			state.Config.DefaultMailboxID = ""
+
+			if !unsetUserTokens {
+				return errors.New("--user-tokens must be true")
+			}
+			state.Config.UserAccessToken = ""
+			state.Config.RefreshToken = ""
+			state.Config.UserAccessTokenExpiresAt = 0
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
 			payload := map[string]any{
-				"config_path":        state.ConfigPath,
-				"default_mailbox_id": "",
+				"config_path":         state.ConfigPath,
+				"user_tokens_cleared": true,
 			}
-			return state.Printer.Print(payload, fmt.Sprintf("cleared default_mailbox_id in %s", state.ConfigPath))
+			return state.Printer.Print(payload, fmt.Sprintf("cleared user tokens in %s", state.ConfigPath))
 		},
 	}
 	cmd.Flags().BoolVar(&unsetBaseURL, "base-url", false, "clear the persisted base URL")
 	cmd.Flags().BoolVar(&unsetDefaultMailboxID, "default-mailbox-id", false, "clear the persisted default mailbox id")
-	cmd.MarkFlagsMutuallyExclusive("base-url", "default-mailbox-id")
-	cmd.MarkFlagsOneRequired("base-url", "default-mailbox-id")
+	cmd.Flags().BoolVar(&unsetUserTokens, "user-tokens", false, "clear persisted user access tokens")
+	cmd.MarkFlagsMutuallyExclusive("base-url", "default-mailbox-id", "user-tokens")
+	cmd.MarkFlagsOneRequired("base-url", "default-mailbox-id", "user-tokens")
 
 	return cmd
 }

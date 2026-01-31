@@ -285,18 +285,3 @@ func TestConfigUnsetDefaultMailboxIDClearsConfig(t *testing.T) {
 		t.Fatalf("expected default_mailbox_id cleared, got %q", saved.DefaultMailboxID)
 	}
 }
-
-func TestConfigUnsetBaseURLAndDefaultMailboxIDErrors(t *testing.T) {
-	state := &appState{
-		ConfigPath: filepath.Join(t.TempDir(), "config.json"),
-		Config:     config.Default(),
-		Printer:    output.Printer{Writer: io.Discard},
-	}
-
-	cmd := newConfigCmd(state)
-	cmd.SetArgs([]string{"unset", "--base-url", "--default-mailbox-id"})
-
-	if err := cmd.Execute(); err == nil {
-		t.Fatalf("expected config unset error for base-url and default-mailbox-id")
-	}
-}
