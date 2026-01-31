@@ -17,14 +17,23 @@ func SuggestedUserOAuthScopesFromServices(services []string, readonly bool) ([]s
 			return nil, fmt.Errorf("unknown service %q", name)
 		}
 
+		// Prefer the requested variant; fall back to any declared scopes.
 		if readonly {
 			if len(def.UserScopes.Readonly) > 0 {
 				scopes = append(scopes, def.UserScopes.Readonly...)
 				continue
 			}
+			if len(def.UserScopes.Full) > 0 {
+				scopes = append(scopes, def.UserScopes.Full...)
+				continue
+			}
 		} else {
 			if len(def.UserScopes.Full) > 0 {
 				scopes = append(scopes, def.UserScopes.Full...)
+				continue
+			}
+			if len(def.UserScopes.Readonly) > 0 {
+				scopes = append(scopes, def.UserScopes.Readonly...)
 				continue
 			}
 		}
