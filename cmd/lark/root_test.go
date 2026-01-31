@@ -310,8 +310,13 @@ func TestRootCalendarAliasWorks(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "Manage calendar events") {
-		t.Fatalf("unexpected help output: %q", buf.String())
+	if !strings.Contains(buf.String(), "Usage:\n  lark calendars [command]") {
+		t.Fatalf("expected canonical calendars usage in help output, got: %q", buf.String())
+	}
+	// Ensure the canonical command name is used in the usage line.
+	// Note: "lark calendars" contains the substring "lark calendar", so we must match a trailing space.
+	if strings.Contains(buf.String(), "Usage:\n  lark calendar ") {
+		t.Fatalf("unexpected singular calendar usage in help output: %q", buf.String())
 	}
 }
 

@@ -49,6 +49,7 @@ go build -o lark ./cmd/lark
 ./lark users list --help
 ./lark users info --help
 ./lark messages send --help  # alias: msg
+./lark calendars --help  # alias: calendar
 ```
 
 ---

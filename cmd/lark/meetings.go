@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -320,6 +321,10 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("reserve-id", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(reserveID) == "" {
+				return errors.New("reserve-id is required")
 			}
 			return nil
 		},
@@ -371,7 +376,6 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().IntVar(&meetingInitialType, "meeting-initial-type", 0, "meeting initial type")
 	cmd.Flags().BoolVar(&autoRecord, "auto-record", false, "enable auto recording")
 	cmd.Flags().StringVar(&password, "password", "", "meeting password (4-9 digits)")
-	_ = cmd.MarkFlagRequired("reserve-id")
 	return cmd
 }
 
@@ -392,6 +396,10 @@ func newMeetingDeleteCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("reserve-id", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(reserveID) == "" {
+				return errors.New("reserve-id is required")
 			}
 			return nil
 		},
@@ -413,7 +421,6 @@ func newMeetingDeleteCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&reserveID, "reserve-id", "", "reserve ID (or provide as positional argument)")
-	_ = cmd.MarkFlagRequired("reserve-id")
 	return cmd
 }
 
