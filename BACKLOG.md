@@ -275,7 +275,7 @@ P0 deliverables:
 P1:
 - [x] `base table create`
 - [x] `base table delete`
-- [ ] record batch operations
+- [x] record batch operations
   - [x] `base record batch-create`
   - [x] `base record batch-update`
   - [x] `base record batch-delete`
