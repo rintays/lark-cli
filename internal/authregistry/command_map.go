@@ -7,17 +7,18 @@ import "strings"
 //
 // Keys are space-separated command paths. Values are service names.
 var commandServiceMap = map[string][]string{
-	"drive":    {"drive"},
-	"docs":     {"docs"},
-	"sheets":   {"sheets"},
-	"mail":     {"mail"},
-	"wiki":     {"wiki"},
-	"base":     {"base"},
-	"calendar":   {"calendar"},
-	"calendars":  {"calendar"},
-	"chats":    {"im"},
-	"messages": {"im"},
-	"msg":      {"im"},
+	"drive":     {"drive"},
+	"docs":      {"docs"},
+	"sheets":    {"sheets"},
+	"mail":      {"mail"},
+	"wiki":      {"wiki"},
+	"base":      {"base"},
+	"bases":     {"base"},
+	"calendar":  {"calendar"},
+	"calendars": {"calendar"},
+	"chats":     {"im"},
+	"messages":  {"im"},
+	"msg":       {"im"},
 
 	// Internal aliases (not currently exposed as CLI roots).
 	"im": {"im"},

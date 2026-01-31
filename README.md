@@ -384,14 +384,14 @@ Example:
 ```bash
 ./lark auth user login --help
 ./lark mail public-mailboxes list --help
-./lark base table list --help
-./lark base field list --help
-./lark base view list --help
-./lark base record create --help
-./lark base record info --help
-./lark base record search --help
-./lark base record update --help
-./lark base record delete --help
+./lark bases table list --help  # alias: base
+./lark bases field list --help
+./lark bases view list --help
+./lark bases record create --help
+./lark bases record info --help
+./lark bases record search --help
+./lark bases record update --help
+./lark bases record delete --help
 ./lark wiki member list --help
 ./lark wiki member delete --help
 ./lark wiki node search --help
@@ -455,7 +455,7 @@ Items not finished yet (high-level):
 
 - **Mail UX:** use configured default mailbox for mail commands + additional mailbox management commands
 - **Sheets:** row/col insert/delete commands
-- **Base (Bitable):** `base` top-level command tree (records CRUD, tables/fields/views)
+- **Base (Bitable):** `bases` top-level command tree (records CRUD, tables/fields/views) (alias: `base`)
 - **Wiki:** v2 SDK endpoints (v1 node search is available via `wiki node search`)
 - **Integration tests:** `*_integration_test.go` suite gated by `LARK_INTEGRATION=1`
 

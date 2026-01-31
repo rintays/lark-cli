@@ -10,8 +10,9 @@ import (
 
 func newBaseCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "base",
-		Short: "Manage Bitable bases",
+		Use:     "bases",
+		Aliases: []string{"base"},
+		Short:   "Manage Bitable bases",
 	}
 	cmd.AddCommand(newBaseTableCmd(state))
 	cmd.AddCommand(newBaseFieldCmd(state))
