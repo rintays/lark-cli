@@ -99,6 +99,47 @@ func TestConfigGetHumanOutputRedactsTokens(t *testing.T) {
 	}
 }
 
+func TestConfigListKeysJSONOutput(t *testing.T) {
+	var buf bytes.Buffer
+	state := &appState{
+		Config:  config.Default(),
+		Printer: output.Printer{Writer: &buf, JSON: true},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"list-keys"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config list-keys error: %v", err)
+	}
+
+	if !json.Valid(buf.Bytes()) {
+		t.Fatalf("expected valid JSON, got %q", buf.String())
+	}
+
+	var got []configKeyInfo
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal JSON: %v", err)
+	}
+
+	keys := make(map[string]struct{}, len(got))
+	for _, item := range got {
+		keys[item.Key] = struct{}{}
+	}
+
+	for _, key := range []string{
+		"base-url",
+		"platform",
+		"default-mailbox-id",
+		"user-tokens",
+		"app-id",
+		"app-secret",
+	} {
+		if _, ok := keys[key]; !ok {
+			t.Fatalf("expected key %q in output", key)
+		}
+	}
+}
+
 func TestConfigSetBaseURLPersistsConfig(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.json")
 	state := &appState{

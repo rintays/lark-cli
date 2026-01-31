@@ -18,6 +18,7 @@ func newConfigCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newConfigGetCmd(state))
 	cmd.AddCommand(newConfigSetCmd(state))
 	cmd.AddCommand(newConfigUnsetCmd(state))
+	cmd.AddCommand(newConfigListKeysCmd(state))
 	return cmd
 }
 
@@ -288,6 +289,65 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 	cmd.MarkFlagsOneRequired("base-url", "default-mailbox-id", "default-token-type", "user-tokens")
 
 	return cmd
+}
+
+type configKeyInfo struct {
+	Key         string `json:"key"`
+	Description string `json:"description"`
+}
+
+func configKeys() []configKeyInfo {
+	return []configKeyInfo{
+		{
+			Key:         "base-url",
+			Description: "Base URL to persist (config set) or clear (config unset)",
+		},
+		{
+			Key:         "platform",
+			Description: "Platform shortcut to set the base URL (feishu or lark)",
+		},
+		{
+			Key:         "default-mailbox-id",
+			Description: "Default mailbox ID to persist (config set) or clear (config unset)",
+		},
+		{
+			Key:         "user-tokens",
+			Description: "Clear persisted user access/refresh tokens (config unset)",
+		},
+		{
+			Key:         "app-id",
+			Description: "App ID to persist (config set)",
+		},
+		{
+			Key:         "app-secret",
+			Description: "App secret to persist (config set)",
+		},
+	}
+}
+
+func newConfigListKeysCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list-keys",
+		Short: "List supported config keys",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			keys := configKeys()
+			text := formatConfigKeysHuman(keys)
+			return state.Printer.Print(keys, text)
+		},
+	}
+	return cmd
+}
+
+func formatConfigKeysHuman(keys []configKeyInfo) string {
+	lines := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if key.Description == "" {
+			lines = append(lines, key.Key)
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%s - %s", key.Key, key.Description))
+	}
+	return strings.Join(lines, "\n")
 }
 
 func formatConfigHuman(cfg *config.Config) string {
