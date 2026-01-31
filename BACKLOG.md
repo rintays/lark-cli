@@ -519,3 +519,4 @@ Deliverables:
 - 2026-01-31: Marked `lark config list-keys` complete.
 - 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
+- 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
