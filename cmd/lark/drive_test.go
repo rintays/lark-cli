@@ -220,7 +220,7 @@ func TestDriveSearchCommand(t *testing.T) {
 func TestDriveSearchCommandSingleFileType(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/drive/v1/files/search" {
+		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer user-token" {
@@ -231,19 +231,29 @@ func TestDriveSearchCommandSingleFileType(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode payload: %v", err)
 		}
-		fileTypes, ok := payload["file_types"].([]any)
-		if !ok {
-			t.Fatalf("missing file_types: %+v", payload)
+		if payload["search_key"] != "spec" {
+			t.Fatalf("unexpected search_key: %+v", payload)
 		}
-		if len(fileTypes) != 1 || fileTypes[0] != "docx" {
-			t.Fatalf("unexpected file_types: %+v", fileTypes)
+		if payload["count"].(float64) != 1 {
+			t.Fatalf("unexpected count: %+v", payload["count"])
+		}
+		if payload["offset"].(float64) != 0 {
+			t.Fatalf("unexpected offset: %+v", payload["offset"])
+		}
+		docTypes, ok := payload["docs_types"].([]any)
+		if !ok || len(docTypes) != 1 {
+			t.Fatalf("unexpected docs_types: %+v", payload["docs_types"])
+		}
+		if docTypes[0].(string) != "doc" {
+			t.Fatalf("unexpected docs_types: %+v", docTypes)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"files":    []map[string]any{{"token": "f9", "name": "Spec", "type": "docx", "url": "https://example.com/doc"}},
-				"has_more": false,
+				"docs_entities": []map[string]any{{"docs_token": "f9", "docs_type": "doc", "title": "Spec", "open_url": "https://example.com/doc"}},
+				"has_more":      false,
+				"total":         1,
 			},
 		})
 	})
@@ -282,7 +292,7 @@ func TestDriveSearchCommandSingleFileType(t *testing.T) {
 func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "env-token")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/drive/v1/files/search" {
+		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer env-token" {
@@ -293,8 +303,9 @@ func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"files":    []map[string]any{{"token": "f7", "name": "Note", "type": "docx", "url": "https://example.com/doc"}},
-				"has_more": false,
+				"docs_entities": []map[string]any{{"docs_token": "f7", "docs_type": "doc", "title": "Note", "open_url": "https://example.com/doc"}},
+				"has_more":      false,
+				"total":         1,
 			},
 		})
 	})

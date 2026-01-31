@@ -14,7 +14,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestDocsSearchCommandUsesDriveSearchEndpoint(t *testing.T) {
+func TestDocsSearchCommandUsesDocsSearchEndpoint(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -23,7 +23,7 @@ func TestDocsSearchCommandUsesDriveSearchEndpoint(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/drive/v1/files/search" {
+		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		var payload map[string]any
@@ -33,31 +33,35 @@ func TestDocsSearchCommandUsesDriveSearchEndpoint(t *testing.T) {
 		if payload["search_key"] != "spec" {
 			t.Fatalf("unexpected search_key: %+v", payload)
 		}
+		if payload["count"].(float64) != 10 {
+			t.Fatalf("unexpected count: %+v", payload["count"])
+		}
+		if payload["offset"].(float64) != 0 {
+			t.Fatalf("unexpected offset: %+v", payload["offset"])
+		}
+		docTypes, ok := payload["docs_types"].([]any)
+		if !ok || len(docTypes) != 1 {
+			t.Fatalf("unexpected docs_types: %+v", payload["docs_types"])
+		}
+		if docTypes[0].(string) != "doc" {
+			t.Fatalf("unexpected docs_types: %+v", docTypes)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"files": []map[string]any{
+				"docs_entities": []map[string]any{
 					{
-						"token":       "d1",
-						"name":        "Specs",
-						"type":        "docx",
-						"url":         "https://example.com/docx",
-						"created_at":  0,
-						"modified_at": 0,
-					},
-					{
-						"token":       "s1",
-						"name":        "Sheet",
-						"type":        "sheet",
-						"url":         "https://example.com/sheet",
-						"created_at":  0,
-						"modified_at": 0,
+						"docs_token": "d1",
+						"docs_type":  "doc",
+						"title":      "Specs",
+						"owner_id":   "ou_docs",
+						"open_url":   "https://example.com/docx",
 					},
 				},
-				"has_more":   false,
-				"page_token": "",
+				"has_more": false,
+				"total":    1,
 			},
 		})
 	})
@@ -91,8 +95,5 @@ func TestDocsSearchCommandUsesDriveSearchEndpoint(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "d1\tSpecs\tdocx\thttps://example.com/docx") {
 		t.Fatalf("unexpected output: %q", out)
-	}
-	if strings.Contains(out, "s1\tSheet\tsheet") {
-		t.Fatalf("expected sheet file to be filtered out, got: %q", out)
 	}
 }

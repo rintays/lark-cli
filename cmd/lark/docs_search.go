@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-
-	"lark/internal/larksdk"
 )
 
 func newDocsSearchCmd(state *appState) *cobra.Command {
@@ -34,49 +32,9 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			debugf(state, "docs search: query=%q limit=%d pages=%d\n", query, limit, pages)
-
-			files := make([]larksdk.DriveFile, 0, limit)
-			pageToken := ""
-			remaining := limit
-			pageCount := 0
-			for {
-				pageCount++
-				pageSize := remaining
-				if pageSize > maxDrivePageSize {
-					pageSize = maxDrivePageSize
-				}
-				debugf(state, "docs search request: page=%d/%d page_size=%d page_token=%q\n", pageCount, pages, pageSize, pageToken)
-
-				// Thin wrapper over drive search: fetch then filter to docx.
-				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
-					Query:     query,
-					PageSize:  pageSize,
-					PageToken: pageToken,
-				})
-				if err != nil {
-					return withUserScopeHintForCommand(state, err)
-				}
-				debugf(state, "docs search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
-				for _, file := range result.Files {
-					if file.FileType == "docx" {
-						files = append(files, file)
-						if len(files) >= limit {
-							break
-						}
-					}
-				}
-				if len(files) >= limit || !result.HasMore || pageCount >= pages {
-					break
-				}
-				remaining = limit - len(files)
-				pageToken = result.PageToken
-				if pageToken == "" {
-					break
-				}
-			}
-			if len(files) > limit {
-				files = files[:limit]
+			files, err := docsSearchDriveFiles(ctx, state, token, "docs", query, []string{"doc"}, limit, pages)
+			if err != nil {
+				return err
 			}
 			payload := map[string]any{"files": files}
 			lines := make([]string, 0, len(files))

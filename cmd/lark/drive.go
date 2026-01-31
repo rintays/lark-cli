@@ -123,41 +123,49 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			debugf(state, "drive search: query=%q folder=%q types=%v limit=%d pages=%d\n", query, folderID, fileTypes, limit, pages)
-			files := make([]larksdk.DriveFile, 0, limit)
-			pageToken := ""
-			remaining := limit
-			pageCount := 0
-			for {
-				pageCount++
-				pageSize := remaining
-				if pageSize > maxDrivePageSize {
-					pageSize = maxDrivePageSize
-				}
-				debugf(state, "drive search request: page=%d/%d page_size=%d page_token=%q\n", pageCount, pages, pageSize, pageToken)
-				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
-					Query:       query,
-					FolderToken: folderID,
-					FileTypes:   fileTypes,
-					PageSize:    pageSize,
-					PageToken:   pageToken,
-				})
+			var files []larksdk.DriveFile
+			if folderID == "" {
+				files, err = docsSearchDriveFiles(ctx, state, token, "drive", query, fileTypes, limit, pages)
 				if err != nil {
-					return withUserScopeHintForCommand(state, err)
+					return err
 				}
-				debugf(state, "drive search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
-				files = append(files, result.Files...)
-				if len(files) >= limit || !result.HasMore || pageCount >= pages {
-					break
+			} else {
+				debugf(state, "drive search: query=%q folder=%q types=%v limit=%d pages=%d\n", query, folderID, fileTypes, limit, pages)
+				files = make([]larksdk.DriveFile, 0, limit)
+				pageToken := ""
+				remaining := limit
+				pageCount := 0
+				for {
+					pageCount++
+					pageSize := remaining
+					if pageSize > maxDrivePageSize {
+						pageSize = maxDrivePageSize
+					}
+					debugf(state, "drive search request: page=%d/%d page_size=%d page_token=%q\n", pageCount, pages, pageSize, pageToken)
+					result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
+						Query:       query,
+						FolderToken: folderID,
+						FileTypes:   fileTypes,
+						PageSize:    pageSize,
+						PageToken:   pageToken,
+					})
+					if err != nil {
+						return withUserScopeHintForCommand(state, err)
+					}
+					debugf(state, "drive search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
+					files = append(files, result.Files...)
+					if len(files) >= limit || !result.HasMore || pageCount >= pages {
+						break
+					}
+					remaining = limit - len(files)
+					pageToken = result.PageToken
+					if pageToken == "" {
+						break
+					}
 				}
-				remaining = limit - len(files)
-				pageToken = result.PageToken
-				if pageToken == "" {
-					break
+				if len(files) > limit {
+					files = files[:limit]
 				}
-			}
-			if len(files) > limit {
-				files = files[:limit]
 			}
 			payload := map[string]any{"files": files}
 			lines := make([]string, 0, len(files))
