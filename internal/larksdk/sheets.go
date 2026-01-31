@@ -86,6 +86,15 @@ func (r *deleteSheetRowsResponse) Success() bool {
 	return r.Code == 0
 }
 
+type deleteSheetColsResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+}
+
+func (r *deleteSheetColsResponse) Success() bool {
+	return r.Code == 0
+}
+
 func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (SheetValueRange, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetValueRange{}, ErrUnavailable
@@ -404,6 +413,63 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	}
 	if !resp.Success() {
 		return SheetDimensionDeleteResult{}, fmt.Errorf("delete sheet rows failed: %s", resp.Msg)
+	}
+	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
+}
+
+func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionDeleteResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return SheetDimensionDeleteResult{}, ErrUnavailable
+	}
+	if spreadsheetToken == "" {
+		return SheetDimensionDeleteResult{}, errors.New("spreadsheet token is required")
+	}
+	if sheetID == "" {
+		return SheetDimensionDeleteResult{}, errors.New("sheet id is required")
+	}
+	if startIndex < 0 {
+		return SheetDimensionDeleteResult{}, errors.New("start index must be >= 0")
+	}
+	if count <= 0 {
+		return SheetDimensionDeleteResult{}, errors.New("count must be greater than 0")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return SheetDimensionDeleteResult{}, errors.New("tenant access token is required")
+	}
+	endIndex := startIndex + count
+
+	req := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/delete_dimension",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		Body:                      map[string]any{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
+	req.PathParams.Set("sheet_id", sheetID)
+	req.Body = map[string]any{
+		"dimension_range": map[string]any{
+			"major_dimension": "COLS",
+			"start_index":     startIndex,
+			"end_index":       endIndex,
+		},
+	}
+
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return SheetDimensionDeleteResult{}, err
+	}
+	if apiResp == nil {
+		return SheetDimensionDeleteResult{}, errors.New("delete sheet cols failed: empty response")
+	}
+	resp := &deleteSheetColsResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return SheetDimensionDeleteResult{}, err
+	}
+	if !resp.Success() {
+		return SheetDimensionDeleteResult{}, fmt.Errorf("delete sheet cols failed: %s", resp.Msg)
 	}
 	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
 }

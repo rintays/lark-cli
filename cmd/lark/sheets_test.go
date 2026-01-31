@@ -498,6 +498,118 @@ func TestSheetsColsInsertRequiresSheetID(t *testing.T) {
 	}
 }
 
+func TestSheetsColsDeleteCommandWithSDK(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/sheet/delete_dimension" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		dimensionRange, ok := payload["dimension_range"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing dimension_range")
+		}
+		if dimensionRange["major_dimension"] != "COLS" {
+			t.Fatalf("unexpected major_dimension: %#v", dimensionRange["major_dimension"])
+		}
+		if startIndex, ok := dimensionRange["start_index"].(float64); !ok || int(startIndex) != 3 {
+			t.Fatalf("unexpected start_index: %#v", dimensionRange["start_index"])
+		}
+		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 5 {
+			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"cols",
+		"delete",
+		"--spreadsheet-id", "spreadsheet",
+		"--sheet-id", "sheet",
+		"--start-index", "3",
+		"--count", "2",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets cols delete error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "ok: deleted cols") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestSheetsColsDeleteRequiresSheetID(t *testing.T) {
+	requests := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"cols",
+		"delete",
+		"--spreadsheet-id", "spreadsheet",
+		"--start-index", "3",
+		"--count", "2",
+	})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected error for missing sheet-id")
+	}
+	if requests != 0 {
+		t.Fatalf("expected no HTTP requests, got %d", requests)
+	}
+}
+
 func TestSheetsRowsInsertCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

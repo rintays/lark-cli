@@ -14,6 +14,7 @@ func newSheetsColsCmd(state *appState) *cobra.Command {
 		Short: "Column operations",
 	}
 	cmd.AddCommand(newSheetsColsInsertCmd(state))
+	cmd.AddCommand(newSheetsColsDeleteCmd(state))
 	return cmd
 }
 
@@ -54,6 +55,50 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id")
 	cmd.Flags().IntVar(&startIndex, "start-index", 0, "start column index (0-based)")
 	cmd.Flags().IntVar(&count, "count", 0, "number of columns to insert")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("sheet-id")
+	_ = cmd.MarkFlagRequired("start-index")
+	_ = cmd.MarkFlagRequired("count")
+	return cmd
+}
+
+func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
+	var spreadsheetID string
+	var sheetID string
+	var startIndex int
+	var count int
+
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete columns from a sheet",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if startIndex < 0 {
+				return errors.New("start-index must be >= 0")
+			}
+			if count <= 0 {
+				return errors.New("count must be greater than 0")
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			result, err := state.SDK.DeleteSheetCols(context.Background(), token, spreadsheetID, sheetID, startIndex, count)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"delete": result}
+			text := fmt.Sprintf("ok: deleted cols start=%d count=%d", result.StartIndex, result.Count)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id")
+	cmd.Flags().IntVar(&startIndex, "start-index", 0, "start column index (0-based)")
+	cmd.Flags().IntVar(&count, "count", 0, "number of columns to delete")
 	_ = cmd.MarkFlagRequired("spreadsheet-id")
 	_ = cmd.MarkFlagRequired("sheet-id")
 	_ = cmd.MarkFlagRequired("start-index")
