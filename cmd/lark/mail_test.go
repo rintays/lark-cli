@@ -461,8 +461,13 @@ func TestMailListCommandWithSDK(t *testing.T) {
 				"msg":  "ok",
 				"data": map[string]any{
 					"message": map[string]any{
-						"message_id": "msg_1",
-						"subject":    "Hello",
+						"message_id":    "msg_1",
+						"subject":       "Hello",
+						"internal_date": "2026-01-30T12:00:00Z",
+						"from": map[string]any{
+							"mail_address": "alice@example.com",
+							"name":         "Alice",
+						},
 					},
 				},
 			})
@@ -474,8 +479,13 @@ func TestMailListCommandWithSDK(t *testing.T) {
 				"msg":  "ok",
 				"data": map[string]any{
 					"message": map[string]any{
-						"message_id": "msg_2",
-						"subject":    "World",
+						"message_id":    "msg_2",
+						"subject":       "World",
+						"internal_date": "2026-01-30T13:00:00Z",
+						"from": map[string]any{
+							"mail_address": "bob@example.com",
+							"name":         "Bob",
+						},
 					},
 				},
 			})
@@ -517,10 +527,10 @@ func TestMailListCommandWithSDK(t *testing.T) {
 		t.Fatalf("mail list error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "msg_1\tHello") {
+	if !strings.Contains(buf.String(), "msg_1\tHello\tAlice <alice@example.com>\t2026-01-30T12:00:00Z") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
-	if !strings.Contains(buf.String(), "msg_2\tWorld") {
+	if !strings.Contains(buf.String(), "msg_2\tWorld\tBob <bob@example.com>\t2026-01-30T13:00:00Z") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 	if listCalls != 1 {
@@ -585,8 +595,13 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 				"msg":  "ok",
 				"data": map[string]any{
 					"message": map[string]any{
-						"message_id": "msg_1",
-						"subject":    "Hello",
+						"message_id":    "msg_1",
+						"subject":       "Hello",
+						"internal_date": "2026-01-30T12:00:00Z",
+						"from": map[string]any{
+							"mail_address": "alice@example.com",
+							"name":         "Alice",
+						},
 					},
 				},
 			})
@@ -622,7 +637,7 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 		t.Fatalf("mail list error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "msg_1\tHello") {
+	if !strings.Contains(buf.String(), "msg_1\tHello\tAlice <alice@example.com>\t2026-01-30T12:00:00Z") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 	if listCalls != 1 {
@@ -690,8 +705,13 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 				"msg":  "ok",
 				"data": map[string]any{
 					"message": map[string]any{
-						"message_id": "msg_1",
-						"subject":    "Hello",
+						"message_id":    "msg_1",
+						"subject":       "Hello",
+						"internal_date": "2026-01-30T12:00:00Z",
+						"from": map[string]any{
+							"mail_address": "alice@example.com",
+							"name":         "Alice",
+						},
 					},
 				},
 			})
@@ -726,7 +746,7 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 		t.Fatalf("mail list error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "msg_1\tHello") {
+	if !strings.Contains(buf.String(), "msg_1\tHello\tAlice <alice@example.com>\t2026-01-30T12:00:00Z") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 	if listCalls != 1 {

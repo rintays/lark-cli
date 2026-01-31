@@ -302,9 +302,9 @@ func newMailListCmd(state *appState) *cobra.Command {
 			payload := map[string]any{"messages": messages}
 			lines := make([]string, 0, len(messages))
 			for _, message := range messages {
-				lines = append(lines, formatMailMessageLine(message.MessageID, message.Subject))
+				lines = append(lines, formatMailMessageListLine(message))
 			}
-			text := tableText([]string{"message_id", "subject"}, lines, "no messages found")
+			text := tableText([]string{"message_id", "subject", "from", "internal_date"}, lines, "no messages found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -549,12 +549,32 @@ func formatMailMessageInfo(message larksdk.MailMessage) string {
 	return formatInfoTable(rows, "no message found")
 }
 
-func formatMailMessageLine(messageID, subject string) string {
-	subject = strings.TrimSpace(subject)
+func formatMailMessageListLine(message larksdk.MailMessage) string {
+	subject := strings.TrimSpace(message.Subject)
 	if subject == "" {
 		subject = "(no subject)"
 	}
-	return fmt.Sprintf("%s\t%s", messageID, subject)
+	from := formatMailAddressLine(message.From)
+	if from == "" {
+		from = "-"
+	}
+	internalDate := strings.TrimSpace(message.InternalDate)
+	if internalDate == "" {
+		internalDate = "-"
+	}
+	return strings.Join([]string{message.MessageID, subject, from, internalDate}, "\t")
+}
+
+func formatMailAddressLine(addr larksdk.MailAddress) string {
+	name := strings.TrimSpace(addr.Name)
+	mail := strings.TrimSpace(addr.MailAddress)
+	if name != "" && mail != "" {
+		return fmt.Sprintf("%s <%s>", name, mail)
+	}
+	if name != "" {
+		return name
+	}
+	return mail
 }
 
 func formatMailMailboxLine(mailbox larksdk.Mailbox) string {
