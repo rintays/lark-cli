@@ -13,7 +13,7 @@ func newAuthPlatformCmd(state *appState) *cobra.Command {
 		Short: "Manage the default platform base URL",
 	}
 	cmd.AddCommand(newAuthPlatformSetCmd(state))
-	cmd.AddCommand(newAuthPlatformGetCmd(state))
+	cmd.AddCommand(newAuthPlatformInfoCmd(state))
 	return cmd
 }
 
@@ -45,9 +45,9 @@ func newAuthPlatformSetCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newAuthPlatformGetCmd(state *appState) *cobra.Command {
+func newAuthPlatformInfoCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "info",
 		Short: "Show configured platform and base URL",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			baseURL := state.baseURLPersist

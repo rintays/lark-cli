@@ -20,7 +20,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newSheetsReadCmd(state))
 	cmd.AddCommand(newSheetsUpdateCmd(state))
 	cmd.AddCommand(newSheetsAppendCmd(state))
-	cmd.AddCommand(newSheetsMetadataCmd(state))
+	cmd.AddCommand(newSheetsInfoCmd(state))
 	cmd.AddCommand(newSheetsClearCmd(state))
 	cmd.AddCommand(newSheetsColsCmd(state))
 	cmd.AddCommand(newSheetsRowsCmd(state))
@@ -61,12 +61,12 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newSheetsMetadataCmd(state *appState) *cobra.Command {
+func newSheetsInfoCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 
 	cmd := &cobra.Command{
-		Use:   "metadata",
-		Short: "Get spreadsheet metadata",
+		Use:   "info",
+		Short: "Show spreadsheet info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {

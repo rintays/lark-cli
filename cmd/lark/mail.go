@@ -27,7 +27,7 @@ func newMailCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newMailMailboxesCmd(state))
 	cmd.AddCommand(newMailFoldersCmd(state))
 	cmd.AddCommand(newMailListCmd(state))
-	cmd.AddCommand(newMailGetCmd(state))
+	cmd.AddCommand(newMailInfoCmd(state))
 	cmd.AddCommand(newMailSendCmd(state))
 	return cmd
 }
@@ -37,17 +37,17 @@ func newMailMailboxCmd(state *appState) *cobra.Command {
 		Use:   "mailbox",
 		Short: "Manage a mailbox",
 	}
-	cmd.AddCommand(newMailMailboxGetCmd(state))
+	cmd.AddCommand(newMailMailboxInfoCmd(state))
 	cmd.AddCommand(newMailMailboxSetCmd(state))
 	return cmd
 }
 
-func newMailMailboxGetCmd(state *appState) *cobra.Command {
+func newMailMailboxInfoCmd(state *appState) *cobra.Command {
 	var mailboxID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get mailbox details",
+		Use:   "info",
+		Short: "Show mailbox details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -312,13 +312,13 @@ func newMailListCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newMailGetCmd(state *appState) *cobra.Command {
+func newMailInfoCmd(state *appState) *cobra.Command {
 	var mailboxID string
 	var messageID string
 
 	cmd := &cobra.Command{
-		Use:   "get <message-id>",
-		Short: "Get a mail message",
+		Use:   "info <message-id>",
+		Short: "Show a mail message",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err

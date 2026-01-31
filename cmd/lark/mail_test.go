@@ -310,7 +310,7 @@ func TestMailMailboxesListAliasCommandWithSDK(t *testing.T) {
 	}
 }
 
-func TestMailMailboxGetCommandWithSDK(t *testing.T) {
+func TestMailMailboxInfoCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
@@ -357,9 +357,9 @@ func TestMailMailboxGetCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"mailbox", "get", "--mailbox-id", "mbx_1"})
+	cmd.SetArgs([]string{"mailbox", "info", "--mailbox-id", "mbx_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("mail mailbox get error: %v", err)
+		t.Fatalf("mail mailbox info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "mbx_1\tPrimary\tdev@example.com") {
@@ -764,7 +764,7 @@ func TestMailListCommandLimitMustBePositiveDoesNotCallHTTP(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
-func TestMailGetCommandWithSDK(t *testing.T) {
+func TestMailInfoCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
@@ -810,9 +810,9 @@ func TestMailGetCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"get", "msg_1", "--mailbox-id", "mbx_1"})
+	cmd.SetArgs([]string{"info", "msg_1", "--mailbox-id", "mbx_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("mail get error: %v", err)
+		t.Fatalf("mail info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "msg_1\tHello") {
@@ -820,7 +820,7 @@ func TestMailGetCommandWithSDK(t *testing.T) {
 	}
 }
 
-func TestMailGetCommandUsesDefaultMailboxID(t *testing.T) {
+func TestMailInfoCommandUsesDefaultMailboxID(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
@@ -866,9 +866,9 @@ func TestMailGetCommandUsesDefaultMailboxID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"get", "msg_1"})
+	cmd.SetArgs([]string{"info", "msg_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("mail get error: %v", err)
+		t.Fatalf("mail info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "msg_1\tHello") {
@@ -876,7 +876,7 @@ func TestMailGetCommandUsesDefaultMailboxID(t *testing.T) {
 	}
 }
 
-func TestMailGetCommandDefaultsToMeMailboxID(t *testing.T) {
+func TestMailInfoCommandDefaultsToMeMailboxID(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
@@ -921,18 +921,18 @@ func TestMailGetCommandDefaultsToMeMailboxID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"get", "msg_1"})
+	cmd.SetArgs([]string{"info", "msg_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("mail get error: %v", err)
+		t.Fatalf("mail info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "msg_1\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
-func TestMailGetCommandRequiresMessageID(t *testing.T) {
+func TestMailInfoCommandRequiresMessageID(t *testing.T) {
 	cmd := newMailCmd(&appState{})
-	cmd.SetArgs([]string{"get", "--mailbox-id", "mbx_1"})
+	cmd.SetArgs([]string{"info", "--mailbox-id", "mbx_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -942,7 +942,7 @@ func TestMailGetCommandRequiresMessageID(t *testing.T) {
 	}
 }
 
-func TestMailGetCommandMissingMessageIDDoesNotCallHTTP(t *testing.T) {
+func TestMailInfoCommandMissingMessageIDDoesNotCallHTTP(t *testing.T) {
 	var calls int
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
@@ -966,7 +966,7 @@ func TestMailGetCommandMissingMessageIDDoesNotCallHTTP(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"get", "--mailbox-id", "mbx_1"})
+	cmd.SetArgs([]string{"info", "--mailbox-id", "mbx_1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -999,7 +999,7 @@ func TestMailListCommandRequiresSDK(t *testing.T) {
 	}
 }
 
-func TestMailGetCommandRequiresSDK(t *testing.T) {
+func TestMailInfoCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
@@ -1012,7 +1012,7 @@ func TestMailGetCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"get", "msg_1", "--mailbox-id", "mbx_1"})
+	cmd.SetArgs([]string{"info", "msg_1", "--mailbox-id", "mbx_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")

@@ -14,7 +14,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestBaseRecordGetCommandWithSDK(t *testing.T) {
+func TestBaseRecordInfoCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
@@ -59,9 +59,9 @@ func TestBaseRecordGetCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "get", "--app-token", "app_1", "--table-id", "tbl_1", "--record-id", "rec_1"})
+	cmd.SetArgs([]string{"record", "info", "--app-token", "app_1", "--table-id", "tbl_1", "--record-id", "rec_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("base record get error: %v", err)
+		t.Fatalf("base record info error: %v", err)
 	}
 	if !strings.Contains(buf.String(), "rec_1") {
 		t.Fatalf("unexpected output: %q", buf.String())

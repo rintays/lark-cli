@@ -19,57 +19,13 @@ func TestWikiTaskCommandsRegistered(t *testing.T) {
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"wiki", "task", "get", "--help"})
+	cmd.SetArgs([]string{"wiki", "task", "info", "--help"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help failed: %v", err)
 	}
 }
 
-func TestWikiTaskListAliasRegistered(t *testing.T) {
-	cmd := newRootCmd()
-	var buf bytes.Buffer
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"wiki", "task", "list", "--help"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("help failed: %v", err)
-	}
-}
-
-func TestWikiTaskListAliasRequiresTaskID(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Fatalf("unexpected HTTP call")
-	})
-	httpClient, baseURL := testutil.NewTestClient(handler)
-
-	state := &appState{
-		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
-			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-		},
-		Printer: output.Printer{Writer: &bytes.Buffer{}},
-	}
-	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
-	if err != nil {
-		t.Fatalf("sdk client error: %v", err)
-	}
-	state.SDK = sdkClient
-
-	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"task", "list"})
-	err = cmd.Execute()
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if err.Error() != "required flag(s) \"task-id\" not set" {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestWikiTaskGetCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
+func TestWikiTaskInfoCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -131,9 +87,9 @@ func TestWikiTaskGetCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"task", "get", "--task-id", "t1"})
+	cmd.SetArgs([]string{"task", "info", "--task-id", "t1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("wiki task get error: %v", err)
+		t.Fatalf("wiki task info error: %v", err)
 	}
 
 	var payload map[string]any

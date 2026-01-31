@@ -23,7 +23,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newDriveListCmd(state))
 	cmd.AddCommand(newDriveSearchCmd(state))
-	cmd.AddCommand(newDriveGetCmd(state))
+	cmd.AddCommand(newDriveInfoCmd(state))
 	cmd.AddCommand(newDriveExportCmd(state))
 	cmd.AddCommand(newDriveDownloadCmd(state))
 	cmd.AddCommand(newDriveUploadCmd(state))
@@ -157,12 +157,12 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newDriveGetCmd(state *appState) *cobra.Command {
+func newDriveInfoCmd(state *appState) *cobra.Command {
 	var fileToken string
 
 	cmd := &cobra.Command{
-		Use:   "get <file-token>",
-		Short: "Get Drive file metadata",
+		Use:   "info <file-token>",
+		Short: "Show Drive file info",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err

@@ -57,7 +57,7 @@ func newBaseRecordCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newBaseRecordCreateCmd(state))
 	cmd.AddCommand(newBaseRecordSearchCmd(state))
-	cmd.AddCommand(newBaseRecordGetCmd(state))
+	cmd.AddCommand(newBaseRecordInfoCmd(state))
 	cmd.AddCommand(newBaseRecordUpdateCmd(state))
 	cmd.AddCommand(newBaseRecordDeleteCmd(state))
 	return cmd
@@ -180,14 +180,14 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newBaseRecordGetCmd(state *appState) *cobra.Command {
+func newBaseRecordInfoCmd(state *appState) *cobra.Command {
 	var appToken string
 	var tableID string
 	var recordID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a Bitable record",
+		Use:   "info",
+		Short: "Show a Bitable record",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")

@@ -507,7 +507,7 @@ func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 	}
 }
 
-func TestDriveGetCommandWithSDK(t *testing.T) {
+func TestDriveInfoCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/open-apis/drive/v1/files/f1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -544,9 +544,9 @@ func TestDriveGetCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"get", "f1"})
+	cmd.SetArgs([]string{"info", "f1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("drive get error: %v", err)
+		t.Fatalf("drive info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "f1\tDoc\tdocx\thttps://example.com/doc") {
@@ -554,7 +554,7 @@ func TestDriveGetCommandWithSDK(t *testing.T) {
 	}
 }
 
-func TestDriveGetMissingFileTokenDoesNotCallHTTP(t *testing.T) {
+func TestDriveInfoMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 	})
@@ -574,7 +574,7 @@ func TestDriveGetMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"get"})
+	cmd.SetArgs([]string{"info"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")

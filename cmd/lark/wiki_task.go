@@ -16,18 +16,17 @@ func newWikiTaskCmd(state *appState) *cobra.Command {
 		Use:   "task",
 		Short: "Query Wiki task results",
 	}
-	cmd.AddCommand(newWikiTaskGetCmd(state))
+	cmd.AddCommand(newWikiTaskInfoCmd(state))
 	return cmd
 }
 
-func newWikiTaskGetCmd(state *appState) *cobra.Command {
+func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 	var taskID string
 	var taskType string
 
 	cmd := &cobra.Command{
-		Use:     "get",
-		Aliases: []string{"list"},
-		Short:   "Get Wiki task results (v2)",
+		Use:   "info",
+		Short: "Show Wiki task results (v2)",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {

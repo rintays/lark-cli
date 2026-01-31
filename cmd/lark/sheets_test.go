@@ -240,7 +240,7 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 	}
 }
 
-func TestSheetsMetadataCommand(t *testing.T) {
+func TestSheetsInfoCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -284,9 +284,9 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"metadata", "--spreadsheet-id", "spreadsheet"})
+	cmd.SetArgs([]string{"info", "--spreadsheet-id", "spreadsheet"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("sheets metadata error: %v", err)
+		t.Fatalf("sheets info error: %v", err)
 	}
 
 	output := buf.String()
@@ -295,7 +295,7 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	}
 }
 
-func TestSheetsMetadataCommandRequiresSpreadsheetID(t *testing.T) {
+func TestSheetsInfoCommandRequiresSpreadsheetID(t *testing.T) {
 	requests := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
@@ -320,7 +320,7 @@ func TestSheetsMetadataCommandRequiresSpreadsheetID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"metadata"})
+	cmd.SetArgs([]string{"info"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatalf("expected error for missing spreadsheet-id")
 	}

@@ -25,7 +25,7 @@ func newDocsCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newDocsListCmd(state))
 	cmd.AddCommand(newDocsCreateCmd(state))
-	cmd.AddCommand(newDocsGetCmd(state))
+	cmd.AddCommand(newDocsInfoCmd(state))
 	cmd.AddCommand(newDocsExportCmd(state))
 	cmd.AddCommand(newDocsCatCmd(state))
 	cmd.AddCommand(newDocsSearchCmd(state))
@@ -66,12 +66,12 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newDocsGetCmd(state *appState) *cobra.Command {
+func newDocsInfoCmd(state *appState) *cobra.Command {
 	var documentID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get Docs (docx) document metadata",
+		Use:   "info",
+		Short: "Show Docs (docx) document info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")

@@ -11,13 +11,13 @@ import (
 	"lark/internal/larksdk"
 )
 
-func newWikiNodeGetCmd(state *appState) *cobra.Command {
+func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 	var nodeToken string
 	var objType string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a Wiki node (v2)",
+		Use:   "info",
+		Short: "Show a Wiki node (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
