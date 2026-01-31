@@ -451,20 +451,15 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "share <file-token>",
 		Short: "Update Drive file sharing permissions",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				return cobra.MaximumNArgs(1)(cmd, args)
+		Args:  cobra.MaximumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return nil
 			}
-			if len(args) > 0 {
-				if fileToken != "" && fileToken != args[0] {
-					return errors.New("file-token provided twice")
-				}
-				fileToken = args[0]
+			if fileToken != "" && fileToken != args[0] {
+				return errors.New("file-token provided twice")
 			}
-			if fileToken == "" {
-				return errors.New("file-token is required")
-			}
-			return nil
+			return cmd.Flags().Set("file-token", args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -508,6 +503,7 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&shareEntity, "share-entity", "", "share permission scope (for example: tenant_editable)")
 	cmd.Flags().StringVar(&securityEntity, "security-entity", "", "security permission scope (for example: tenant_editable)")
 	cmd.Flags().StringVar(&commentEntity, "comment-entity", "", "comment permission scope (for example: tenant_editable)")
+	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("type")
 	cmd.MarkFlagsOneRequired("link-share", "external-access", "invite-external", "share-entity", "security-entity", "comment-entity")
 	return cmd

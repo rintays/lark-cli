@@ -354,6 +354,7 @@ Additional consistency work:
   - [x] `calendar list/create` now reject positional args (Args=cobra.NoArgs) + test
   - [x] `drive get` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.

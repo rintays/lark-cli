@@ -706,6 +706,39 @@ func TestDriveShareCommand(t *testing.T) {
 	}
 }
 
+func TestDriveShareMissingFileTokenDoesNotCallHTTP(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"share", "--type", "docx", "--link-share", "tenant_readable"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"file-token\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDriveUploadCommand(t *testing.T) {
 	tmpFile, err := os.CreateTemp("", "lark-upload-*.txt")
 	if err != nil {
