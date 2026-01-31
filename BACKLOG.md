@@ -281,6 +281,7 @@ P1:
   - [x] `base record batch-delete`
 - [ ] schema/view management
   - [ ] `base field create/update/delete`
+    - [x] `base field create`
   - [ ] `base view create/update/delete`
 
 P2:
