@@ -80,12 +80,18 @@ lark auth platform set feishu|lark
 lark auth platform info
 ```
 
-Or set env vars (used only when config is empty; config wins):
+Or set env vars:
 
 ```bash
+# App credentials: used only when config is empty (config wins).
 export LARK_APP_ID=<APP_ID>
 export LARK_APP_SECRET=<APP_SECRET>
-export LARK_PROFILE=<profile>  # optional profile selection
+
+# Optional profile selection.
+export LARK_PROFILE=<profile>
+
+# Token storage backend: env wins over config.keyring_backend.
+export LARK_KEYRING_BACKEND=file  # or: keychain|auto
 ```
 
 View the currently loaded config:
