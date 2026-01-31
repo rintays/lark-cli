@@ -14,6 +14,7 @@ import (
 func newDocsSearchCmd(state *appState) *cobra.Command {
 	var query string
 	var limit int
+	var pages int
 
 	cmd := &cobra.Command{
 		Use:   "search",
@@ -21,6 +22,9 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
+			}
+			if pages <= 0 {
+				return errors.New("pages must be greater than 0")
 			}
 			ctx := context.Background()
 			token, err := resolveDriveSearchToken(ctx, state)
@@ -30,17 +34,19 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			debugf(state, "docs search: query=%q limit=%d\n", query, limit)
+			debugf(state, "docs search: query=%q limit=%d pages=%d\n", query, limit, pages)
 
 			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
 			remaining := limit
+			pageCount := 0
 			for {
+				pageCount++
 				pageSize := remaining
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
-				debugf(state, "docs search request: page_size=%d page_token=%q\n", pageSize, pageToken)
+				debugf(state, "docs search request: page=%d/%d page_size=%d page_token=%q\n", pageCount, pages, pageSize, pageToken)
 
 				// Thin wrapper over drive search: fetch then filter to docx.
 				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
@@ -60,7 +66,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 						}
 					}
 				}
-				if len(files) >= limit || !result.HasMore {
+				if len(files) >= limit || !result.HasMore || pageCount >= pages {
 					break
 				}
 				remaining = limit - len(files)
@@ -87,6 +93,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&query, "query", "", "search text")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
+	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	_ = cmd.MarkFlagRequired("query")
 
 	return cmd

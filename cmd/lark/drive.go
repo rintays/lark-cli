@@ -103,6 +103,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	var folderID string
 	var fileTypes []string
 	var limit int
+	var pages int
 
 	cmd := &cobra.Command{
 		Use:   "search",
@@ -110,6 +111,9 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
+			}
+			if pages <= 0 {
+				return errors.New("pages must be greater than 0")
 			}
 			ctx := context.Background()
 			token, err := resolveDriveSearchToken(ctx, state)
@@ -119,16 +123,18 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			debugf(state, "drive search: query=%q folder=%q types=%v limit=%d\n", query, folderID, fileTypes, limit)
+			debugf(state, "drive search: query=%q folder=%q types=%v limit=%d pages=%d\n", query, folderID, fileTypes, limit, pages)
 			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
 			remaining := limit
+			pageCount := 0
 			for {
+				pageCount++
 				pageSize := remaining
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
-				debugf(state, "drive search request: page_size=%d page_token=%q\n", pageSize, pageToken)
+				debugf(state, "drive search request: page=%d/%d page_size=%d page_token=%q\n", pageCount, pages, pageSize, pageToken)
 				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
 					Query:       query,
 					FolderToken: folderID,
@@ -141,7 +147,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 				}
 				debugf(state, "drive search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
 				files = append(files, result.Files...)
-				if len(files) >= limit || !result.HasMore {
+				if len(files) >= limit || !result.HasMore || pageCount >= pages {
 					break
 				}
 				remaining = limit - len(files)
@@ -170,6 +176,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope search")
 	cmd.Flags().StringArrayVar(&fileTypes, "type", nil, "filter by file type (docx|sheet|bitable|file|doc); repeatable")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
+	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	_ = cmd.MarkFlagRequired("query")
 	return cmd
 }

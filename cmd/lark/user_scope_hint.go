@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 var scopeBracketPattern = regexp.MustCompile(`\[(.*?)\]`)
+var errorCodePattern = regexp.MustCompile(`code=(\d+)`)
 
 func withUserScopeHint(err error) error {
 	return withUserScopeHintForCommand(nil, err)
@@ -20,14 +22,15 @@ func withUserScopeHintForCommand(state *appState, err error) error {
 	if strings.Contains(msg, "Re-authorize with:") {
 		return err
 	}
+	if !shouldSuggestScopes(msg) {
+		return err
+	}
 
 	scopes := extractScopesFromErrorMessage(msg)
-	derivation := ""
 	if len(scopes) == 0 && state != nil {
 		_, inferred, _, ok, inferErr := userOAuthScopesForCommand(state.Command)
 		if inferErr == nil && ok {
 			scopes = inferred
-			derivation = fmt.Sprintf(" (based on command %q)", strings.TrimSpace(state.Command))
 		}
 	}
 	if len(scopes) == 0 {
@@ -36,7 +39,7 @@ func withUserScopeHintForCommand(state *appState, err error) error {
 
 	scopes = ensureOfflineAccess(selectPreferredScopes(scopes))
 	scopeArg := strings.Join(scopes, " ")
-	hint := fmt.Sprintf("Missing user OAuth scopes%s: %s.\nRe-authorize with:\n  lark auth user login --scopes %q --force-consent", derivation, strings.Join(scopes, ", "), scopeArg)
+	hint := fmt.Sprintf("Missing user OAuth scopes: %s.\nRe-authorize with:\n  lark auth user login --scopes %q --force-consent", strings.Join(scopes, ", "), scopeArg)
 	return fmt.Errorf("%s\n%s", msg, hint)
 }
 
@@ -64,6 +67,32 @@ func containsScopeToken(scopes []string) bool {
 		}
 	}
 	return false
+}
+
+func shouldSuggestScopes(msg string) bool {
+	if code := extractErrorCode(msg); code != 0 {
+		return code == 99991679
+	}
+	lower := strings.ToLower(msg)
+	if strings.Contains(lower, "permission") || strings.Contains(lower, "privilege") || strings.Contains(lower, "unauthorized") {
+		return true
+	}
+	if strings.Contains(msg, "权限") {
+		return true
+	}
+	return false
+}
+
+func extractErrorCode(msg string) int {
+	match := errorCodePattern.FindStringSubmatch(msg)
+	if len(match) != 2 {
+		return 0
+	}
+	value, err := strconv.Atoi(match[1])
+	if err != nil {
+		return 0
+	}
+	return value
 }
 
 func selectPreferredScopes(scopes []string) []string {
