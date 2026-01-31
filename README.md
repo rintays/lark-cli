@@ -389,6 +389,7 @@ Example:
 ./lark wiki member list --help
 ./lark wiki member delete --help
 ./lark wiki node search --help
+./lark wiki task get --help # alias: wiki task list
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
