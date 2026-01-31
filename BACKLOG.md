@@ -361,7 +361,7 @@ Deliverables:
   - [x] `wiki space list/get` (skeleton: not implemented yet)
   - [ ] `wiki node get/list`
     - [x] `wiki node get` skeleton added (not implemented yet)
-    - [x] `wiki node list` skeleton added (not implemented yet)
+    - [x] `wiki node list` implemented (v2)
   - [x] `wiki member` management (skeleton: not implemented yet)
   - [x] `wiki task` query (skeleton: not implemented yet)
 - [ ] P1 (gap fill):
