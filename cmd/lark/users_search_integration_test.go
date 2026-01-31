@@ -14,7 +14,7 @@ func TestUsersSearchIntegration(t *testing.T) {
 
 	email := os.Getenv("LARK_TEST_USER_EMAIL")
 	if email == "" {
-		t.Skip("missing LARK_TEST_USER_EMAIL")
+		t.Skip("LARK_TEST_USER_EMAIL not set")
 	}
 
 	var buf bytes.Buffer
