@@ -353,6 +353,7 @@ Deliverables:
 - [ ] P0 (v2 SDK-backed):
   - [x] `wiki space list/get` (skeleton: not implemented yet)
   - [ ] `wiki node get/list`
+    - [x] `wiki node get` skeleton added (not implemented yet)
   - [ ] `wiki member` management
   - [ ] `wiki task` query (if useful)
 - [ ] P1 (gap fill):
