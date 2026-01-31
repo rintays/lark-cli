@@ -19,13 +19,24 @@ func TestWikiTaskCommandsRegistered(t *testing.T) {
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"wiki", "task", "get", "--help"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("help failed: %v", err)
+	}
+}
+
+func TestWikiTaskListAliasRegistered(t *testing.T) {
+	cmd := newRootCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"wiki", "task", "list", "--help"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help failed: %v", err)
 	}
 }
 
-func TestWikiTaskListCommandRequiresTaskID(t *testing.T) {
+func TestWikiTaskListAliasRequiresTaskID(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected HTTP call")
 	})
@@ -58,7 +69,7 @@ func TestWikiTaskListCommandRequiresTaskID(t *testing.T) {
 	}
 }
 
-func TestWikiTaskListCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
+func TestWikiTaskGetCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -120,9 +131,9 @@ func TestWikiTaskListCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"task", "list", "--task-id", "t1"})
+	cmd.SetArgs([]string{"task", "get", "--task-id", "t1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("wiki task list error: %v", err)
+		t.Fatalf("wiki task get error: %v", err)
 	}
 
 	var payload map[string]any

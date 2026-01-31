@@ -14,20 +14,21 @@ import (
 func newWikiTaskCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "task",
-		Short: "Query Wiki tasks",
+		Short: "Query Wiki task results",
 	}
-	cmd.AddCommand(newWikiTaskListCmd(state))
+	cmd.AddCommand(newWikiTaskGetCmd(state))
 	return cmd
 }
 
-func newWikiTaskListCmd(state *appState) *cobra.Command {
+func newWikiTaskGetCmd(state *appState) *cobra.Command {
 	var taskID string
 	var taskType string
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List Wiki task results (v2)",
-		Args:  cobra.NoArgs,
+		Use:     "get",
+		Aliases: []string{"list"},
+		Short:   "Get Wiki task results (v2)",
+		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
