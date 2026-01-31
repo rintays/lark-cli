@@ -84,7 +84,14 @@
 - 2026-01-31: Added `lark sheets delete` command backed by Drive delete, with README/design coverage and tests.
 - 2026-01-31: Message search now resolves message IDs to full message details for output (content/sender/time), and JSON includes both message IDs and message objects.
 - 2026-01-31: Adjusted Sheets dimension payloads for better API compatibility, switched columns to COLUMNS, clarified sheet range help/examples, normalized sheets create folder-id root handling, and clarified user token help/error text for Sheets search.
+- 2026-01-31: Messages send now requires `--receive-id`, chats update uses positional chat-id, and message/wiki search added `--pages` pagination with auto page-size; README updated.
 - 2026-01-31: Message search scope hints now include `im:message:get_as_user` alongside `search:message` for user OAuth guidance.
 - 2026-01-31: Mail list output now includes sender and internal_date columns for quick triage.
+- 2026-01-31: Added Bitable base concept explanations to the `bases` command help and README.
+- 2026-01-31: Added product concept explanations to top-level help for users/drive/docs/sheets/wiki/mail/messages/chats/calendars/meetings/minutes/contacts.
 - 2026-01-31: Sheets create now includes default sheet id/range, sheets read/update/append/clear accept `--sheet-id` with range shorthand, sheets update/append accept JSON/CSV values files (`--values-file` or `--values @file`), and sheets read defaults missing major_dimension to ROWS.
+- 2026-01-31: Added `lark mail get` for full message content; `mail info`/`mail list` now return metadata-only message fields.
+- 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.
+- 2026-01-31: Made meetings list and calendars list/search accept optional start/end filters, removed required flags, and added calendar pagination to respect `--limit`.
+- 2026-01-31: Meetings list now defaults to the last 6 months when start/end are omitted.
 - 2026-01-31: Sheets rows/cols delete now use the v2 dimension_range delete API with 1-based index conversion in payloads, fixing delete failures.

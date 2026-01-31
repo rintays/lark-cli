@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,6 +41,16 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			table, err := state.SDK.CreateBaseTable(context.Background(), token, appToken, tableName, viewName)
+			if err != nil && viewName != "" && isBaseTableViewNameUnsupported(err) {
+				retry, retryErr := state.SDK.CreateBaseTable(context.Background(), token, appToken, tableName, "")
+				if retryErr == nil {
+					cmd.PrintErrln("warning: --view-name is not supported by this API; created table without a default view name")
+					table = retry
+					err = nil
+				} else {
+					return fmt.Errorf("create base table failed with --view-name (%v); retry without --view-name failed: %w", err, retryErr)
+				}
+			}
 			if err != nil {
 				return err
 			}
@@ -51,7 +62,14 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableName, "name", "", "Table name (or provide as positional argument)")
-	cmd.Flags().StringVar(&viewName, "view-name", "", "Default view name (optional)")
+	cmd.Flags().StringVar(&viewName, "view-name", "", "Default view name (optional; may be rejected by some tenants)")
 	_ = cmd.MarkFlagRequired("app-token")
 	return cmd
+}
+
+func isBaseTableViewNameUnsupported(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "wrongrequestbody")
 }
