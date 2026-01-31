@@ -24,7 +24,7 @@
 
 ## CLI Argument Principles
 - Required resource identifiers should be positional args (e.g., `lark docs info <doc-id>`), not mandatory `--id` flags.
-- Keep legacy flags as optional aliases when possible to avoid breaking users.
+- Do not keep legacy `--id` style flags for required identifiers.
 - Exceptions: `base --app-token` and `wiki --space-id` remain flags.
 
 ## Testing Guidelines

@@ -30,15 +30,13 @@ func newMsgListCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(containerID) == "" {
-					return errors.New("container-id is required")
-				}
-				return nil
+				return errors.New("container-id is required")
 			}
-			if containerID != "" && containerID != args[0] {
-				return errors.New("container-id provided twice")
+			containerID = strings.TrimSpace(args[0])
+			if containerID == "" {
+				return errors.New("container-id is required")
 			}
-			return cmd.Flags().Set("container-id", args[0])
+			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
@@ -107,7 +105,6 @@ func newMsgListCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&containerIDType, "container-id-type", "chat", "container type (chat or thread)")
-	cmd.Flags().StringVar(&containerID, "container-id", "", "chat_id or thread_id (or provide as positional argument)")
 	cmd.Flags().StringVar(&startTime, "start-time", "", "start time (unix seconds)")
 	cmd.Flags().StringVar(&endTime, "end-time", "", "end time (unix seconds)")
 	cmd.Flags().StringVar(&sortType, "sort", "ByCreateTimeAsc", "sort type (ByCreateTimeAsc or ByCreateTimeDesc)")
