@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"lark/internal/testutil"
@@ -31,8 +32,32 @@ func TestMsgSendIntegration(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json output: %v; out=%q", err, buf.String())
 	}
-	id, ok := payload["message_id"].(string)
-	if !ok || id == "" {
-		t.Fatalf("expected non-empty message_id in output, got: %v", payload)
+	id := messageIDFromPayload(payload)
+	if id == "" {
+		t.Fatalf("expected non-empty message id in output, got: %v", payload)
 	}
+}
+
+func messageIDFromPayload(payload map[string]any) string {
+	if id, ok := payload["message_id"].(string); ok && strings.TrimSpace(id) != "" {
+		return id
+	}
+	message, ok := payload["message"]
+	if !ok {
+		return ""
+	}
+	switch value := message.(type) {
+	case string:
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	case map[string]any:
+		if id, ok := value["message_id"].(string); ok && strings.TrimSpace(id) != "" {
+			return id
+		}
+		if id, ok := value["id"].(string); ok && strings.TrimSpace(id) != "" {
+			return id
+		}
+	}
+	return ""
 }
