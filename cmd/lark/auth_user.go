@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/config"
 )
 
 const (
@@ -159,10 +161,22 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if strings.EqualFold(state.Config.KeyringBackend, "keychain") {
 				return errors.New("keychain backend is not implemented yet; please use keyring_backend=file (or set LARK_KEYRING_BACKEND=file)")
 			}
+			now := time.Now()
 			state.Config.UserAccessToken = tokens.AccessToken
 			state.Config.RefreshToken = tokens.RefreshToken
-			state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()
+			state.Config.UserAccessTokenExpiresAt = now.Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()
 			state.Config.UserScopes = scopeList
+			refreshPayload := &config.UserRefreshTokenPayload{
+				RefreshToken: tokens.RefreshToken,
+				CreatedAt:    now.Unix(),
+			}
+			if scopeOpts.ServicesSet {
+				refreshPayload.Services = scopeOpts.Services
+			}
+			if grantedScope != "" {
+				refreshPayload.Scopes = grantedScope
+			}
+			state.Config.UserRefreshTokenPayload = refreshPayload
 			if err := state.saveConfig(); err != nil {
 				return err
 			}

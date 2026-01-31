@@ -142,7 +142,7 @@ lark auth
 lark whoami
 lark chats list --limit 10
 lark users search --email user@example.com
-lark messages send --chat-id <CHAT_ID> --text "hello"
+lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
 ---
@@ -180,7 +180,7 @@ Precedence:
 ### Send a message
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --text "hello"
+lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
 Send to a user by email:
@@ -192,13 +192,13 @@ lark messages send --receive-id-type email --receive-id user@example.com --text 
 Send a post (rich text):
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
+lark messages send --receive-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
 ```
 
 Send an image:
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --image-key <IMAGE_KEY>
+lark messages send --receive-id <CHAT_ID> --image-key <IMAGE_KEY>
 ```
 
 Reply in thread:
@@ -256,7 +256,7 @@ lark chats get <CHAT_ID> --members-limit 0
 Update chat info:
 
 ```bash
-lark chats update --chat-id <CHAT_ID> --name "New Name"
+lark chats update <CHAT_ID> --name "New Name"
 ```
 
 Get chat announcement:
@@ -351,7 +351,9 @@ lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
 Read:
 
 ```bash
-lark sheets read <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+# or
+lark sheets read <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID>
 ```
 
 Search:
@@ -363,19 +365,25 @@ lark sheets search <TEXT> --limit 50 # requires user_access_token or `lark auth 
 Update:
 
 ```bash
-lark sheets update <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+# or
+lark sheets update <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values-file ./values.csv
 ```
 
 Append:
 
 ```bash
-lark sheets append <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+# or
+lark sheets append <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values @./values.json
 ```
 
 Clear:
 
 ```bash
-lark sheets clear <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+# or
+lark sheets clear <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID>
 ```
 
 Info:
