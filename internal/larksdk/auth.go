@@ -11,6 +11,21 @@ import (
 	larkauthen "github.com/larksuite/oapi-sdk-go/v3/service/authen/v1"
 )
 
+type RefreshAccessTokenError struct {
+	Code int
+	Msg  string
+}
+
+func (e *RefreshAccessTokenError) Error() string {
+	if e == nil {
+		return "refresh access token failed"
+	}
+	if e.Msg == "" {
+		return fmt.Sprintf("refresh access token failed (code=%d)", e.Code)
+	}
+	return fmt.Sprintf("refresh access token failed (code=%d): %s", e.Code, e.Msg)
+}
+
 func (c *Client) TenantAccessToken(ctx context.Context) (string, int64, error) {
 	if !c.available() {
 		return "", 0, ErrUnavailable
@@ -61,7 +76,7 @@ func (c *Client) RefreshUserAccessToken(ctx context.Context, refreshToken string
 		return "", "", 0, errors.New("refresh access token failed: empty response")
 	}
 	if !resp.Success() {
-		return "", "", 0, fmt.Errorf("refresh access token failed: %s", resp.Msg)
+		return "", "", 0, &RefreshAccessTokenError{Code: resp.Code, Msg: resp.Msg}
 	}
 	if resp.Data == nil {
 		return "", "", 0, errors.New("refresh access token failed: missing data")

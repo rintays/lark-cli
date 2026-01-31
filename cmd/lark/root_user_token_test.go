@@ -211,7 +211,7 @@ func TestEnsureUserTokenRefreshFailureClears(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code": 999,
-				"msg":  "nope",
+				"msg":  "invalid refresh_token",
 			})
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -241,6 +241,9 @@ func TestEnsureUserTokenRefreshFailureClears(t *testing.T) {
 	_, err = ensureUserToken(context.Background(), state)
 	if err == nil {
 		t.Fatalf("expected ensureUserToken error")
+	}
+	if !strings.Contains(err.Error(), "refresh token revoked") {
+		t.Fatalf("expected refresh token revoked/expired hint, got %v", err)
 	}
 	if !strings.Contains(err.Error(), userOAuthReloginCommand) {
 		t.Fatalf("expected login instruction, got %v", err)

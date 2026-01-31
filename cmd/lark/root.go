@@ -247,6 +247,24 @@ func expireUserToken(state *appState, cause error) error {
 	state.Config.RefreshToken = ""
 	saveErr := state.saveConfig()
 	base := fmt.Sprintf("user access token expired; run `%s`", userOAuthReloginCommand)
+	var refreshErr *larksdk.RefreshAccessTokenError
+	if errors.As(cause, &refreshErr) {
+		msg := strings.ToLower(refreshErr.Msg)
+		if strings.Contains(msg, "invalid") || strings.Contains(msg, "revok") || strings.Contains(msg, "expire") {
+			base = fmt.Sprintf("user access token expired (refresh token revoked or expired); run `%s`", userOAuthReloginCommand)
+		}
+	}
+	if cause != nil {
+		var refreshErr *larksdk.RefreshAccessTokenError
+		if errors.As(cause, &refreshErr) {
+			msg := strings.ToLower(refreshErr.Msg)
+			mentionsRefreshToken := strings.Contains(msg, "refresh_token") || strings.Contains(msg, "refresh token")
+			looksRevoked := strings.Contains(msg, "invalid") || strings.Contains(msg, "expired") || strings.Contains(msg, "revoked")
+			if mentionsRefreshToken && looksRevoked {
+				base = fmt.Sprintf("refresh token revoked or expired; cleared cached credentials; run `%s`", userOAuthReloginCommand)
+			}
+		}
+	}
 	if saveErr != nil {
 		if cause != nil {
 			return fmt.Errorf("%s: %v; failed to clear cached token: %w", base, cause, saveErr)
