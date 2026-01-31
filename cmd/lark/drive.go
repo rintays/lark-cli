@@ -371,17 +371,16 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 		Use:   "export <file-token>",
 		Short: "Export a Drive file",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				return cobra.MaximumNArgs(1)(cmd, args)
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
 			}
 			if len(args) > 0 {
 				if fileToken != "" && fileToken != args[0] {
 					return errors.New("file-token provided twice")
 				}
-				fileToken = args[0]
-			}
-			if fileToken == "" {
-				return errors.New("file-token is required")
+				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
+					return err
+				}
 			}
 			return nil
 		},
@@ -441,6 +440,7 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: docx, sheet, bitable)")
 	cmd.Flags().StringVar(&format, "format", "", "export format (for example: pdf, docx, xlsx)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
+	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("format")
 	_ = cmd.MarkFlagRequired("out")

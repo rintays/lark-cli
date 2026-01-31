@@ -1052,7 +1052,7 @@ func TestDriveExportCommand(t *testing.T) {
 			}()
 
 			cmd := newDriveCmd(state)
-			cmd.SetArgs([]string{"export", "--file-token", "f1", "--type", "docx", "--format", "pdf", "--out", outPath})
+			cmd.SetArgs([]string{"export", "f1", "--type", "docx", "--format", "pdf", "--out", outPath})
 			if err := cmd.Execute(); err != nil {
 				t.Fatalf("drive export error: %v", err)
 			}
@@ -1080,6 +1080,41 @@ func TestDriveExportCommand(t *testing.T) {
 				t.Fatalf("unexpected output: %q", buf.String())
 			}
 		})
+	}
+}
+
+func TestDriveExportMissingFileTokenDoesNotCallHTTP(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	outPath := filepath.Join(t.TempDir(), "export.pdf")
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"export", "--type", "docx", "--format", "pdf", "--out", outPath})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"file-token\" not set" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
