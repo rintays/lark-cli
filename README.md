@@ -413,7 +413,26 @@ Behavior:
 ---
 
 
-...`/...`
+## Integration tests
+
+Integration tests run only when explicitly enabled (real network + credentials):
+
+```bash
+export LARK_INTEGRATION=1
+```
+
+Run the Wiki SpaceMember.Create role-upsert verification test:
+
+```bash
+export LARK_TEST_WIKI_SPACE_ID=<space_id>
+export LARK_TEST_USER_EMAIL=<member_email>
+
+go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v
+# or:
+make it-wiki-member-role-update
+```
+
+Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`) and cached user token (`lark auth user login`).
 
 ---
 

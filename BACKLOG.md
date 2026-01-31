@@ -382,7 +382,12 @@ Deliverables:
     - [x] `wiki member delete`
     - [x] `wiki member add` (SpaceMember.Create)
     - [ ] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
-      - Integration test added: `cmd/lark/wiki_member_role_update_integration_test.go` (run with `LARK_INTEGRATION=1` + `LARK_TEST_WIKI_SPACE_ID` + `LARK_TEST_USER_EMAIL`; requires cached user token via `lark auth user login`)
+      - Integration test added: `cmd/lark/wiki_member_role_update_integration_test.go`
+      - How to run (single test in a real env):
+        - Required env vars: `LARK_INTEGRATION=1`, `LARK_TEST_WIKI_SPACE_ID`, `LARK_TEST_USER_EMAIL`
+        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`) and cached user token (`lark auth user login`)
+        - Command:
+          - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
   - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`); command alias: prefer `wiki task get`, keep `wiki task list` for compatibility
 - [ ] P1 (gap fill):
   - [x] implement `internal/larksdk/wiki_search_v1.go` using `core.ApiReq`
