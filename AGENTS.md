@@ -69,6 +69,7 @@
 - 2026-01-31: Added calendar search/get/update/delete commands, improved primary calendar resolution, and expanded calendar auth metadata.
 - 2026-01-31: Added meeting reservation create/update/delete, expanded meeting list filters with required time range validation, and updated README features note.
 - 2026-01-31: Unified read-style commands to `info` (docs/sheets/drive/mail/users/wiki/base/config/auth/meetings/minutes) with no legacy aliases; updated tests/docs.
+- 2026-01-31: Drive info/urls now honor user tokens with auto fallback and added a user-token drive info test.
 - 2026-01-31: Promoted required identifiers to positional args for docs/drive/sheets/base/wiki/minutes/meetings/auth scopes/mailbox set (keeping base app-token and wiki space-id as flags), updated tests and README examples.
 - 2026-01-31: Minutes list now filters Drive file listings by type; added minutes delete/update commands backed by Drive delete and permission update endpoints, plus minutes command tests and design doc updates.
 - 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.

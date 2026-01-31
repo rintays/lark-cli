@@ -190,16 +190,12 @@ func newDriveInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			ctx := context.Background()
+			fetcher, err := newDriveMetadataFetcher(ctx, state)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
-				FileToken: fileToken,
-			})
+			file, err := fetcher.get(ctx, fileToken)
 			if err != nil {
 				return err
 			}
@@ -472,16 +468,14 @@ func newDriveURLsCmd(state *appState) *cobra.Command {
 		Short: "Print web URLs for Drive file IDs",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			ctx := context.Background()
+			fetcher, err := newDriveMetadataFetcher(ctx, state)
 			if err != nil {
 				return err
 			}
 			files := make([]larksdk.DriveFile, 0, len(args))
 			for _, fileID := range args {
-				file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{FileToken: fileID})
+				file, err := fetcher.get(ctx, fileID)
 				if err != nil {
 					return err
 				}
@@ -582,4 +576,66 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 	_ = cmd.MarkFlagRequired("type")
 	cmd.MarkFlagsOneRequired("link-share", "external-access", "invite-external", "share-entity", "security-entity", "comment-entity")
 	return cmd
+}
+
+type driveMetadataFetcher struct {
+	state         *appState
+	token         string
+	tokenType     tokenType
+	allowFallback bool
+}
+
+func newDriveMetadataFetcher(ctx context.Context, state *appState) (*driveMetadataFetcher, error) {
+	if state.SDK == nil {
+		return nil, errors.New("sdk client is required")
+	}
+	token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
+	if err != nil {
+		return nil, err
+	}
+	requested, err := parseTokenType(state.TokenType)
+	if err != nil {
+		return nil, err
+	}
+	return &driveMetadataFetcher{
+		state:         state,
+		token:         token,
+		tokenType:     tokenType,
+		allowFallback: requested == tokenTypeAuto,
+	}, nil
+}
+
+func (f *driveMetadataFetcher) get(ctx context.Context, fileToken string) (larksdk.DriveFile, error) {
+	file, err := driveFileMetadataWithToken(ctx, f.state.SDK, f.tokenType, f.token, fileToken)
+	if err == nil || !f.allowFallback || f.tokenType != tokenTypeTenant {
+		return file, err
+	}
+	userToken, userErr := resolveDriveSearchToken(ctx, f.state)
+	if userErr != nil || userToken == "" {
+		return file, err
+	}
+	if f.state.Verbose {
+		fmt.Fprintln(f.state.Printer.Writer, "retrying drive info with user access token")
+	}
+	fallbackFile, fallbackErr := driveFileMetadataWithToken(ctx, f.state.SDK, tokenTypeUser, userToken, fileToken)
+	if fallbackErr != nil {
+		return file, err
+	}
+	f.token = userToken
+	f.tokenType = tokenTypeUser
+	return fallbackFile, nil
+}
+
+func driveFileMetadataWithToken(ctx context.Context, sdk *larksdk.Client, accessType tokenType, token, fileToken string) (larksdk.DriveFile, error) {
+	if sdk == nil {
+		return larksdk.DriveFile{}, errors.New("sdk client is required")
+	}
+	switch accessType {
+	case tokenTypeUser:
+		return sdk.GetDriveFileMetadataWithUserToken(ctx, token, larksdk.GetDriveFileRequest{FileToken: fileToken})
+	case tokenTypeTenant:
+		return sdk.GetDriveFileMetadata(ctx, token, larksdk.GetDriveFileRequest{FileToken: fileToken})
+	default:
+		return larksdk.DriveFile{}, fmt.Errorf("unsupported token type %s", accessType)
+	}
 }
