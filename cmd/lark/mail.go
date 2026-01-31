@@ -21,6 +21,10 @@ func newMailCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newMailMailboxCmd(state))
 	cmd.AddCommand(newMailPublicMailboxesCmd(state))
+	// Backwards-compatible alias: historically users ran `lark mail mailboxes list`.
+	// The user_mailboxes list endpoint is not available in Feishu OpenAPI, so we
+	// map this to public mailboxes discovery.
+	cmd.AddCommand(newMailMailboxesCmd(state))
 	cmd.AddCommand(newMailFoldersCmd(state))
 	cmd.AddCommand(newMailListCmd(state))
 	cmd.AddCommand(newMailGetCmd(state))
@@ -109,6 +113,47 @@ func newMailPublicMailboxesCmd(state *appState) *cobra.Command {
 		Short: "Discover public mailboxes",
 	}
 	cmd.AddCommand(newMailPublicMailboxesListCmd(state))
+	return cmd
+}
+
+func newMailMailboxesCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "mailboxes",
+		Short: "List mailboxes (alias for public-mailboxes)",
+		Long: "This is a backwards-compatible alias. Feishu OpenAPI does not provide a user mailbox list endpoint; use public mailboxes discovery or pass --mailbox-id me for user mailbox operations.",
+	}
+	cmd.AddCommand(newMailMailboxesListCmd(state))
+	return cmd
+}
+
+func newMailMailboxesListCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List mailboxes (public mailboxes)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			token, err := ensureTenantToken(context.Background(), state)
+			if err != nil {
+				return err
+			}
+			mailboxes, err := state.SDK.ListPublicMailboxes(context.Background(), token)
+			if err != nil {
+				return err
+			}
+			payload := map[string]any{"public_mailboxes": mailboxes}
+			lines := make([]string, 0, len(mailboxes))
+			for _, mailbox := range mailboxes {
+				lines = append(lines, formatMailMailboxLine(mailbox))
+			}
+			text := "no public mailboxes found"
+			if len(lines) > 0 {
+				text = strings.Join(lines, "\n")
+			}
+			return state.Printer.Print(payload, text)
+		},
+	}
 	return cmd
 }
 
