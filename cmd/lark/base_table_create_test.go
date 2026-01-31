@@ -46,10 +46,7 @@ func TestBaseTableCreateCommand(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"table": map[string]any{
-					"table_id": "tbl_1",
-					"name":     "MyTable",
-				},
+				"table_id": "tbl_1",
 			},
 		})
 	})
