@@ -641,8 +641,12 @@ func TestSheetsColsInsertRequiresSheetID(t *testing.T) {
 		"--start-index", "1",
 		"--count", "2",
 	})
-	if err := cmd.Execute(); err == nil {
+	err = cmd.Execute()
+	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
+	}
+	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
 		t.Fatalf("expected no HTTP requests, got %d", requests)
@@ -753,8 +757,12 @@ func TestSheetsColsDeleteRequiresSheetID(t *testing.T) {
 		"--start-index", "3",
 		"--count", "2",
 	})
-	if err := cmd.Execute(); err == nil {
+	err = cmd.Execute()
+	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
+	}
+	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
 		t.Fatalf("expected no HTTP requests, got %d", requests)
@@ -937,8 +945,56 @@ func TestSheetsRowsInsertRequiresSheetID(t *testing.T) {
 		"--start-index", "1",
 		"--count", "2",
 	})
-	if err := cmd.Execute(); err == nil {
+	err = cmd.Execute()
+	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
+	}
+	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if requests != 0 {
+		t.Fatalf("expected no HTTP requests, got %d", requests)
+	}
+}
+
+func TestSheetsRowsInsertRequiresStartIndex(t *testing.T) {
+	requests := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"rows",
+		"insert",
+		"--spreadsheet-id", "spreadsheet",
+		"--sheet-id", "sheet",
+		"--count", "2",
+	})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected error for missing start-index")
+	}
+	if err.Error() != "required flag(s) \"start-index\" not set" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
 		t.Fatalf("expected no HTTP requests, got %d", requests)
@@ -977,8 +1033,12 @@ func TestSheetsRowsDeleteRequiresSheetID(t *testing.T) {
 		"--start-index", "1",
 		"--count", "2",
 	})
-	if err := cmd.Execute(); err == nil {
+	err = cmd.Execute()
+	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
+	}
+	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
 		t.Fatalf("expected no HTTP requests, got %d", requests)

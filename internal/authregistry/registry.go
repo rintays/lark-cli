@@ -52,7 +52,8 @@ type ServiceDef struct {
 //
 // Keep this list stable and append-only where possible.
 var Registry = map[string]ServiceDef{
-	"im": {Name: "im", TokenTypes: []TokenType{TokenTenant}},
+	"im":             {Name: "im", TokenTypes: []TokenType{TokenTenant}},
+	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"search:message"}, RequiresOffline: true},
 
 	// NOTE: "docs" is a legacy name used by existing commands; "docx" is the
 	// user-facing/API surface name for the same capability.
@@ -61,7 +62,7 @@ var Registry = map[string]ServiceDef{
 	"docx":   {Name: "docx", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
 	"sheets": {Name: "sheets", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
 
-	"calendar": {Name: "calendar", TokenTypes: []TokenType{TokenTenant}},
+	"calendar": {Name: "calendar", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"calendar:calendar"}, UserScopes: ServiceScopeSet{Full: []string{"calendar:calendar"}, Readonly: []string{"calendar:calendar:readonly"}}},
 	"mail":     {Name: "mail", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"mail:readonly"}, RequiresOffline: true}, // TODO: verify mail user OAuth scopes for message send
 	"wiki":     {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
 	"base":     {Name: "base", TokenTypes: []TokenType{TokenTenant}},

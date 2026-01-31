@@ -103,8 +103,23 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	var pages int
 
 	cmd := &cobra.Command{
-		Use:   "search",
+		Use:   "search <query>",
 		Short: "Search Drive files by text",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(query) == "" {
+					return errors.New("query is required")
+				}
+				return nil
+			}
+			if query != "" && query != args[0] {
+				return errors.New("query provided twice")
+			}
+			return cmd.Flags().Set("query", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -142,12 +157,11 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search text")
+	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
 	cmd.Flags().StringArrayVar(&fileTypes, "type", nil, "filter by doc type (docx|doc|sheet|slides|bitable|mindnote|file); repeatable")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope the search")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
-	_ = cmd.MarkFlagRequired("query")
 	return cmd
 }
 
@@ -168,6 +182,10 @@ func newDriveInfoCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(fileToken) == "" {
+				return errors.New("file-token is required")
 			}
 			return nil
 		},
@@ -195,7 +213,6 @@ func newDriveInfoCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (or provide as positional argument)")
-	_ = cmd.MarkFlagRequired("file-token")
 	return cmd
 }
 
@@ -205,8 +222,23 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 	var uploadName string
 
 	cmd := &cobra.Command{
-		Use:   "upload --file <path>",
+		Use:   "upload <path>",
 		Short: "Upload a local file to Drive",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(filePath) == "" {
+					return errors.New("file is required")
+				}
+				return nil
+			}
+			if filePath != "" && filePath != args[0] {
+				return errors.New("file provided twice")
+			}
+			return cmd.Flags().Set("file", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info, err := os.Stat(filePath)
 			if err != nil {
@@ -270,10 +302,9 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&filePath, "file", "", "path to local file")
+	cmd.Flags().StringVar(&filePath, "file", "", "path to local file (or provide as positional argument)")
 	cmd.Flags().StringVar(&folderToken, "folder-token", "", "Drive folder token (default: 0 (root))")
 	cmd.Flags().StringVar(&uploadName, "name", "", "override the uploaded file name")
-	_ = cmd.MarkFlagRequired("file")
 	return cmd
 }
 
@@ -282,8 +313,23 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 	var outPath string
 
 	cmd := &cobra.Command{
-		Use:   "download --file-token <token> --out <path>",
+		Use:   "download <file-token> --out <path>",
 		Short: "Download a Drive file",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(fileToken) == "" {
+					return errors.New("file-token is required")
+				}
+				return nil
+			}
+			if fileToken != "" && fileToken != args[0] {
+				return errors.New("file-token provided twice")
+			}
+			return cmd.Flags().Set("file-token", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if info, err := os.Stat(outPath); err == nil && info.IsDir() {
 				return fmt.Errorf("output path is a directory: %s", outPath)
@@ -322,9 +368,8 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token")
+	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (or provide as positional argument)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
-	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("out")
 	return cmd
 }
@@ -349,6 +394,10 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(fileToken) == "" {
+				return errors.New("file-token is required")
 			}
 			return nil
 		},
@@ -411,7 +460,6 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: docx, sheet, bitable)")
 	cmd.Flags().StringVar(&format, "format", "", "export format (for example: pdf, docx, xlsx)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
-	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("format")
 	_ = cmd.MarkFlagRequired("out")
@@ -465,9 +513,14 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "share <file-token>",
 		Short: "Update Drive file sharing permissions",
-		Args:  cobra.MaximumNArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
 			if len(args) == 0 {
+				if strings.TrimSpace(fileToken) == "" {
+					return errors.New("file-token is required")
+				}
 				return nil
 			}
 			if fileToken != "" && fileToken != args[0] {
@@ -526,7 +579,6 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&shareEntity, "share-entity", "", "share permission scope (for example: tenant_editable)")
 	cmd.Flags().StringVar(&securityEntity, "security-entity", "", "security permission scope (for example: tenant_editable)")
 	cmd.Flags().StringVar(&commentEntity, "comment-entity", "", "comment permission scope (for example: tenant_editable)")
-	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("type")
 	cmd.MarkFlagsOneRequired("link-share", "external-access", "invite-external", "share-entity", "security-entity", "comment-entity")
 	return cmd

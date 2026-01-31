@@ -45,6 +45,48 @@ type ListCalendarEventsResult struct {
 	SyncToken string
 }
 
+type SearchCalendarEventsRequest struct {
+	CalendarID string
+	Query      string
+	StartTime  string
+	EndTime    string
+	UserIDs    []string
+	RoomIDs    []string
+	ChatIDs    []string
+	PageSize   int
+	PageToken  string
+}
+
+type SearchCalendarEventsResult struct {
+	Items     []CalendarEvent
+	PageToken string
+}
+
+type GetCalendarEventRequest struct {
+	CalendarID string
+	EventID    string
+}
+
+type UpdateCalendarEventRequest struct {
+	CalendarID  string
+	EventID     string
+	Summary     string
+	Description string
+	StartTime   *int64
+	EndTime     *int64
+}
+
+type DeleteCalendarEventRequest struct {
+	CalendarID       string
+	EventID          string
+	NeedNotification bool
+}
+
+type DeleteCalendarEventResult struct {
+	EventID string
+	Deleted bool
+}
+
 type CreateCalendarEventRequest struct {
 	CalendarID  string
 	Summary     string
@@ -127,14 +169,48 @@ type MeetingListItem struct {
 }
 
 type ListMeetingsRequest struct {
-	PageSize  int
-	PageToken string
+	StartTime               string
+	EndTime                 string
+	MeetingStatus           *int
+	MeetingNo               string
+	UserID                  string
+	RoomID                  string
+	MeetingType             *int
+	PageSize                int
+	PageToken               string
+	IncludeExternalMeetings *bool
+	IncludeWebinar          *bool
+	UserIDType              string
 }
 
 type ListMeetingsResult struct {
 	Items     []MeetingListItem
 	PageToken string
 	HasMore   bool
+}
+
+type ReserveMeetingSetting struct {
+	Topic              *string `json:"topic,omitempty"`
+	MeetingInitialType *int    `json:"meeting_initial_type,omitempty"`
+	AutoRecord         *bool   `json:"auto_record,omitempty"`
+	Password           *string `json:"password,omitempty"`
+}
+
+type Reserve struct {
+	ID              string                 `json:"id"`
+	MeetingNo       string                 `json:"meeting_no"`
+	Password        string                 `json:"password"`
+	URL             string                 `json:"url"`
+	AppLink         string                 `json:"app_link"`
+	LiveLink        string                 `json:"live_link"`
+	EndTime         string                 `json:"end_time"`
+	ExpireStatus    *int                   `json:"expire_status,omitempty"`
+	ReserveUserID   string                 `json:"reserve_user_id"`
+	MeetingSettings *ReserveMeetingSetting `json:"meeting_settings,omitempty"`
+}
+
+type ReserveCorrectionCheckInfo struct {
+	InvalidHostIDList []string `json:"invalid_host_id_list,omitempty"`
 }
 
 type User struct {
@@ -176,18 +252,6 @@ type Minute struct {
 	Cover      string `json:"cover,omitempty"`
 	Duration   string `json:"duration,omitempty"`
 	URL        string `json:"url,omitempty"`
-}
-
-type ListMinutesRequest struct {
-	PageSize   int
-	PageToken  string
-	UserIDType string
-}
-
-type ListMinutesResult struct {
-	Items     []Minute
-	PageToken string
-	HasMore   bool
 }
 
 type RevisionID string

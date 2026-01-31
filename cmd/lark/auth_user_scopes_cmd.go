@@ -52,8 +52,20 @@ func newAuthUserScopesListCmd(state *appState) *cobra.Command {
 func newAuthUserScopesSetCmd(state *appState) *cobra.Command {
 	var scopes string
 	cmd := &cobra.Command{
-		Use:   "set",
+		Use:   "set <scopes...>",
 		Short: "Set default user OAuth scopes",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if strings.TrimSpace(scopes) == "" {
+					return errors.New("scopes is required")
+				}
+				return nil
+			}
+			if scopes != "" {
+				return errors.New("scopes provided twice")
+			}
+			return cmd.Flags().Set("scopes", strings.Join(args, " "))
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.Config == nil {
 				return errors.New("config is required")
@@ -73,16 +85,27 @@ func newAuthUserScopesSetCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, "saved user scopes")
 		},
 	}
-	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated)")
-	_ = cmd.MarkFlagRequired("scopes")
+	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated, or provide as positional arguments)")
 	return cmd
 }
 
 func newAuthUserScopesAddCmd(state *appState) *cobra.Command {
 	var scopes string
 	cmd := &cobra.Command{
-		Use:   "add",
+		Use:   "add <scopes...>",
 		Short: "Add default user OAuth scopes",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if strings.TrimSpace(scopes) == "" {
+					return errors.New("scopes is required")
+				}
+				return nil
+			}
+			if scopes != "" {
+				return errors.New("scopes provided twice")
+			}
+			return cmd.Flags().Set("scopes", strings.Join(args, " "))
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.Config == nil {
 				return errors.New("config is required")
@@ -107,16 +130,27 @@ func newAuthUserScopesAddCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, "added user scopes")
 		},
 	}
-	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated)")
-	_ = cmd.MarkFlagRequired("scopes")
+	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated, or provide as positional arguments)")
 	return cmd
 }
 
 func newAuthUserScopesRemoveCmd(state *appState) *cobra.Command {
 	var scopes string
 	cmd := &cobra.Command{
-		Use:   "remove",
+		Use:   "remove <scopes...>",
 		Short: "Remove default user OAuth scopes",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if strings.TrimSpace(scopes) == "" {
+					return errors.New("scopes is required")
+				}
+				return nil
+			}
+			if scopes != "" {
+				return errors.New("scopes provided twice")
+			}
+			return cmd.Flags().Set("scopes", strings.Join(args, " "))
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.Config == nil {
 				return errors.New("config is required")
@@ -151,8 +185,7 @@ func newAuthUserScopesRemoveCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, "removed user scopes")
 		},
 	}
-	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated)")
-	_ = cmd.MarkFlagRequired("scopes")
+	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated, or provide as positional arguments)")
 	return cmd
 }
 

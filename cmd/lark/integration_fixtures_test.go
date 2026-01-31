@@ -123,7 +123,9 @@ func (fx *integrationFixtures) EnsureBaseAppToken(t *testing.T) string {
 		t.Logf("search drive for base app failed; creating a new one instead: %v", err)
 	}
 
-	app, err := fx.SDK.CreateBitableApp(ctx, fx.Token, integrationBaseAppName, fx.DriveFolderToken)
+	app, err := fx.SDK.CreateBitableApp(ctx, fx.Token, integrationBaseAppName, larksdk.BitableAppCreateOptions{
+		FolderToken: fx.DriveFolderToken,
+	})
 	if err != nil {
 		t.Fatalf("create bitable app: %v", err)
 	}
@@ -236,7 +238,7 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 		}
 		fx.SpreadsheetToken = ssToken
 		t.Cleanup(func() {
-			if err := sdk.DeleteDriveFile(context.Background(), token, ssToken, "sheet"); err != nil {
+			if _, err := sdk.DeleteDriveFile(context.Background(), token, ssToken, "sheet"); err != nil {
 				t.Logf("cleanup: delete spreadsheet %s: %v", ssToken, err)
 			}
 		})

@@ -87,7 +87,7 @@ func TestSheetsSearchCommandUsesDocsSearchEndpoint(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "budget", "--limit", "10"})
+	cmd.SetArgs([]string{"search", "budget", "--limit", "10"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets search error: %v", err)
 	}

@@ -73,7 +73,7 @@ func TestDocsCreateCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"create", "--title", "Specs", "--folder-id", "fld"})
+	cmd.SetArgs([]string{"create", "Specs", "--folder-id", "fld"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs create error: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestDocsInfoCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs info error: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestDocsExportCommand(t *testing.T) {
 		exportTaskPollInterval = prevInterval
 	}()
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs export error: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestDocsInfoCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -385,7 +385,7 @@ func TestDocsCatCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"cat", "--doc-id", "doc1", "--format", "txt"})
+	cmd.SetArgs([]string{"cat", "doc1", "--format", "txt"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs cat error: %v", err)
 	}
@@ -411,7 +411,7 @@ func TestDocsExportCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
