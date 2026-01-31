@@ -64,6 +64,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 	var readonly bool
 	var driveScope string
 	var forceConsent bool
+	var incremental bool
 	var timeout time.Duration
 
 	cmd := &cobra.Command{
@@ -101,13 +102,14 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			scopeValue := joinScopes(scopeList)
+			requestedScopes := requestedUserOAuthScopes(scopeList, state.Config.UserAccessTokenScope, incremental)
+			scopeValue := strings.Join(requestedScopes, " ")
 
 			authState, err := newOAuthState()
 			if err != nil {
 				return err
 			}
-			authorizeURL, err := buildUserAuthorizeURL(state.Config.BaseURL, state.Config.AppID, userOAuthRedirectURL, authState, scopeValue, userOAuthPrompt(forceConsent))
+			authorizeURL, err := buildUserAuthorizeURL(state.Config.BaseURL, state.Config.AppID, userOAuthRedirectURL, authState, scopeValue, userOAuthPrompt(forceConsent), incremental)
 			if err != nil {
 				return err
 			}
@@ -187,6 +189,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 	cmd.Flags().BoolVar(&readonly, "readonly", false, "use read-only OAuth scopes for selected services")
 	cmd.Flags().StringVar(&driveScope, "drive-scope", "", "drive scope (full or readonly)")
 	cmd.Flags().BoolVar(&forceConsent, "force-consent", false, "force the consent screen during OAuth")
+	cmd.Flags().BoolVar(&incremental, "incremental", true, "use incremental OAuth (include granted scopes; set --incremental=false to request full scopes)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 2*time.Minute, "timeout waiting for OAuth callback")
 
 	return cmd
@@ -242,7 +245,7 @@ func userOAuthPrompt(forceConsent bool) string {
 	}
 	return ""
 }
-func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope, prompt string) (string, error) {
+func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope, prompt string, includeGrantedScopes bool) (string, error) {
 	base, err := url.Parse(baseURL)
 	if err != nil {
 		return "", err
@@ -260,6 +263,9 @@ func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope, prompt str
 	}
 	if prompt != "" {
 		query.Set("prompt", prompt)
+	}
+	if includeGrantedScopes {
+		query.Set("include_granted_scopes", "true")
 	}
 	base.RawQuery = query.Encode()
 	return base.String(), nil

@@ -14,7 +14,7 @@ import (
 )
 
 func TestBuildUserAuthorizeURL(t *testing.T) {
-	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access", "")
+	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access", "", false)
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
 	}
@@ -44,10 +44,13 @@ func TestBuildUserAuthorizeURL(t *testing.T) {
 	if query.Get("prompt") != "" {
 		t.Fatalf("unexpected prompt: %s", query.Get("prompt"))
 	}
+	if query.Get("include_granted_scopes") != "" {
+		t.Fatalf("unexpected include_granted_scopes: %s", query.Get("include_granted_scopes"))
+	}
 }
 
 func TestBuildUserAuthorizeURLWithPrompt(t *testing.T) {
-	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access", "consent")
+	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access", "consent", false)
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
 	}
@@ -57,6 +60,46 @@ func TestBuildUserAuthorizeURLWithPrompt(t *testing.T) {
 	}
 	if parsed.Query().Get("prompt") != "consent" {
 		t.Fatalf("unexpected prompt: %s", parsed.Query().Get("prompt"))
+	}
+}
+
+func TestBuildUserAuthorizeURLIncrementalScopes(t *testing.T) {
+	scopeList := []string{"offline_access", "drive:drive", "calendar:calendar"}
+	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive", true), " ")
+	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", scopeValue, "", true)
+	if err != nil {
+		t.Fatalf("build authorize url: %v", err)
+	}
+	parsed, err := url.Parse(urlStr)
+	if err != nil {
+		t.Fatalf("parse authorize url: %v", err)
+	}
+	query := parsed.Query()
+	if query.Get("include_granted_scopes") != "true" {
+		t.Fatalf("expected include_granted_scopes, got %q", query.Get("include_granted_scopes"))
+	}
+	if query.Get("scope") != "offline_access calendar:calendar" {
+		t.Fatalf("unexpected scope: %s", query.Get("scope"))
+	}
+}
+
+func TestBuildUserAuthorizeURLNonIncrementalScopes(t *testing.T) {
+	scopeList := []string{"offline_access", "drive:drive", "calendar:calendar"}
+	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive", false), " ")
+	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", scopeValue, "", false)
+	if err != nil {
+		t.Fatalf("build authorize url: %v", err)
+	}
+	parsed, err := url.Parse(urlStr)
+	if err != nil {
+		t.Fatalf("parse authorize url: %v", err)
+	}
+	query := parsed.Query()
+	if query.Get("include_granted_scopes") != "" {
+		t.Fatalf("unexpected include_granted_scopes: %s", query.Get("include_granted_scopes"))
+	}
+	if query.Get("scope") != "offline_access calendar:calendar drive:drive" {
+		t.Fatalf("unexpected scope: %s", query.Get("scope"))
 	}
 }
 
