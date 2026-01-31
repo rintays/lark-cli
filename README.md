@@ -17,8 +17,11 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
   - Config file support + env fallback
 - **Users / Chats / Messages (IM)**
   - search users
-  - list chats
-  - send messages (supports `--receive-id-type`)
+  - list/create/get/update chats
+  - get/update chat announcements
+  - send/reply messages (text/post/image/file/media)
+  - list/search messages
+  - add/delete reactions, pin/unpin messages
 - **Drive**
   - list/search/info/urls/download/upload
   - share permission updates
@@ -176,6 +179,80 @@ Send to a user by email:
 
 ```bash
 lark messages send --receive-id-type email --receive-id user@example.com --text "hello"
+```
+
+Send a post (rich text):
+
+```bash
+lark messages send --chat-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
+```
+
+Send an image:
+
+```bash
+lark messages send --chat-id <CHAT_ID> --image-key <IMAGE_KEY>
+```
+
+Reply in thread:
+
+```bash
+lark messages reply --message-id <MESSAGE_ID> --text "reply" --reply-in-thread
+```
+
+Search messages (user token required):
+
+```bash
+lark messages search --query "hello" --chat-id <CHAT_ID>
+```
+
+List recent messages:
+
+```bash
+lark messages list --container-id <CHAT_ID> --limit 20
+```
+
+Add a reaction:
+
+```bash
+lark messages reactions add --message-id <MESSAGE_ID> --emoji SMILE
+```
+
+Pin a message:
+
+```bash
+lark messages pin --message-id <MESSAGE_ID>
+```
+
+### Chats
+
+Create a chat:
+
+```bash
+lark chats create --name "Demo Chat"
+```
+
+Get chat info:
+
+```bash
+lark chats get <CHAT_ID>
+```
+
+Update chat info:
+
+```bash
+lark chats update --chat-id <CHAT_ID> --name "New Name"
+```
+
+Get chat announcement:
+
+```bash
+lark chats announcement get <CHAT_ID>
+```
+
+Update chat announcement:
+
+```bash
+lark chats announcement update --chat-id <CHAT_ID> --revision 12 --request '<REQUEST_JSON>'
 ```
 
 ### Drive

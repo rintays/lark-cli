@@ -241,16 +241,16 @@ Acceptance criteria:
 **Why:** common spreadsheet operations.
 
 Deliverables:
-- [ ] Add row/col operations (Sheets v3 sheet-rowcol):
+- [x] Add row/col operations (Sheets v3 sheet-rowcol):
   - [x] insert rows (v3 insert_dimension, `sheets rows insert`) (endpoint: `/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/insert_dimension`)
   - [x] insert cols (v3 insert_dimension, `sheets cols insert`)
   - [x] delete rows (`sheets rows delete`)
   - [x] delete cols (`sheets cols delete`)
-  - [ ] follow gog-style command tree
-  - [ ] SDK-first; otherwise `core.ApiReq` wrappers
+  - [x] follow gog-style command tree
+  - [x] SDK-first; otherwise `core.ApiReq` wrappers
 
 Acceptance criteria:
-- Integration tests cover at least one insert and one delete.
+- [x] Integration tests cover at least one insert and one delete.
 
 ---
 
@@ -525,3 +525,4 @@ Deliverables:
 - 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
+- 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).

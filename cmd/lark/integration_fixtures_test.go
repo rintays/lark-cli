@@ -236,7 +236,7 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 		}
 		fx.SpreadsheetToken = ssToken
 		t.Cleanup(func() {
-			if err := sdk.DeleteDriveFile(context.Background(), token, ssToken, "sheet"); err != nil {
+			if _, err := sdk.DeleteDriveFile(context.Background(), token, ssToken, "sheet"); err != nil {
 				t.Logf("cleanup: delete spreadsheet %s: %v", ssToken, err)
 			}
 		})

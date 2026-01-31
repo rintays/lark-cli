@@ -48,7 +48,9 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 | Calendar attendees | `/open-apis/calendar/v4/calendars/:id/events/:event_id/attendees` | Core ApiReq wrapper | tenant/user | v4 | `lark calendars create` (alias: `calendar`). |
 | Meetings info | `/open-apis/vc/v1/meetings/:meeting_id` | Core ApiReq wrapper | tenant/user | v1 | `lark meetings info`. |
 | Minutes info | `/open-apis/minutes/v1/minutes/:minute_token` | SDK minutes | tenant | v1 | `lark minutes info`. |
-| Minutes list | `/open-apis/minutes/v1/minutes` | Core ApiReq wrapper | tenant/user | v1 | `lark minutes list`. |
+| Minutes list | `/open-apis/drive/v1/files` | SDK drive list (filter type=minutes) | tenant/user | v1 | `lark minutes list`. |
+| Minutes delete | `/open-apis/drive/v1/files/:file_token` | SDK drive delete | tenant/user | v1 | `lark minutes delete`. |
+| Minutes update | `/open-apis/drive/v1/permissions/:file_token/public` | SDK drive permissions | tenant/user | v1 | `lark minutes update`. |
 | Mail folders | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/folders` | Core ApiReq wrapper | tenant/user | v1 | `lark mail folders`. |
 | Mail list | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages` | Core ApiReq wrapper | tenant/user | v1 | `lark mail list`. |
 | Mail info | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/:message_id` | Core ApiReq wrapper | tenant/user | v1 | `lark mail info`. |
