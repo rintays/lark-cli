@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
@@ -47,8 +48,10 @@ func (c *Client) BatchUpdateBaseRecords(ctx context.Context, token, appToken, ta
 	if len(records) == 0 {
 		return nil, errors.New("records are required")
 	}
+	normalized := make([]BaseRecordUpdate, 0, len(records))
 	for _, record := range records {
-		if record.RecordID == "" {
+		recordID := strings.TrimSpace(record.RecordID)
+		if recordID == "" {
 			return nil, errors.New("records include empty record_id")
 		}
 		if record.Fields == nil {
@@ -57,13 +60,14 @@ func (c *Client) BatchUpdateBaseRecords(ctx context.Context, token, appToken, ta
 		if len(record.Fields) == 0 {
 			return nil, errors.New("records include empty fields")
 		}
+		normalized = append(normalized, BaseRecordUpdate{RecordID: recordID, Fields: record.Fields})
 	}
 
 	// SDK doesn't currently expose client_token for this endpoint; fall back to core when needed.
 	if clientToken == "" && c.bitableRecordUpdateSDKAvailable() {
-		return c.batchUpdateBaseRecordsSDK(ctx, tenantToken, appToken, tableID, records, ignoreConsistencyCheck)
+		return c.batchUpdateBaseRecordsSDK(ctx, tenantToken, appToken, tableID, normalized, ignoreConsistencyCheck)
 	}
-	return c.batchUpdateBaseRecordsCore(ctx, tenantToken, appToken, tableID, records, clientToken, ignoreConsistencyCheck)
+	return c.batchUpdateBaseRecordsCore(ctx, tenantToken, appToken, tableID, normalized, clientToken, ignoreConsistencyCheck)
 }
 
 func (c *Client) batchUpdateBaseRecordsSDK(ctx context.Context, tenantToken, appToken, tableID string, records []BaseRecordUpdate, ignoreConsistencyCheck bool) ([]BaseRecord, error) {
@@ -121,6 +125,9 @@ func (c *Client) batchUpdateBaseRecordsCore(ctx context.Context, tenantToken, ap
 	}
 	apiReq.PathParams.Set("app_token", appToken)
 	apiReq.PathParams.Set("table_id", tableID)
+	if clientToken != "" {
+		apiReq.QueryParams.Set("client_token", clientToken)
+	}
 	if ignoreConsistencyCheck {
 		apiReq.QueryParams.Set("ignore_consistency_check", "true")
 	}

@@ -123,15 +123,17 @@ func parseBaseRecordBatchUpdateRecordsJSON(data []byte) ([]larksdk.BaseRecordUpd
 	if len(records) == 0 {
 		return nil, errors.New("records must include at least one record")
 	}
-	for _, record := range records {
-		if strings.TrimSpace(record.RecordID) == "" {
-			return nil, errors.New("records include empty record_id")
+	for i := range records {
+		record := &records[i]
+		record.RecordID = strings.TrimSpace(record.RecordID)
+		if record.RecordID == "" {
+			return nil, fmt.Errorf("records[%d].record_id is required", i)
 		}
 		if record.Fields == nil {
-			return nil, errors.New("records include null fields")
+			return nil, fmt.Errorf("records[%d].fields is required", i)
 		}
 		if len(record.Fields) == 0 {
-			return nil, errors.New("records include empty fields")
+			return nil, fmt.Errorf("records[%d].fields must not be empty", i)
 		}
 	}
 	return records, nil
