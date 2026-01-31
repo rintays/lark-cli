@@ -196,31 +196,31 @@ lark messages send --chat-id <CHAT_ID> --image-key <IMAGE_KEY>
 Reply in thread:
 
 ```bash
-lark messages reply --message-id <MESSAGE_ID> --text "reply" --reply-in-thread
+lark messages reply <MESSAGE_ID> --text "reply" --reply-in-thread
 ```
 
 Search messages (user token required):
 
 ```bash
-lark messages search --query "hello" --chat-id <CHAT_ID>
+lark messages search "hello" --chat-id <CHAT_ID>
 ```
 
 List recent messages:
 
 ```bash
-lark messages list --container-id <CHAT_ID> --limit 20
+lark messages list <CHAT_ID> --limit 20
 ```
 
 Add a reaction:
 
 ```bash
-lark messages reactions add --message-id <MESSAGE_ID> --emoji SMILE
+lark messages reactions add <MESSAGE_ID> SMILE
 ```
 
 Pin a message:
 
 ```bash
-lark messages pin --message-id <MESSAGE_ID>
+lark messages pin <MESSAGE_ID>
 ```
 
 ### Chats

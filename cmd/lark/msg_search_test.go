@@ -68,7 +68,7 @@ func TestMsgSearchCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMsgCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "hello", "--limit", "2", "--page-size", "2"})
+	cmd.SetArgs([]string{"search", "hello", "--limit", "2", "--page-size", "2"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("msg search error: %v", err)
 	}

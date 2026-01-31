@@ -69,7 +69,7 @@ func TestMsgListCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMsgCmd(state)
-	cmd.SetArgs([]string{"list", "--container-id", "oc_123", "--limit", "1"})
+	cmd.SetArgs([]string{"list", "oc_123", "--limit", "1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("msg list error: %v", err)
 	}
