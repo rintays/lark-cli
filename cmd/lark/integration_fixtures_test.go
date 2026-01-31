@@ -90,34 +90,37 @@ func (fx *integrationFixtures) EnsureBaseAppToken(t *testing.T) string {
 		FileTypes: []string{"bitable"},
 		PageSize:  50,
 	})
-	if err != nil {
-		t.Fatalf("search drive for base app: %v", err)
-	}
-	files := res.Files
-	for res.HasMore {
-		res, err = fx.SDK.SearchDriveFiles(ctx, fx.Token, larksdk.SearchDriveFilesRequest{
-			Query:     integrationBaseAppName,
-			FileTypes: []string{"bitable"},
-			PageSize:  50,
-			PageToken: res.PageToken,
-		})
-		if err != nil {
-			t.Fatalf("search drive for base app (page): %v", err)
+	if err == nil {
+		files := res.Files
+		for res.HasMore {
+			res, err = fx.SDK.SearchDriveFiles(ctx, fx.Token, larksdk.SearchDriveFilesRequest{
+				Query:     integrationBaseAppName,
+				FileTypes: []string{"bitable"},
+				PageSize:  50,
+				PageToken: res.PageToken,
+			})
+			if err != nil {
+				t.Fatalf("search drive for base app (page): %v", err)
+			}
+			files = append(files, res.Files...)
+			if !res.HasMore {
+				break
+			}
 		}
-		files = append(files, res.Files...)
-		if !res.HasMore {
-			break
-		}
-	}
 
-	for _, f := range files {
-		if f.Name != integrationBaseAppName {
-			continue
+		for _, f := range files {
+			if f.Name != integrationBaseAppName {
+				continue
+			}
+			if token, ok := parseBitableAppTokenFromURL(f.URL); ok {
+				fx.BaseAppToken = token
+				return fx.BaseAppToken
+			}
 		}
-		if token, ok := parseBitableAppTokenFromURL(f.URL); ok {
-			fx.BaseAppToken = token
-			return fx.BaseAppToken
-		}
+	} else {
+		// Some tenants require a user access token for drive search.
+		// Fall back to creating a fresh app token.
+		t.Logf("search drive for base app failed; creating a new one instead: %v", err)
 	}
 
 	app, err := fx.SDK.CreateBitableApp(ctx, fx.Token, integrationBaseAppName, fx.DriveFolderToken)
