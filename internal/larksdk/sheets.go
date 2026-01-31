@@ -263,44 +263,28 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 	if sheetRange == "" {
 		return ClearSheetRangeResult{}, errors.New("range is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return ClearSheetRangeResult{}, errors.New("tenant access token is required")
+
+	// Feishu/Lark Sheets clear endpoint can be unavailable/unstable across tenants.
+	// Implement "clear" by overwriting the target A1 range with empty strings.
+	rows, cols := a1RangeShape(sheetRange)
+	if rows <= 0 || cols <= 0 {
+		// Fallback: clear at least the first cell.
+		rows, cols = 1, 1
 	}
 
-	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/values/clear",
-		HttpMethod:                http.MethodPost,
-		PathParams:                larkcore.PathParams{},
-		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	values := make([][]any, 0, rows)
+	for i := 0; i < rows; i++ {
+		row := make([]any, 0, cols)
+		for j := 0; j < cols; j++ {
+			row = append(row, "")
+		}
+		values = append(values, row)
 	}
-	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
-	req.QueryParams.Set("range", sheetRange)
-
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	_, err := c.UpdateSheetRange(ctx, token, spreadsheetToken, sheetRange, values)
 	if err != nil {
 		return ClearSheetRangeResult{}, err
 	}
-	if apiResp == nil {
-		return ClearSheetRangeResult{}, errors.New("clear sheet range failed: empty response")
-	}
-	resp := &clearSheetRangeResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
-		return ClearSheetRangeResult{}, err
-	}
-	if !resp.Success() {
-		return ClearSheetRangeResult{}, fmt.Errorf("clear sheet range failed: %s", resp.Msg)
-	}
-	result := ClearSheetRangeResult{ClearedRange: sheetRange}
-	if resp.Data != nil {
-		if resp.Data.ClearedRange != "" {
-			result.ClearedRange = resp.Data.ClearedRange
-		} else if resp.Data.ClearedRangeLegacy != "" {
-			result.ClearedRange = resp.Data.ClearedRangeLegacy
-		}
-	}
-	return result, nil
+	return ClearSheetRangeResult{ClearedRange: sheetRange}, nil
 }
 
 func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionInsertResult, error) {
@@ -340,6 +324,9 @@ func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, s
 			"major_dimension": "ROWS",
 			"start_index":     startIndex,
 			"end_index":       endIndex,
+			"majorDimension":  "ROWS",
+			"startIndex":      startIndex,
+			"endIndex":        endIndex,
 		},
 	}
 
@@ -397,6 +384,9 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 			"major_dimension": "ROWS",
 			"start_index":     startIndex,
 			"end_index":       endIndex,
+			"majorDimension":  "ROWS",
+			"startIndex":      startIndex,
+			"endIndex":        endIndex,
 		},
 	}
 
@@ -454,6 +444,9 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 			"major_dimension": "COLS",
 			"start_index":     startIndex,
 			"end_index":       endIndex,
+			"majorDimension":  "COLS",
+			"startIndex":      startIndex,
+			"endIndex":        endIndex,
 		},
 	}
 
@@ -511,6 +504,9 @@ func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, s
 			"major_dimension": "COLS",
 			"start_index":     startIndex,
 			"end_index":       endIndex,
+			"majorDimension":  "COLS",
+			"startIndex":      startIndex,
+			"endIndex":        endIndex,
 		},
 	}
 

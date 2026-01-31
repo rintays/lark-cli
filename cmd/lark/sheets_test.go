@@ -331,24 +331,33 @@ func TestSheetsMetadataCommandRequiresSpreadsheetID(t *testing.T) {
 
 func TestSheetsClearCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Fatalf("expected POST, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Fatalf("expected PUT, got %s", r.Method)
 		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values/clear" {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.URL.Query().Get("range") != "Sheet1!A1:B2" {
-			t.Fatalf("unexpected range query: %s", r.URL.RawQuery)
+		// Clear is implemented as update with empty strings.
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		vr, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange: %v", payload)
+		}
+		if vr["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", vr["range"])
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"clearedRange": "Sheet1!A1:B2",
+				"updatedCells": 4,
 			},
 		})
 	})

@@ -246,6 +246,9 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			if folderToken == "" {
+				folderToken = "root"
+			}
 			result, err := state.SDK.UploadDriveFile(context.Background(), token, larksdk.UploadDriveFileRequest{
 				FileName:    uploadName,
 				FolderToken: folderToken,

@@ -32,8 +32,9 @@ func TestIntegrationBaseRecordCreateGetDelete(t *testing.T) {
 			t.Fatalf("list base fields: %v", err)
 		}
 		for _, f := range fields.Items {
-			if f.Type == 1 && f.FieldName != "" {
-				fieldName = f.FieldName
+			// Prefer a simple text field.
+			if f.Type == 1 && f.FieldID != "" {
+				fieldName = f.FieldID
 				break
 			}
 		}
