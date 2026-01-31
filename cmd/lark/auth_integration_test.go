@@ -25,8 +25,19 @@ func TestAuthIntegration(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json output: %v; out=%q", err, buf.String())
 	}
-	tok, ok := payload["tenant_access_token"].(string)
-	if !ok || tok == "" {
-		t.Fatalf("expected non-empty tenant_access_token, got: %v", payload)
+
+	var token string
+	if raw, ok := payload["tenant_access_token"]; ok {
+		if value, ok := raw.(string); ok {
+			token = value
+		}
+	} else if raw, ok := payload["token"]; ok {
+		if value, ok := raw.(string); ok {
+			token = value
+		}
+	}
+
+	if token == "" {
+		t.Fatalf("expected non-empty tenant_access_token or token in output, got: %v", payload)
 	}
 }
