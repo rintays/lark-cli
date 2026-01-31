@@ -127,10 +127,10 @@ Work items (must follow the design, not ad-hoc patches):
     - [x] Longest-prefix matching for command paths (e.g. "drive list" maps via "drive")
     - [x] Metadata aggregation helper: command → (services, token types, offline requirement, required user scopes)
     - [x] Detect TokenUser services missing declared RequiredUserScopes (so we don’t pretend we know scopes yet)
-- [ ] **Scope variants as first-class knobs**
+- [x] **Scope variants as first-class knobs**
   - [x] `lark auth explain --readonly` (use per-service UserScopes variants when available; fallback to RequiredUserScopes)
-  - [ ] `--readonly` mode (where feasible)
-  - [ ] per-service scope variants (if Feishu/Lark has meaningful levels; drive is the likely one)
+  - [x] `--readonly` mode (where feasible; use readonly scope variants per service when available, otherwise fall back)
+  - [x] per-service scope variants (start with Drive: `drive:drive` vs `drive:drive:readonly`)
 - [ ] **Incremental authorization** (gog `include_granted_scopes=true` analogue)
   - [ ] Default to incremental grant when adding services/scopes (avoid re-consenting everything)
 - [ ] **Explicit re-auth triggers** (gog `--force-consent` analogue)
