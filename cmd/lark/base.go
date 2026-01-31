@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -87,10 +86,7 @@ func newBaseTableListCmd(state *appState) *cobra.Command {
 			for _, table := range tables {
 				lines = append(lines, fmt.Sprintf("%s\t%s", table.TableID, table.Name))
 			}
-			text := "no tables found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"table_id", "name"}, lines, "no tables found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -125,10 +121,7 @@ func newBaseFieldListCmd(state *appState) *cobra.Command {
 			for _, field := range fields {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%d", field.FieldID, field.FieldName, field.Type))
 			}
-			text := "no fields found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"field_id", "name", "type"}, lines, "no fields found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -165,10 +158,7 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 			for _, view := range views {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", view.ViewID, view.Name, view.ViewType))
 			}
-			text := "no views found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"view_id", "name", "type"}, lines, "no views found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -201,7 +191,10 @@ func newBaseRecordGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"record": record}
-			text := fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime, record.LastModifiedTime)
+			text := tableTextRow(
+				[]string{"record_id", "created_time", "last_modified_time"},
+				[]string{record.RecordID, record.CreatedTime, record.LastModifiedTime},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

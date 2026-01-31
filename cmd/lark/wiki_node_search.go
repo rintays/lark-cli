@@ -86,10 +86,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 			for _, n := range nodes {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", n.NodeToken, n.ObjType, n.Title, n.URL))
 			}
-			text := "no nodes found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"node_token", "obj_type", "title", "url"}, lines, "no nodes found")
 			return state.Printer.Print(payload, text)
 		},
 	}

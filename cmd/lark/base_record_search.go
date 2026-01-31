@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -53,10 +52,7 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 			for _, record := range records {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime, record.LastModifiedTime))
 			}
-			text := "no records found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"record_id", "created_time", "last_modified_time"}, lines, "no records found")
 			return state.Printer.Print(payload, text)
 		},
 	}

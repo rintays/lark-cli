@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -30,7 +29,7 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"table": table}
-			text := fmt.Sprintf("%s\t%s", table.TableID, table.Name)
+			text := tableTextRow([]string{"table_id", "name"}, []string{table.TableID, table.Name})
 			return state.Printer.Print(payload, text)
 		},
 	}

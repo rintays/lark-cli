@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -32,7 +31,7 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 				"title":             title,
 				"folder_id":         folderID,
 			}
-			text := fmt.Sprintf("%s\t%s", spreadsheetToken, title)
+			text := tableTextRow([]string{"spreadsheet_token", "title"}, []string{spreadsheetToken, title})
 			return state.Printer.Print(payload, text)
 		},
 	}

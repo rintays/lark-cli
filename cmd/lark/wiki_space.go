@@ -77,10 +77,7 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 			for _, s := range items {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", s.SpaceID, s.Name, s.SpaceType, s.Visibility))
 			}
-			text := "no spaces found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"space_id", "name", "space_type", "visibility"}, lines, "no spaces found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -109,7 +106,10 @@ func newWikiSpaceGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"space": space}
-			text := fmt.Sprintf("%s\t%s\t%s\t%s", space.SpaceID, space.Name, space.SpaceType, space.Visibility)
+			text := tableTextRow(
+				[]string{"space_id", "name", "space_type", "visibility"},
+				[]string{space.SpaceID, space.Name, space.SpaceType, space.Visibility},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

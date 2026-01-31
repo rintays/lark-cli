@@ -64,7 +64,8 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"mailbox": mailbox}
-			return state.Printer.Print(payload, formatMailMailboxLine(mailbox))
+			text := tableText([]string{"mailbox_id", "name", "address"}, []string{formatMailMailboxLine(mailbox)}, "no mailbox found")
+			return state.Printer.Print(payload, text)
 		},
 	}
 
@@ -142,10 +143,7 @@ func newMailMailboxesListCmd(state *appState) *cobra.Command {
 			for _, mailbox := range mailboxes {
 				lines = append(lines, formatMailMailboxLine(mailbox))
 			}
-			text := "no public mailboxes found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"mailbox_id", "name", "address"}, lines, "no public mailboxes found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -173,10 +171,7 @@ func newMailPublicMailboxesListCmd(state *appState) *cobra.Command {
 			for _, mailbox := range mailboxes {
 				lines = append(lines, formatMailMailboxLine(mailbox))
 			}
-			text := "no public mailboxes found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"mailbox_id", "name", "address"}, lines, "no public mailboxes found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -207,10 +202,7 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 			for _, folder := range folders {
 				lines = append(lines, formatMailFolderLine(folder))
 			}
-			text := "no folders found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"folder_id", "name", "type"}, lines, "no folders found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -297,10 +289,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 			for _, message := range messages {
 				lines = append(lines, formatMailMessageLine(message.MessageID, message.Subject))
 			}
-			text := "no messages found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"message_id", "subject"}, lines, "no messages found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -347,7 +336,8 @@ func newMailGetCmd(state *appState) *cobra.Command {
 				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"message": message}
-			return state.Printer.Print(payload, formatMailMessageLine(message.MessageID, message.Subject))
+			text := tableText([]string{"message_id", "subject"}, []string{formatMailMessageLine(message.MessageID, message.Subject)}, "no message found")
+			return state.Printer.Print(payload, text)
 		},
 	}
 
@@ -433,10 +423,8 @@ func newMailSendCmd(state *appState) *cobra.Command {
 }
 
 func formatMailFolderLine(folder larksdk.MailFolder) string {
-	parts := []string{folder.FolderID, folder.Name}
-	if folder.FolderType.String() != "" {
-		parts = append(parts, folder.FolderType.String())
-	}
+	folderType := folder.FolderType.String()
+	parts := []string{folder.FolderID, folder.Name, folderType}
 	return strings.Join(parts, "\t")
 }
 
@@ -464,16 +452,13 @@ func formatMailMailboxLine(mailbox larksdk.Mailbox) string {
 	if id == "" {
 		id = address
 	}
-	parts := []string{}
-	if id != "" {
-		parts = append(parts, id)
+	if primary == id {
+		primary = ""
 	}
-	if primary != "" && primary != id {
-		parts = append(parts, primary)
+	if address == id || address == primary {
+		address = ""
 	}
-	if address != "" && address != id && address != primary {
-		parts = append(parts, address)
-	}
+	parts := []string{id, primary, address}
 	return strings.Join(parts, "\t")
 }
 

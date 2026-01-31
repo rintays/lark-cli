@@ -180,10 +180,7 @@ func newAuthUserServicesCmd(state *appState) *cobra.Command {
 				ro := strings.Join(set.Readonly, " ")
 				lines = append(lines, fmt.Sprintf("%s\tfull=%s\treadonly=%s", svc, full, ro))
 			}
-			text := "no services configured"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"service", "full", "readonly"}, lines, "no services configured")
 			return state.Printer.Print(payload, text)
 		},
 	}

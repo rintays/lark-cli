@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -67,7 +66,16 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"meeting": meeting}
-			text := fmt.Sprintf("%s\t%s\t%d\t%s\t%s", meeting.ID, meeting.Topic, meeting.Status, meeting.StartTime, meeting.EndTime)
+			text := tableTextRow(
+				[]string{"meeting_id", "topic", "status", "start_time", "end_time"},
+				[]string{
+					meeting.ID,
+					meeting.Topic,
+					fmt.Sprintf("%d", meeting.Status),
+					meeting.StartTime,
+					meeting.EndTime,
+				},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -133,10 +141,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 				}
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s\t%s", meeting.ID, meeting.Topic, status, meeting.StartTime, meeting.EndTime))
 			}
-			text := "no meetings found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"meeting_id", "topic", "status", "start_time", "end_time"}, lines, "no meetings found")
 			return state.Printer.Print(payload, text)
 		},
 	}

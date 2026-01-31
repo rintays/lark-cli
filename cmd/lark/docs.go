@@ -55,7 +55,10 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"document": doc}
-			text := fmt.Sprintf("%s\t%s\t%s", doc.DocumentID, doc.Title, doc.URL)
+			text := tableTextRow(
+				[]string{"document_id", "title", "url"},
+				[]string{doc.DocumentID, doc.Title, doc.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -85,7 +88,10 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"document": doc}
-			text := fmt.Sprintf("%s\t%s\t%s", doc.DocumentID, doc.Title, doc.URL)
+			text := tableTextRow(
+				[]string{"document_id", "title", "url"},
+				[]string{doc.DocumentID, doc.Title, doc.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -148,7 +154,10 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 				"output_path":   outPath,
 				"bytes_written": written,
 			}
-			text := fmt.Sprintf("%s\t%s\t%d", documentID, outPath, written)
+			text := tableTextRow(
+				[]string{"document_id", "output_path", "bytes_written"},
+				[]string{documentID, outPath, fmt.Sprintf("%d", written)},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

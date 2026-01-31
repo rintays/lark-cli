@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -34,7 +33,10 @@ func newWikiNodeGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"node": node}
-			text := fmt.Sprintf("%s\t%s\t%s\t%s", node.NodeToken, node.ObjType, node.Title, node.ObjToken)
+			text := tableTextRow(
+				[]string{"node_token", "obj_type", "title", "obj_token"},
+				[]string{node.NodeToken, node.ObjType, node.Title, node.ObjToken},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
