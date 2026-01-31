@@ -236,6 +236,12 @@ Get chat info:
 ```bash
 lark chats get <CHAT_ID>
 ```
+By default this includes a member preview; adjust or disable it with:
+
+```bash
+lark chats get <CHAT_ID> --members-limit 50
+lark chats get <CHAT_ID> --members-limit 0
+```
 
 Update chat info:
 

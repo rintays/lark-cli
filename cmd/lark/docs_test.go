@@ -286,7 +286,13 @@ func TestDocsInfoCommandFallbackURL(t *testing.T) {
 	if !driveCalled {
 		t.Fatal("drive metadata endpoint not called")
 	}
-	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
+	if !strings.Contains(buf.String(), "document_id\tdoc1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "title\tSpecs") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "url\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

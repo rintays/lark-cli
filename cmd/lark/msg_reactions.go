@@ -30,26 +30,18 @@ func newMsgReactionsAddCmd(state *appState) *cobra.Command {
 			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if messageID != "" && messageID != args[0] {
-					return errors.New("message-id provided twice")
-				}
-				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
-					return err
-				}
-			}
-			if len(args) > 1 {
-				if emojiType != "" && emojiType != args[1] {
-					return errors.New("emoji provided twice")
-				}
-				if err := cmd.Flags().Set("emoji", args[1]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(messageID) == "" {
+			if len(args) == 0 {
 				return errors.New("message-id is required")
 			}
-			if strings.TrimSpace(emojiType) == "" {
+			if len(args) < 2 {
+				return errors.New("emoji is required")
+			}
+			messageID = strings.TrimSpace(args[0])
+			emojiType = strings.TrimSpace(args[1])
+			if messageID == "" {
+				return errors.New("message-id is required")
+			}
+			if emojiType == "" {
 				return errors.New("emoji is required")
 			}
 			return nil
@@ -75,8 +67,6 @@ func newMsgReactionsAddCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&emojiType, "emoji", "", "emoji type (e.g. SMILE) (or provide as positional argument)")
 	return cmd
 }
 
@@ -91,26 +81,18 @@ func newMsgReactionsDeleteCmd(state *appState) *cobra.Command {
 			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if messageID != "" && messageID != args[0] {
-					return errors.New("message-id provided twice")
-				}
-				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
-					return err
-				}
-			}
-			if len(args) > 1 {
-				if reactionID != "" && reactionID != args[1] {
-					return errors.New("reaction-id provided twice")
-				}
-				if err := cmd.Flags().Set("reaction-id", args[1]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(messageID) == "" {
+			if len(args) == 0 {
 				return errors.New("message-id is required")
 			}
-			if strings.TrimSpace(reactionID) == "" {
+			if len(args) < 2 {
+				return errors.New("reaction-id is required")
+			}
+			messageID = strings.TrimSpace(args[0])
+			reactionID = strings.TrimSpace(args[1])
+			if messageID == "" {
+				return errors.New("message-id is required")
+			}
+			if reactionID == "" {
 				return errors.New("reaction-id is required")
 			}
 			return nil
@@ -136,7 +118,5 @@ func newMsgReactionsDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&reactionID, "reaction-id", "", "reaction ID (or provide as positional argument)")
 	return cmd
 }
