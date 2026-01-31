@@ -25,7 +25,7 @@ func newDocsCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newDocsListCmd(state))
 	cmd.AddCommand(newDocsCreateCmd(state))
-	cmd.AddCommand(newDocsGetCmd(state))
+	cmd.AddCommand(newDocsInfoCmd(state))
 	cmd.AddCommand(newDocsExportCmd(state))
 	cmd.AddCommand(newDocsCatCmd(state))
 	cmd.AddCommand(newDocsSearchCmd(state))
@@ -37,8 +37,23 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 	var folderID string
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <title>",
 		Short: "Create a Docs (docx) document",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(title) == "" {
+					return errors.New("title is required")
+				}
+				return nil
+			}
+			if title != "" && title != args[0] {
+				return errors.New("title provided twice")
+			}
+			return cmd.Flags().Set("title", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -55,23 +70,40 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"document": doc}
-			text := fmt.Sprintf("%s\t%s\t%s", doc.DocumentID, doc.Title, doc.URL)
+			text := tableTextRow(
+				[]string{"document_id", "title", "url"},
+				[]string{doc.DocumentID, doc.Title, doc.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&title, "title", "", "document title")
+	cmd.Flags().StringVar(&title, "title", "", "document title (or provide as positional argument)")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root)")
-	_ = cmd.MarkFlagRequired("title")
 	return cmd
 }
 
-func newDocsGetCmd(state *appState) *cobra.Command {
+func newDocsInfoCmd(state *appState) *cobra.Command {
 	var documentID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get Docs (docx) document metadata",
+		Use:   "info <doc-id>",
+		Short: "Show Docs (docx) document info",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(documentID) == "" {
+					return errors.New("doc-id is required")
+				}
+				return nil
+			}
+			if documentID != "" && documentID != args[0] {
+				return errors.New("doc-id provided twice")
+			}
+			return cmd.Flags().Set("doc-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -85,13 +117,15 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"document": doc}
-			text := fmt.Sprintf("%s\t%s\t%s", doc.DocumentID, doc.Title, doc.URL)
+			text := tableTextRow(
+				[]string{"document_id", "title", "url"},
+				[]string{doc.DocumentID, doc.Title, doc.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID")
-	_ = cmd.MarkFlagRequired("doc-id")
+	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	return cmd
 }
 
@@ -101,8 +135,23 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 	var outPath string
 
 	cmd := &cobra.Command{
-		Use:   "export --doc-id <DOCUMENT_ID> --format pdf --out <path>",
+		Use:   "export <doc-id> --format pdf --out <path>",
 		Short: "Export a Docs (docx) document",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(documentID) == "" {
+					return errors.New("doc-id is required")
+				}
+				return nil
+			}
+			if documentID != "" && documentID != args[0] {
+				return errors.New("doc-id provided twice")
+			}
+			return cmd.Flags().Set("doc-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if info, err := os.Stat(outPath); err == nil && info.IsDir() {
 				return fmt.Errorf("output path is a directory: %s", outPath)
@@ -148,15 +197,17 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 				"output_path":   outPath,
 				"bytes_written": written,
 			}
-			text := fmt.Sprintf("%s\t%s\t%d", documentID, outPath, written)
+			text := tableTextRow(
+				[]string{"document_id", "output_path", "bytes_written"},
+				[]string{documentID, outPath, fmt.Sprintf("%d", written)},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID")
+	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&format, "format", "", "export format (pdf)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
-	_ = cmd.MarkFlagRequired("doc-id")
 	_ = cmd.MarkFlagRequired("format")
 	_ = cmd.MarkFlagRequired("out")
 	return cmd
@@ -167,8 +218,23 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 	var format string
 
 	cmd := &cobra.Command{
-		Use:   "cat --doc-id <DOCUMENT_ID> [--format txt|md]",
+		Use:   "cat <doc-id> [--format txt|md]",
 		Short: "Print Docs (docx) document content",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(documentID) == "" {
+					return errors.New("doc-id is required")
+				}
+				return nil
+			}
+			if documentID != "" && documentID != args[0] {
+				return errors.New("doc-id provided twice")
+			}
+			return cmd.Flags().Set("doc-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			format = strings.ToLower(strings.TrimSpace(format))
 			if format == "" {
@@ -203,9 +269,8 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID")
+	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&format, "format", "txt", "output format (txt or md)")
-	_ = cmd.MarkFlagRequired("doc-id")
 	return cmd
 }
 

@@ -57,7 +57,7 @@ func TestBaseAppGetCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"app", "get", "--app-token", "app_1"})
+	cmd.SetArgs([]string{"app", "info", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base app get error: %v", err)
 	}
