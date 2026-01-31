@@ -56,8 +56,19 @@ func TestSheetsUpdateIntegration(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &readPayload); err != nil {
 		t.Fatalf("invalid json output (read): %v; out=%q", err, buf.String())
 	}
-	// We keep this tolerant by scanning the raw output for the timestamp.
-	if !strings.Contains(buf.String(), ts) {
-		t.Fatalf("expected read output to contain timestamp %q; got payload=%v", ts, readPayload)
+	valueRange, ok := readPayload["valueRange"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected valueRange in read output, got: %v", readPayload)
+	}
+	readValues, ok := valueRange["values"]
+	if !ok {
+		t.Fatalf("expected values in read output, got: %v", valueRange)
+	}
+	readValuesJSON, err := json.Marshal(readValues)
+	if err != nil {
+		t.Fatalf("marshal read values: %v", err)
+	}
+	if !strings.Contains(string(readValuesJSON), ts) {
+		t.Fatalf("expected read values to include timestamp %q, got: %s", ts, string(readValuesJSON))
 	}
 }
