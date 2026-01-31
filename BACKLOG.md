@@ -350,6 +350,7 @@ Deliverables:
   - [x] `mail mailbox info` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
   - [x] README now points to the correct backlog path (`<workspace>/lark/BACKLOG.md`)
+  - [x] `calendars` help text uses plural canonical naming and documents the `calendar` alias (+ test)
 - [x] Fix: `docs` command no longer registers `list` twice.
 
 Additional consistency work:
