@@ -12,7 +12,7 @@ import (
 )
 
 func TestBuildUserAuthorizeURL(t *testing.T) {
-	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access")
+	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access", "")
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
 	}
@@ -38,6 +38,24 @@ func TestBuildUserAuthorizeURL(t *testing.T) {
 	}
 	if query.Get("scope") != "offline_access" {
 		t.Fatalf("unexpected scope: %s", query.Get("scope"))
+	}
+	if query.Get("prompt") != "" {
+		t.Fatalf("unexpected prompt: %s", query.Get("prompt"))
+	}
+}
+
+func TestBuildUserAuthorizeURLForceConsentAddsPrompt(t *testing.T) {
+	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", "offline_access", "consent")
+	if err != nil {
+		t.Fatalf("build authorize url: %v", err)
+	}
+	parsed, err := url.Parse(urlStr)
+	if err != nil {
+		t.Fatalf("parse authorize url: %v", err)
+	}
+	query := parsed.Query()
+	if query.Get("prompt") != "consent" {
+		t.Fatalf("expected prompt=consent, got %q", query.Get("prompt"))
 	}
 }
 
@@ -114,7 +132,7 @@ func TestRequireUserRefreshToken(t *testing.T) {
 	if !strings.Contains(err.Error(), "offline access was not granted") {
 		t.Fatalf("expected offline access hint, got %q", err.Error())
 	}
-	if !strings.Contains(err.Error(), "lark auth user login --scope offline_access") {
+	if !strings.Contains(err.Error(), "lark auth user login --scope offline_access --force-consent") {
 		t.Fatalf("expected re-run instruction, got %q", err.Error())
 	}
 	if !strings.Contains(err.Error(), "redirect URL/config") {

@@ -55,6 +55,7 @@ func newAuthUserCmd(state *appState) *cobra.Command {
 func newAuthUserLoginCmd(state *appState) *cobra.Command {
 	var scope string
 	var timeout time.Duration
+	var forceConsent bool
 
 	cmd := &cobra.Command{
 		Use:   "login",
@@ -67,7 +68,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			authorizeURL, err := buildUserAuthorizeURL(state.Config.BaseURL, state.Config.AppID, userOAuthRedirectURL, authState, userOAuthScope(scope, cmd.Flags().Changed("scope")))
+			authorizeURL, err := buildUserAuthorizeURL(state.Config.BaseURL, state.Config.AppID, userOAuthRedirectURL, authState, userOAuthScope(scope, cmd.Flags().Changed("scope")), userOAuthPrompt(forceConsent))
 			if err != nil {
 				return err
 			}
@@ -124,6 +125,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&scope, "scope", "", "OAuth scopes (space-separated)")
+	cmd.Flags().BoolVar(&forceConsent, "force-consent", false, "force showing the consent screen")
 	cmd.Flags().DurationVar(&timeout, "timeout", 2*time.Minute, "timeout waiting for OAuth callback")
 
 	return cmd
@@ -148,10 +150,17 @@ func requireUserRefreshToken(refreshToken string) error {
 	if refreshToken != "" {
 		return nil
 	}
-	return errors.New("offline access was not granted: refresh_token missing from OAuth response; re-run with: lark auth user login --scope offline_access; check console redirect URL/config")
+	return errors.New("offline access was not granted: refresh_token missing from OAuth response; re-run with: lark auth user login --scope offline_access --force-consent; check console redirect URL/config")
 }
 
-func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope string) (string, error) {
+func userOAuthPrompt(forceConsent bool) string {
+	if forceConsent {
+		return "consent"
+	}
+	return ""
+}
+
+func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope, prompt string) (string, error) {
 	base, err := url.Parse(baseURL)
 	if err != nil {
 		return "", err
@@ -166,6 +175,9 @@ func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope string) (st
 	}
 	if scope != "" {
 		query.Set("scope", scope)
+	}
+	if prompt != "" {
+		query.Set("prompt", prompt)
 	}
 	base.RawQuery = query.Encode()
 	return base.String(), nil

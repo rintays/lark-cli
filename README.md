@@ -318,7 +318,7 @@ lark calendar create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --en
 Some Mail actions (notably **`mail send`**) require a **user access token** (OAuth), not a tenant token.
 
 Current behavior:
-- Run `lark auth user login` to launch OAuth and store tokens locally
+- Run `lark auth user login` to launch OAuth and store tokens locally (add `--force-consent` if you need to re-grant scopes / refresh token)
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
 - Mail commands `mail folders/list/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
