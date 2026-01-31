@@ -321,7 +321,7 @@ Mail CLI-only usability gaps:
   - [ ] Fill remaining config knobs for true CLI-only workflows:
     - [x] `lark config set --default-mailbox-id <id|me>` (parity with unset)
     - [x] `lark config set --app-id ... --app-secret ...` (optional; alternative to `lark auth login`)
-    - [ ] `lark config list-keys` (or document all supported keys in `lark config set --help`)
+    - [x] `lark config list-keys` (or document all supported keys in `lark config set --help`)
     - [ ] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile get/set
   - [ ] (Alternative) keep domain-specific where it’s clearer: `auth platform set/get`, `mail mailbox get-default/unset-default`, `auth user status/logout`
 
