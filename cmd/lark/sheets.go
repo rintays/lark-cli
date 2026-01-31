@@ -22,6 +22,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newSheetsAppendCmd(state))
 	cmd.AddCommand(newSheetsMetadataCmd(state))
 	cmd.AddCommand(newSheetsClearCmd(state))
+	cmd.AddCommand(newSheetsRowsCmd(state))
 	return cmd
 }
 
