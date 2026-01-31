@@ -78,13 +78,5 @@ func (c *Client) DeleteBaseTable(ctx context.Context, token, appToken, tableID s
 		return BaseTableDeleteResult{}, fmt.Errorf("delete base table failed: %s", resp.Msg)
 	}
 	result := BaseTableDeleteResult{TableID: tableID, Deleted: true}
-	if resp.Data != nil {
-		if resp.Data.TableId != nil && *resp.Data.TableId != "" {
-			result.TableID = *resp.Data.TableId
-		}
-		if resp.Data.Deleted != nil {
-			result.Deleted = *resp.Data.Deleted
-		}
-	}
 	return result, nil
 }
