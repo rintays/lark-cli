@@ -79,4 +79,36 @@ func TestMsgListCommandWithSDK(t *testing.T) {
 	if !strings.Contains(buf.String(), "hi") {
 		t.Fatalf("unexpected output (missing content): %q", buf.String())
 	}
+	metaIndex := strings.Index(buf.String(), "id: m1")
+	contentIndex := strings.Index(buf.String(), "hi")
+	if metaIndex == -1 || contentIndex == -1 || metaIndex > contentIndex {
+		t.Fatalf("unexpected output (meta should appear before content): %q", buf.String())
+	}
+}
+
+func TestMessageContentForDisplayMentions(t *testing.T) {
+	message := larksdk.Message{
+		MsgType: "text",
+		Body:    larksdk.MessageBody{Content: `{"text":"@_user_1 hello"}`},
+		Mentions: []larksdk.MessageMention{
+			{Key: "@_user_1", ID: "ou_123", IDType: "user_id"},
+		},
+	}
+	got := messageContentForDisplay(message)
+	want := "[@_user_1](user_id://ou_123) hello"
+	if got != want {
+		t.Fatalf("unexpected mention render: %q", got)
+	}
+}
+
+func TestMessageContentForDisplayTemplate(t *testing.T) {
+	message := larksdk.Message{
+		MsgType: "system",
+		Body:    larksdk.MessageBody{Content: `{"template":"{from_user} started the group chat.","from_user":["Fred Liang"],"divider_text":{}}`},
+	}
+	got := messageContentForDisplay(message)
+	want := "Fred Liang started the group chat."
+	if got != want {
+		t.Fatalf("unexpected template render: %q", got)
+	}
 }
