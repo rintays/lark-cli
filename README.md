@@ -135,7 +135,7 @@ lark auth
 lark whoami
 lark chats list --limit 10
 lark users search --email user@example.com
-lark messages send --chat-id <CHAT_ID> --text "hello"
+lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
 ---
@@ -172,7 +172,7 @@ Precedence:
 ### Send a message
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --text "hello"
+lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
 Send to a user by email:
@@ -184,13 +184,13 @@ lark messages send --receive-id-type email --receive-id user@example.com --text 
 Send a post (rich text):
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
+lark messages send --receive-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
 ```
 
 Send an image:
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --image-key <IMAGE_KEY>
+lark messages send --receive-id <CHAT_ID> --image-key <IMAGE_KEY>
 ```
 
 Reply in thread:
@@ -248,7 +248,7 @@ lark chats get <CHAT_ID> --members-limit 0
 Update chat info:
 
 ```bash
-lark chats update --chat-id <CHAT_ID> --name "New Name"
+lark chats update <CHAT_ID> --name "New Name"
 ```
 
 Get chat announcement:
