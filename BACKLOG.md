@@ -351,7 +351,7 @@ Known facts from prior research (must be reflected in code decisions):
 
 Deliverables:
 - [ ] P0 (v2 SDK-backed):
-  - [ ] `wiki space list/get`
+  - [x] `wiki space list/get` (skeleton: not implemented yet)
   - [ ] `wiki node get/list`
   - [ ] `wiki member` management
   - [ ] `wiki task` query (if useful)
