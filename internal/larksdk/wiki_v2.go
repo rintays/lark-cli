@@ -27,6 +27,38 @@ type ListWikiSpacesResult struct {
 	PageToken string      `json:"page_token"`
 }
 
+type GetWikiSpaceRequest struct {
+	SpaceID string
+}
+
+func (c *Client) GetWikiSpaceV2(ctx context.Context, token string, req GetWikiSpaceRequest) (WikiSpace, error) {
+	if !c.available() {
+		return WikiSpace{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return WikiSpace{}, errors.New("tenant access token is required")
+	}
+	if req.SpaceID == "" {
+		return WikiSpace{}, errors.New("space id is required")
+	}
+	builder := larkwiki.NewGetSpaceReqBuilder().SpaceId(req.SpaceID)
+	resp, err := c.sdk.Wiki.V2.Space.Get(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiSpace{}, err
+	}
+	if resp == nil {
+		return WikiSpace{}, errors.New("wiki space get failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiSpace{}, fmt.Errorf("wiki space get failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Space == nil {
+		return WikiSpace{}, errors.New("wiki space get failed: missing space")
+	}
+	return convertWikiSpace(resp.Data.Space), nil
+}
+
 func (c *Client) ListWikiSpacesV2(ctx context.Context, token string, req ListWikiSpacesRequest) (ListWikiSpacesResult, error) {
 	if !c.available() {
 		return ListWikiSpacesResult{}, ErrUnavailable
@@ -70,22 +102,26 @@ func (c *Client) ListWikiSpacesV2(ctx context.Context, token string, req ListWik
 		if s == nil {
 			continue
 		}
-		ws := WikiSpace{}
-		if s.SpaceId != nil {
-			ws.SpaceID = *s.SpaceId
-		}
-		if s.Name != nil {
-			ws.Name = *s.Name
-		}
-		if s.SpaceType != nil {
-			ws.SpaceType = *s.SpaceType
-		}
-		if s.Visibility != nil {
-			ws.Visibility = *s.Visibility
-		}
-		out.Items = append(out.Items, ws)
+		out.Items = append(out.Items, convertWikiSpace(s))
 	}
 	return out, nil
+}
+
+func convertWikiSpace(s *larkwiki.Space) WikiSpace {
+	ws := WikiSpace{}
+	if s.SpaceId != nil {
+		ws.SpaceID = *s.SpaceId
+	}
+	if s.Name != nil {
+		ws.Name = *s.Name
+	}
+	if s.SpaceType != nil {
+		ws.SpaceType = *s.SpaceType
+	}
+	if s.Visibility != nil {
+		ws.Visibility = *s.Visibility
+	}
+	return ws
 }
 
 type WikiNode struct {
