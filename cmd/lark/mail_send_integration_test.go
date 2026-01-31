@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -13,21 +12,16 @@ import (
 func TestMailSendIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	to := os.Getenv("LARK_TEST_MAIL_TO")
-	if to == "" {
-		t.Skip("missing LARK_TEST_MAIL_TO")
-	}
+	to := testutil.RequireEnv(t, "LARK_TEST_MAIL_TO")
+	fx := getIntegrationFixtures(t)
 
-	// Requires a user token. We intentionally rely on the CLI's normal resolution:
-	// --user-access-token / env LARK_USER_ACCESS_TOKEN / stored token from `lark auth user login`.
-
-	subject := "clawdbot-it " + time.Now().Format("20060102-150405")
+	subject := integrationFixturePrefix + "mail-" + time.Now().Format("20060102-150405")
 
 	var buf bytes.Buffer
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "mail", "send", "--to", to, "--subject", subject, "--text", "ping"})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "mail", "send", "--to", to, "--subject", subject, "--text", "ping"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("mail send failed: %v", err)

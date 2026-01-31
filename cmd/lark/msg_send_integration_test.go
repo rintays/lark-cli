@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -13,16 +12,14 @@ import (
 func TestMsgSendIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	chatID := os.Getenv("LARK_TEST_CHAT_ID")
-	if chatID == "" {
-		t.Skip("missing LARK_TEST_CHAT_ID")
-	}
+	fx := getIntegrationFixtures(t)
+	chatID := fx.EnsureChatID(t)
 
 	var buf bytes.Buffer
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "messages", "send", "--receive-id-type", "chat_id", "--receive-id", chatID, "--text", "ping"})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "messages", "send", "--receive-id-type", "chat_id", "--receive-id", chatID, "--text", "ping"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("msg send failed: %v", err)

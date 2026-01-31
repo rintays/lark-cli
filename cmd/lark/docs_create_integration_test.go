@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -13,18 +12,16 @@ import (
 func TestDocsCreateIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	folderToken := os.Getenv("LARK_TEST_FOLDER_TOKEN")
-	if folderToken == "" {
-		t.Skip("missing LARK_TEST_FOLDER_TOKEN")
-	}
+	fx := getIntegrationFixtures(t)
+	folderToken := fx.DriveFolderToken
 
-	title := "clawdbot-it " + time.Now().Format("20060102-150405")
+	title := integrationFixturePrefix + "doc-" + time.Now().Format("20060102-150405")
 
 	var buf bytes.Buffer
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "docs", "create", "--title", title, "--folder-id", folderToken})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "docs", "create", "--title", title, "--folder-id", folderToken})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs create failed: %v", err)
@@ -40,7 +37,6 @@ func TestDocsCreateIntegration(t *testing.T) {
 	}
 	id, _ := doc["document_id"].(string)
 	if id == "" {
-		// fallback in case JSON keys change
 		id, _ = doc["documentId"].(string)
 	}
 	if id == "" {

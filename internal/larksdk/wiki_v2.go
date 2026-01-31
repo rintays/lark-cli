@@ -1,0 +1,235 @@
+package larksdk
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larkwiki "github.com/larksuite/oapi-sdk-go/v3/service/wiki/v2"
+)
+
+type WikiSpace struct {
+	SpaceID    string `json:"space_id"`
+	Name       string `json:"name"`
+	SpaceType  string `json:"space_type,omitempty"`
+	Visibility string `json:"visibility,omitempty"`
+}
+
+type ListWikiSpacesRequest struct {
+	PageSize  int
+	PageToken string
+}
+
+type ListWikiSpacesResult struct {
+	Items     []WikiSpace `json:"items"`
+	HasMore   bool        `json:"has_more"`
+	PageToken string      `json:"page_token"`
+}
+
+func (c *Client) ListWikiSpacesV2(ctx context.Context, token string, req ListWikiSpacesRequest) (ListWikiSpacesResult, error) {
+	if !c.available() {
+		return ListWikiSpacesResult{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return ListWikiSpacesResult{}, errors.New("tenant access token is required")
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+	builder := larkwiki.NewListSpaceReqBuilder().PageSize(req.PageSize)
+	if req.PageToken != "" {
+		builder = builder.PageToken(req.PageToken)
+	}
+	resp, err := c.sdk.Wiki.V2.Space.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return ListWikiSpacesResult{}, err
+	}
+	if resp == nil {
+		return ListWikiSpacesResult{}, errors.New("wiki space list failed: empty response")
+	}
+	if !resp.Success() {
+		return ListWikiSpacesResult{}, fmt.Errorf("wiki space list failed: %s", resp.Msg)
+	}
+	out := ListWikiSpacesResult{}
+	if resp.Data == nil {
+		return out, nil
+	}
+	if resp.Data.HasMore != nil {
+		out.HasMore = *resp.Data.HasMore
+	}
+	if resp.Data.PageToken != nil {
+		out.PageToken = *resp.Data.PageToken
+	}
+	if resp.Data.Items == nil {
+		return out, nil
+	}
+	out.Items = make([]WikiSpace, 0, len(resp.Data.Items))
+	for _, s := range resp.Data.Items {
+		if s == nil {
+			continue
+		}
+		ws := WikiSpace{}
+		if s.SpaceId != nil {
+			ws.SpaceID = *s.SpaceId
+		}
+		if s.Name != nil {
+			ws.Name = *s.Name
+		}
+		if s.SpaceType != nil {
+			ws.SpaceType = *s.SpaceType
+		}
+		if s.Visibility != nil {
+			ws.Visibility = *s.Visibility
+		}
+		out.Items = append(out.Items, ws)
+	}
+	return out, nil
+}
+
+type WikiNode struct {
+	SpaceID         string `json:"space_id,omitempty"`
+	NodeToken       string `json:"node_token"`
+	ObjToken        string `json:"obj_token,omitempty"`
+	ObjType         string `json:"obj_type"`
+	ParentNodeToken string `json:"parent_node_token,omitempty"`
+	NodeType        string `json:"node_type,omitempty"`
+	Title           string `json:"title,omitempty"`
+	HasChild        bool   `json:"has_child,omitempty"`
+}
+
+type GetWikiNodeRequest struct {
+	NodeToken string
+	ObjType   string
+}
+
+func (c *Client) GetWikiNodeV2(ctx context.Context, token string, req GetWikiNodeRequest) (WikiNode, error) {
+	if !c.available() {
+		return WikiNode{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return WikiNode{}, errors.New("tenant access token is required")
+	}
+	if req.NodeToken == "" {
+		return WikiNode{}, errors.New("node token is required")
+	}
+	if req.ObjType == "" {
+		return WikiNode{}, errors.New("obj type is required")
+	}
+
+	builder := larkwiki.NewGetNodeSpaceReqBuilder().Token(req.NodeToken).ObjType(req.ObjType)
+	resp, err := c.sdk.Wiki.V2.Space.GetNode(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiNode{}, err
+	}
+	if resp == nil {
+		return WikiNode{}, errors.New("wiki node get failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiNode{}, fmt.Errorf("wiki node get failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Node == nil {
+		return WikiNode{}, errors.New("wiki node get failed: missing node")
+	}
+	return convertWikiNode(resp.Data.Node), nil
+}
+
+type ListWikiNodesRequest struct {
+	SpaceID         string
+	ParentNodeToken string
+	PageSize        int
+	PageToken       string
+}
+
+type ListWikiNodesResult struct {
+	Items     []WikiNode `json:"items"`
+	HasMore   bool       `json:"has_more"`
+	PageToken string     `json:"page_token"`
+}
+
+func (c *Client) ListWikiNodesV2(ctx context.Context, token string, req ListWikiNodesRequest) (ListWikiNodesResult, error) {
+	if !c.available() {
+		return ListWikiNodesResult{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return ListWikiNodesResult{}, errors.New("tenant access token is required")
+	}
+	if req.SpaceID == "" {
+		return ListWikiNodesResult{}, errors.New("space id is required")
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+
+	builder := larkwiki.NewListSpaceNodeReqBuilder().SpaceId(req.SpaceID).PageSize(req.PageSize)
+	if req.PageToken != "" {
+		builder = builder.PageToken(req.PageToken)
+	}
+	if req.ParentNodeToken != "" {
+		builder = builder.ParentNodeToken(req.ParentNodeToken)
+	}
+
+	resp, err := c.sdk.Wiki.V2.SpaceNode.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return ListWikiNodesResult{}, err
+	}
+	if resp == nil {
+		return ListWikiNodesResult{}, errors.New("wiki node list failed: empty response")
+	}
+	if !resp.Success() {
+		return ListWikiNodesResult{}, fmt.Errorf("wiki node list failed: %s", resp.Msg)
+	}
+	out := ListWikiNodesResult{}
+	if resp.Data == nil {
+		return out, nil
+	}
+	if resp.Data.HasMore != nil {
+		out.HasMore = *resp.Data.HasMore
+	}
+	if resp.Data.PageToken != nil {
+		out.PageToken = *resp.Data.PageToken
+	}
+	if resp.Data.Items == nil {
+		return out, nil
+	}
+	out.Items = make([]WikiNode, 0, len(resp.Data.Items))
+	for _, n := range resp.Data.Items {
+		if n == nil {
+			continue
+		}
+		out.Items = append(out.Items, convertWikiNode(n))
+	}
+	return out, nil
+}
+
+func convertWikiNode(n *larkwiki.Node) WikiNode {
+	out := WikiNode{}
+	if n.SpaceId != nil {
+		out.SpaceID = *n.SpaceId
+	}
+	if n.NodeToken != nil {
+		out.NodeToken = *n.NodeToken
+	}
+	if n.ObjToken != nil {
+		out.ObjToken = *n.ObjToken
+	}
+	if n.ObjType != nil {
+		out.ObjType = *n.ObjType
+	}
+	if n.ParentNodeToken != nil {
+		out.ParentNodeToken = *n.ParentNodeToken
+	}
+	if n.NodeType != nil {
+		out.NodeType = *n.NodeType
+	}
+	if n.Title != nil {
+		out.Title = *n.Title
+	}
+	if n.HasChild != nil {
+		out.HasChild = *n.HasChild
+	}
+	return out
+}

@@ -13,10 +13,8 @@ import (
 func TestDriveUploadIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	folderToken := os.Getenv("LARK_TEST_FOLDER_TOKEN")
-	if folderToken == "" {
-		t.Skip("missing LARK_TEST_FOLDER_TOKEN")
-	}
+	fx := getIntegrationFixtures(t)
+	folderToken := fx.DriveFolderToken
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "hello.txt")
@@ -28,7 +26,7 @@ func TestDriveUploadIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "drive", "upload", "--folder-token", folderToken, "--file", filePath})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "drive", "upload", "--folder-token", folderToken, "--file", filePath})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive upload failed: %v", err)

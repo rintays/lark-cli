@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -14,13 +14,10 @@ import (
 func TestSheetsUpdateIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	sheetID := os.Getenv("LARK_TEST_SHEET_ID")
-	sheetRange := os.Getenv("LARK_TEST_SHEET_RANGE")
-	if sheetID == "" || sheetRange == "" {
-		t.Skip("missing LARK_TEST_SHEET_ID or LARK_TEST_SHEET_RANGE")
-	}
+	fx := getIntegrationFixtures(t)
+	sheetID := fx.SpreadsheetToken
+	sheetRange := fmt.Sprintf("%s!A1:B1", fx.SheetTitle)
 
-	// write a timestamp so it's easy to see test activity
 	ts := time.Now().Format(time.RFC3339)
 	values := "[[\"it\",\"" + ts + "\"]]"
 
@@ -28,7 +25,7 @@ func TestSheetsUpdateIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "sheets", "update", "--spreadsheet-id", sheetID, "--range", sheetRange, "--values", values})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "update", "--spreadsheet-id", sheetID, "--range", sheetRange, "--values", values})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets update failed: %v", err)
@@ -42,12 +39,11 @@ func TestSheetsUpdateIntegration(t *testing.T) {
 		t.Fatalf("expected update in output, got: %v", payload)
 	}
 
-	// Verify by reading the same range back.
 	buf.Reset()
 	cmd = newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "sheets", "read", "--spreadsheet-id", sheetID, "--range", sheetRange})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "read", "--spreadsheet-id", sheetID, "--range", sheetRange})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets read failed: %v", err)
 	}

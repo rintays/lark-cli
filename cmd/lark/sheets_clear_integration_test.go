@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
+	"fmt"
 	"testing"
 
 	"lark/internal/testutil"
@@ -12,17 +12,15 @@ import (
 func TestSheetsClearIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	sheetID := os.Getenv("LARK_TEST_SHEET_ID")
-	sheetRange := os.Getenv("LARK_TEST_SHEET_RANGE")
-	if sheetID == "" || sheetRange == "" {
-		t.Skip("missing LARK_TEST_SHEET_ID or LARK_TEST_SHEET_RANGE")
-	}
+	fx := getIntegrationFixtures(t)
+	sheetID := fx.SpreadsheetToken
+	sheetRange := fmt.Sprintf("%s!A1:B10", fx.SheetTitle)
 
 	var buf bytes.Buffer
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "sheets", "clear", "--spreadsheet-id", sheetID, "--range", sheetRange})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "clear", "--spreadsheet-id", sheetID, "--range", sheetRange})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets clear failed: %v", err)
@@ -33,7 +31,6 @@ func TestSheetsClearIntegration(t *testing.T) {
 		t.Fatalf("invalid json output: %v; out=%q", err, buf.String())
 	}
 	if _, ok := payload["cleared_range"]; !ok {
-		// Clear returns a struct; key name might vary. Allow empty assertions by checking non-empty payload.
 		if len(payload) == 0 {
 			t.Fatalf("expected non-empty payload, got: %v", payload)
 		}

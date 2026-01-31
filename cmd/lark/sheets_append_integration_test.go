@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,11 +13,9 @@ import (
 func TestSheetsAppendIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	sheetID := os.Getenv("LARK_TEST_SHEET_ID")
-	sheetRange := os.Getenv("LARK_TEST_SHEET_RANGE")
-	if sheetID == "" || sheetRange == "" {
-		t.Skip("missing LARK_TEST_SHEET_ID or LARK_TEST_SHEET_RANGE")
-	}
+	fx := getIntegrationFixtures(t)
+	sheetID := fx.SpreadsheetToken
+	sheetRange := fmt.Sprintf("%s!A1:B1", fx.SheetTitle)
 
 	values := "[[\"it-append\",\"" + time.Now().Format(time.RFC3339) + "\"]]"
 
@@ -25,7 +23,7 @@ func TestSheetsAppendIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "sheets", "append", "--spreadsheet-id", sheetID, "--range", sheetRange, "--values", values})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "append", "--spreadsheet-id", sheetID, "--range", sheetRange, "--values", values})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets append failed: %v", err)
