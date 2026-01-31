@@ -234,6 +234,12 @@ type SheetDimensionInsertResult struct {
 	EndIndex   int `json:"end_index"`
 }
 
+type SheetDimensionDeleteResult struct {
+	StartIndex int `json:"start_index"`
+	Count      int `json:"count"`
+	EndIndex   int `json:"end_index"`
+}
+
 type SpreadsheetProperties struct {
 	Title      string `json:"title"`
 	OwnerUser  int64  `json:"ownerUser"`
