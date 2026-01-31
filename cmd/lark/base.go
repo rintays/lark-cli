@@ -83,6 +83,7 @@ func newBaseRecordCmd(state *appState) *cobra.Command {
 		Short: "Manage Bitable records",
 	}
 	cmd.AddCommand(newBaseRecordCreateCmd(state))
+	cmd.AddCommand(newBaseRecordBatchCreateCmd(state))
 	cmd.AddCommand(newBaseRecordSearchCmd(state))
 	cmd.AddCommand(newBaseRecordInfoCmd(state))
 	cmd.AddCommand(newBaseRecordUpdateCmd(state))
