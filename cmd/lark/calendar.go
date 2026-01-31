@@ -32,6 +32,7 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List events in a time range",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -108,6 +109,7 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a calendar event",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			startTime, err := time.Parse(time.RFC3339, start)
 			if err != nil {
