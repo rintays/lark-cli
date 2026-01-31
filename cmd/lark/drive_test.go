@@ -89,6 +89,9 @@ func TestDriveSearchCommand(t *testing.T) {
 		if payload["query"] != "budget" {
 			t.Fatalf("unexpected query: %+v", payload)
 		}
+		if payload["folder_token"] != "root" {
+			t.Fatalf("unexpected folder_token: %+v", payload)
+		}
 		if payload["page_size"].(float64) != 2 {
 			t.Fatalf("unexpected page_size: %+v", payload)
 		}
