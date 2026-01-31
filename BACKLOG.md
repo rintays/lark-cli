@@ -391,7 +391,7 @@ Deliverables:
       - Integration test added: `cmd/lark/wiki_member_role_update_integration_test.go`
       - How to run (single test in a real env):
         - Required env vars: `LARK_INTEGRATION=1`, `LARK_TEST_WIKI_SPACE_ID`, `LARK_TEST_USER_EMAIL`
-        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`) and cached user token (`lark auth user login`)
+        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`)
         - Command:
           - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
   - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
@@ -528,3 +528,4 @@ Deliverables:
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
 - 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
 - 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.
+- 2026-02-01: Wiki member role-update integration test now uses tenant token (no user token prereq) and attempts best-effort cleanup (downgrade back to member).

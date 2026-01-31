@@ -69,7 +69,12 @@
 - 2026-01-31: Added calendar search/get/update/delete commands, improved primary calendar resolution, and expanded calendar auth metadata.
 - 2026-01-31: Added meeting reservation create/update/delete, expanded meeting list filters with required time range validation, and updated README features note.
 - 2026-01-31: Unified read-style commands to `info` (docs/sheets/drive/mail/users/wiki/base/config/auth/meetings/minutes) with no legacy aliases; updated tests/docs.
+- 2026-01-31: Drive info/urls now honor user tokens with auto fallback and added a user-token drive info test.
 - 2026-01-31: Promoted required identifiers to positional args for docs/drive/sheets/base/wiki/minutes/meetings/auth scopes/mailbox set (keeping base app-token and wiki space-id as flags), updated tests and README examples.
 - 2026-01-31: Minutes list now filters Drive file listings by type; added minutes delete/update commands backed by Drive delete and permission update endpoints, plus minutes command tests and design doc updates.
+- 2026-01-31: Added docx chat announcement fallback (docx API + block listing) and updated CLI output/tests for docx announcements.
 - 2026-01-31: Aligned message list/search/reply/reactions/pin commands with positional args for required identifiers; updated tests and README examples.
 - 2026-01-31: Expanded docs/sheets/mail info output to full SDK fields with key/value tables, enriched docx/sheets/mail SDK mappings, and updated tests.
+- 2026-01-31: Docs info now falls back to drive file metadata for URL when the docx info API omits it.
+- 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.
+- 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.

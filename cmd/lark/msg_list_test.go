@@ -74,6 +74,9 @@ func TestMsgListCommandWithSDK(t *testing.T) {
 		t.Fatalf("msg list error: %v", err)
 	}
 	if !strings.Contains(buf.String(), "m1") {
-		t.Fatalf("unexpected output: %q", buf.String())
+		t.Fatalf("unexpected output (missing id): %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "hi") {
+		t.Fatalf("unexpected output (missing content): %q", buf.String())
 	}
 }

@@ -116,6 +116,14 @@ func newDocsInfoCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if doc.URL == "" {
+				file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
+					FileToken: documentID,
+				})
+				if err == nil && file.URL != "" {
+					doc.URL = file.URL
+				}
+			}
 			payload := map[string]any{"document": doc}
 			text := formatDocxInfo(doc)
 			return state.Printer.Print(payload, text)
