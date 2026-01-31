@@ -17,7 +17,7 @@ func newWikiSpaceCmd(state *appState) *cobra.Command {
 		Short: "Manage Wiki spaces",
 	}
 	cmd.AddCommand(newWikiSpaceListCmd(state))
-	cmd.AddCommand(newWikiSpaceGetCmd(state))
+	cmd.AddCommand(newWikiSpaceInfoCmd(state))
 	return cmd
 }
 
@@ -87,12 +87,12 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newWikiSpaceGetCmd(state *appState) *cobra.Command {
+func newWikiSpaceInfoCmd(state *appState) *cobra.Command {
 	var spaceID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a Wiki space (v2)",
+		Use:   "info",
+		Short: "Show a Wiki space (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")

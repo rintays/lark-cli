@@ -73,7 +73,7 @@ func TestDocsCreateCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"create", "--title", "Specs", "--folder-id", "fld"})
+	cmd.SetArgs([]string{"create", "Specs", "--folder-id", "fld"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs create error: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestDocsCreateCommandMissingTitleDoesNotCallHTTP(t *testing.T) {
 	}
 }
 
-func TestDocsGetCommand(t *testing.T) {
+func TestDocsInfoCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -165,9 +165,9 @@ func TestDocsGetCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"get", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("docs get error: %v", err)
+		t.Fatalf("docs info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
@@ -175,7 +175,7 @@ func TestDocsGetCommand(t *testing.T) {
 	}
 }
 
-func TestDocsGetCommandMissingDocIDDoesNotCallHTTP(t *testing.T) {
+func TestDocsInfoCommandMissingDocIDDoesNotCallHTTP(t *testing.T) {
 	called := false
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
@@ -200,7 +200,7 @@ func TestDocsGetCommandMissingDocIDDoesNotCallHTTP(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"get"})
+	cmd.SetArgs([]string{"info"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -301,7 +301,7 @@ func TestDocsExportCommand(t *testing.T) {
 		exportTaskPollInterval = prevInterval
 	}()
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs export error: %v", err)
 	}
@@ -315,7 +315,7 @@ func TestDocsExportCommand(t *testing.T) {
 	}
 }
 
-func TestDocsGetCommandRequiresSDK(t *testing.T) {
+func TestDocsInfoCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
@@ -328,7 +328,7 @@ func TestDocsGetCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"get", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -379,7 +379,7 @@ func TestDocsCatCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"cat", "--doc-id", "doc1", "--format", "txt"})
+	cmd.SetArgs([]string{"cat", "doc1", "--format", "txt"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs cat error: %v", err)
 	}
@@ -405,7 +405,7 @@ func TestDocsExportCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
