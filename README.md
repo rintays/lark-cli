@@ -142,7 +142,7 @@ lark auth
 lark whoami
 lark chats list --limit 10
 lark users search --email user@example.com
-lark messages send --chat-id <CHAT_ID> --text "hello"
+lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
 ---
@@ -180,7 +180,7 @@ Precedence:
 ### Send a message
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --text "hello"
+lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
 Send to a user by email:
@@ -192,13 +192,13 @@ lark messages send --receive-id-type email --receive-id user@example.com --text 
 Send a post (rich text):
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
+lark messages send --receive-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
 ```
 
 Send an image:
 
 ```bash
-lark messages send --chat-id <CHAT_ID> --image-key <IMAGE_KEY>
+lark messages send --receive-id <CHAT_ID> --image-key <IMAGE_KEY>
 ```
 
 Reply in thread:
@@ -256,7 +256,7 @@ lark chats get <CHAT_ID> --members-limit 0
 Update chat info:
 
 ```bash
-lark chats update --chat-id <CHAT_ID> --name "New Name"
+lark chats update <CHAT_ID> --name "New Name"
 ```
 
 Get chat announcement:
@@ -351,7 +351,9 @@ lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
 Read:
 
 ```bash
-lark sheets read <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+# or
+lark sheets read <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID>
 ```
 
 Search:
@@ -363,19 +365,25 @@ lark sheets search <TEXT> --limit 50 # requires user_access_token or `lark auth 
 Update:
 
 ```bash
-lark sheets update <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+# or
+lark sheets update <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values-file ./values.csv
 ```
 
 Append:
 
 ```bash
-lark sheets append <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+# or
+lark sheets append <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values @./values.json
 ```
 
 Clear:
 
 ```bash
-lark sheets clear <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+# or
+lark sheets clear <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID>
 ```
 
 Info:
@@ -505,8 +513,9 @@ Current behavior:
 - Run `lark auth user login` to launch OAuth and store tokens locally (add `--force-consent` if you need to re-grant scopes / refresh token)
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
-- Mail commands `mail folders/list/info/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
+- Mail commands `mail folders/list/info/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
 - Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
+- `mail info` shows metadata; `mail get` returns full message content (raw/body/attachments)
 
 Example:
 
@@ -518,7 +527,9 @@ Example:
 ./lark bases app info --help
 ./lark bases app update --help
 ./lark bases table list --help  # alias: base
+./lark bases table create --help
 ./lark bases field list --help
+./lark bases field create --help
 ./lark bases view list --help
 ./lark bases record create --help
 ./lark bases record info --help
@@ -531,6 +542,8 @@ Example:
 ./lark wiki task info --help
 ./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
+./lark mail info <MESSAGE_ID>
+./lark mail get <MESSAGE_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
 ./lark mail send --raw-file ./message.eml
 ```
