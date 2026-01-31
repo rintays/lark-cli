@@ -108,9 +108,7 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
-	// mailbox-id is optional; defaults to config default_mailbox_id or me.
-	// (still allow explicit mailbox-id when needed)
-
+	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
 
