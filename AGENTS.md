@@ -104,3 +104,4 @@
 - 2026-01-31: Expanded base record create/update help text with detailed value format examples for record fields.
 - 2026-01-31: Clarified wiki help text (space/node/task definitions) and corrected meetings help to reflect the default list time range.
 - 2026-01-31: Clarified docs help text to describe document blocks.
+- 2026-01-31: Added wiki space create command (v2) with name/visibility/type settings.
