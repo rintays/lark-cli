@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -64,18 +63,6 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 					return err
 				}
 			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if strings.TrimSpace(sheetID) == "" {
-				return errors.New("sheet-id is required")
-			}
-			if !cmd.Flags().Changed("start-index") {
-				return errors.New("start-index is required")
-			}
-			if !cmd.Flags().Changed("count") {
-				return errors.New("count is required")
-			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -106,6 +93,10 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id (or provide as positional argument)")
 	cmd.Flags().IntVar(&startIndex, "start-index", 0, "start column index (0-based)")
 	cmd.Flags().IntVar(&count, "count", 0, "number of columns to insert")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("sheet-id")
+	_ = cmd.MarkFlagRequired("start-index")
+	_ = cmd.MarkFlagRequired("count")
 	return cmd
 }
 
@@ -154,18 +145,6 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 					return err
 				}
 			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if strings.TrimSpace(sheetID) == "" {
-				return errors.New("sheet-id is required")
-			}
-			if !cmd.Flags().Changed("start-index") {
-				return errors.New("start-index is required")
-			}
-			if !cmd.Flags().Changed("count") {
-				return errors.New("count is required")
-			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -196,5 +175,9 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id (or provide as positional argument)")
 	cmd.Flags().IntVar(&startIndex, "start-index", 0, "start column index (0-based)")
 	cmd.Flags().IntVar(&count, "count", 0, "number of columns to delete")
+	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	_ = cmd.MarkFlagRequired("sheet-id")
+	_ = cmd.MarkFlagRequired("start-index")
+	_ = cmd.MarkFlagRequired("count")
 	return cmd
 }

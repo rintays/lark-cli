@@ -313,5 +313,30 @@ func mapDocxDocument(document *larkdocx.Document) DocxDocument {
 	if document.RevisionId != nil {
 		doc.RevisionID = RevisionID(fmt.Sprintf("%d", *document.RevisionId))
 	}
+	if document.DisplaySetting != nil {
+		setting := &DocxDisplaySetting{
+			ShowAuthors:        document.DisplaySetting.ShowAuthors,
+			ShowCreateTime:     document.DisplaySetting.ShowCreateTime,
+			ShowPv:             document.DisplaySetting.ShowPv,
+			ShowUv:             document.DisplaySetting.ShowUv,
+			ShowLikeCount:      document.DisplaySetting.ShowLikeCount,
+			ShowCommentCount:   document.DisplaySetting.ShowCommentCount,
+			ShowRelatedMatters: document.DisplaySetting.ShowRelatedMatters,
+		}
+		doc.DisplaySetting = setting
+	}
+	if document.Cover != nil {
+		cover := &DocxCover{}
+		if document.Cover.Token != nil {
+			cover.Token = *document.Cover.Token
+		}
+		if document.Cover.OffsetRatioX != nil {
+			cover.OffsetRatioX = document.Cover.OffsetRatioX
+		}
+		if document.Cover.OffsetRatioY != nil {
+			cover.OffsetRatioY = document.Cover.OffsetRatioY
+		}
+		doc.Cover = cover
+	}
 	return doc
 }

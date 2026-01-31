@@ -23,8 +23,23 @@ func newMsgListCmd(state *appState) *cobra.Command {
 	var pageSize int
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   "list <container-id>",
 		Short: "List messages in a chat or thread",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(containerID) == "" {
+					return errors.New("container-id is required")
+				}
+				return nil
+			}
+			if containerID != "" && containerID != args[0] {
+				return errors.New("container-id provided twice")
+			}
+			return cmd.Flags().Set("container-id", args[0])
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -92,12 +107,11 @@ func newMsgListCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&containerIDType, "container-id-type", "chat", "container type (chat or thread)")
-	cmd.Flags().StringVar(&containerID, "container-id", "", "chat_id or thread_id")
+	cmd.Flags().StringVar(&containerID, "container-id", "", "chat_id or thread_id (or provide as positional argument)")
 	cmd.Flags().StringVar(&startTime, "start-time", "", "start time (unix seconds)")
 	cmd.Flags().StringVar(&endTime, "end-time", "", "end time (unix seconds)")
 	cmd.Flags().StringVar(&sortType, "sort", "ByCreateTimeAsc", "sort type (ByCreateTimeAsc or ByCreateTimeDesc)")
 	cmd.Flags().IntVar(&limit, "limit", 20, "max number of messages to return")
 	cmd.Flags().IntVar(&pageSize, "page-size", 20, "page size per request")
-	_ = cmd.MarkFlagRequired("container-id")
 	return cmd
 }

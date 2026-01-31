@@ -362,7 +362,13 @@ func TestMailMailboxInfoCommandWithSDK(t *testing.T) {
 		t.Fatalf("mail mailbox info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "mbx_1\tPrimary\tdev@example.com") {
+	if !strings.Contains(buf.String(), "mailbox_id\tmbx_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "name\tPrimary") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "primary_email\tdev@example.com") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -815,7 +821,10 @@ func TestMailInfoCommandWithSDK(t *testing.T) {
 		t.Fatalf("mail info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "msg_1\tHello") {
+	if !strings.Contains(buf.String(), "message_id\tmsg_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "subject\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -871,7 +880,10 @@ func TestMailInfoCommandUsesDefaultMailboxID(t *testing.T) {
 		t.Fatalf("mail info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "msg_1\tHello") {
+	if !strings.Contains(buf.String(), "message_id\tmsg_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "subject\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -926,7 +938,10 @@ func TestMailInfoCommandDefaultsToMeMailboxID(t *testing.T) {
 		t.Fatalf("mail info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "msg_1\tHello") {
+	if !strings.Contains(buf.String(), "message_id\tmsg_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "subject\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

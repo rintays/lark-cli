@@ -54,6 +54,48 @@ func (c *Client) ListSpreadsheetSheets(ctx context.Context, token, spreadsheetTo
 		if s.Hidden != nil {
 			row.Hidden = *s.Hidden
 		}
+		if s.ResourceType != nil {
+			row.ResourceType = *s.ResourceType
+		}
+		if s.GridProperties != nil {
+			props := &SpreadsheetGridProperties{}
+			if s.GridProperties.FrozenRowCount != nil {
+				props.FrozenRowCount = *s.GridProperties.FrozenRowCount
+			}
+			if s.GridProperties.FrozenColumnCount != nil {
+				props.FrozenColumnCount = *s.GridProperties.FrozenColumnCount
+			}
+			if s.GridProperties.RowCount != nil {
+				props.RowCount = *s.GridProperties.RowCount
+			}
+			if s.GridProperties.ColumnCount != nil {
+				props.ColumnCount = *s.GridProperties.ColumnCount
+			}
+			row.GridProperties = props
+		}
+		if len(s.Merges) > 0 {
+			merges := make([]SpreadsheetMergeRange, 0, len(s.Merges))
+			for _, merge := range s.Merges {
+				if merge == nil {
+					continue
+				}
+				item := SpreadsheetMergeRange{}
+				if merge.StartRowIndex != nil {
+					item.StartRowIndex = *merge.StartRowIndex
+				}
+				if merge.EndRowIndex != nil {
+					item.EndRowIndex = *merge.EndRowIndex
+				}
+				if merge.StartColumnIndex != nil {
+					item.StartColumnIndex = *merge.StartColumnIndex
+				}
+				if merge.EndColumnIndex != nil {
+					item.EndColumnIndex = *merge.EndColumnIndex
+				}
+				merges = append(merges, item)
+			}
+			row.Merges = merges
+		}
 		out = append(out, row)
 	}
 	return out, nil

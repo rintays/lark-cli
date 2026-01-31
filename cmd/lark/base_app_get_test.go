@@ -14,21 +14,15 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestMsgListCommandWithSDK(t *testing.T) {
+func TestBaseAppGetCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			t.Fatalf("unexpected method: %s", r.Method)
+			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/open-apis/im/v1/messages" {
+		if r.URL.Path != "/open-apis/bitable/v1/apps/app_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.URL.Query().Get("container_id_type") != "chat" {
-			t.Fatalf("unexpected container_id_type: %s", r.URL.Query().Get("container_id_type"))
-		}
-		if r.URL.Query().Get("container_id") != "oc_123" {
-			t.Fatalf("unexpected container_id: %s", r.URL.Query().Get("container_id"))
-		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer tenant-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -36,16 +30,10 @@ func TestMsgListCommandWithSDK(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"items": []map[string]any{
-					{
-						"message_id":  "m1",
-						"msg_type":    "text",
-						"chat_id":     "oc_123",
-						"create_time": "123",
-						"body":        map[string]any{"content": "{\"text\":\"hi\"}"},
-					},
+				"app": map[string]any{
+					"app_token": "app_1",
+					"name":      "MyApp",
 				},
-				"has_more": false,
 			},
 		})
 	})
@@ -57,7 +45,7 @@ func TestMsgListCommandWithSDK(t *testing.T) {
 			AppID:                      "app",
 			AppSecret:                  "secret",
 			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
+			TenantAccessToken:          "tenant-token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
@@ -68,12 +56,12 @@ func TestMsgListCommandWithSDK(t *testing.T) {
 	}
 	state.SDK = sdkClient
 
-	cmd := newMsgCmd(state)
-	cmd.SetArgs([]string{"list", "oc_123", "--limit", "1"})
+	cmd := newBaseCmd(state)
+	cmd.SetArgs([]string{"app", "info", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("msg list error: %v", err)
+		t.Fatalf("base app get error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "m1") {
+	if !strings.Contains(buf.String(), "app_1\tMyApp") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

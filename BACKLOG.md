@@ -241,16 +241,16 @@ Acceptance criteria:
 **Why:** common spreadsheet operations.
 
 Deliverables:
-- [ ] Add row/col operations (Sheets v3 sheet-rowcol):
+- [x] Add row/col operations (Sheets v3 sheet-rowcol):
   - [x] insert rows (v3 insert_dimension, `sheets rows insert`) (endpoint: `/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/insert_dimension`)
   - [x] insert cols (v3 insert_dimension, `sheets cols insert`)
   - [x] delete rows (`sheets rows delete`)
   - [x] delete cols (`sheets cols delete`)
-  - [ ] follow gog-style command tree
-  - [ ] SDK-first; otherwise `core.ApiReq` wrappers
+  - [x] follow gog-style command tree
+  - [x] SDK-first; otherwise `core.ApiReq` wrappers
 
 Acceptance criteria:
-- Integration tests cover at least one insert and one delete.
+- [x] Integration tests cover at least one insert and one delete.
 
 ---
 
@@ -360,6 +360,7 @@ Additional consistency work:
   - [x] `drive info` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `sheets rows/cols insert/delete` now use required flag validation for `--spreadsheet-id`, `--sheet-id`, `--start-index`, `--count` + unit tests assert stable required-flag errors
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
@@ -390,7 +391,7 @@ Deliverables:
       - Integration test added: `cmd/lark/wiki_member_role_update_integration_test.go`
       - How to run (single test in a real env):
         - Required env vars: `LARK_INTEGRATION=1`, `LARK_TEST_WIKI_SPACE_ID`, `LARK_TEST_USER_EMAIL`
-        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`) and cached user token (`lark auth user login`)
+        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`)
         - Command:
           - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
   - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
@@ -525,3 +526,6 @@ Deliverables:
 - 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
+- 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
+- 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.
+- 2026-02-01: Wiki member role-update integration test now uses tenant token (no user token prereq) and attempts best-effort cleanup (downgrade back to member).

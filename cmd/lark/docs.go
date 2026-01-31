@@ -116,11 +116,16 @@ func newDocsInfoCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if doc.URL == "" {
+				file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
+					FileToken: documentID,
+				})
+				if err == nil && file.URL != "" {
+					doc.URL = file.URL
+				}
+			}
 			payload := map[string]any{"document": doc}
-			text := tableTextRow(
-				[]string{"document_id", "title", "url"},
-				[]string{doc.DocumentID, doc.Title, doc.URL},
-			)
+			text := formatDocxInfo(doc)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -272,6 +277,46 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&format, "format", "txt", "output format (txt or md)")
 	return cmd
+}
+
+func formatDocxInfo(doc larksdk.DocxDocument) string {
+	rows := [][]string{
+		{"document_id", infoValue(doc.DocumentID)},
+		{"title", infoValue(doc.Title)},
+		{"url", infoValue(doc.URL)},
+		{"revision_id", infoValue(string(doc.RevisionID))},
+	}
+	setting := doc.DisplaySetting
+	rows = append(rows,
+		[]string{"display_setting.show_authors", infoValueBoolPtr(nil)},
+		[]string{"display_setting.show_create_time", infoValueBoolPtr(nil)},
+		[]string{"display_setting.show_pv", infoValueBoolPtr(nil)},
+		[]string{"display_setting.show_uv", infoValueBoolPtr(nil)},
+		[]string{"display_setting.show_like_count", infoValueBoolPtr(nil)},
+		[]string{"display_setting.show_comment_count", infoValueBoolPtr(nil)},
+		[]string{"display_setting.show_related_matters", infoValueBoolPtr(nil)},
+	)
+	if setting != nil {
+		rows[4][1] = infoValueBoolPtr(setting.ShowAuthors)
+		rows[5][1] = infoValueBoolPtr(setting.ShowCreateTime)
+		rows[6][1] = infoValueBoolPtr(setting.ShowPv)
+		rows[7][1] = infoValueBoolPtr(setting.ShowUv)
+		rows[8][1] = infoValueBoolPtr(setting.ShowLikeCount)
+		rows[9][1] = infoValueBoolPtr(setting.ShowCommentCount)
+		rows[10][1] = infoValueBoolPtr(setting.ShowRelatedMatters)
+	}
+	cover := doc.Cover
+	rows = append(rows,
+		[]string{"cover.token", infoValue("")},
+		[]string{"cover.offset_ratio_x", infoValueFloatPtr(nil)},
+		[]string{"cover.offset_ratio_y", infoValueFloatPtr(nil)},
+	)
+	if cover != nil {
+		rows[len(rows)-3][1] = infoValue(cover.Token)
+		rows[len(rows)-2][1] = infoValueFloatPtr(cover.OffsetRatioX)
+		rows[len(rows)-1][1] = infoValueFloatPtr(cover.OffsetRatioY)
+	}
+	return formatInfoTable(rows, "no document found")
 }
 
 type exportTaskClient interface {

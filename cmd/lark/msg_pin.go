@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -12,8 +13,23 @@ func newMsgPinCmd(state *appState) *cobra.Command {
 	var messageID string
 
 	cmd := &cobra.Command{
-		Use:   "pin",
+		Use:   "pin <message-id>",
 		Short: "Pin a message",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(messageID) == "" {
+					return errors.New("message-id is required")
+				}
+				return nil
+			}
+			if messageID != "" && messageID != args[0] {
+				return errors.New("message-id provided twice")
+			}
+			return cmd.Flags().Set("message-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -35,8 +51,7 @@ func newMsgPinCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID")
-	_ = cmd.MarkFlagRequired("message-id")
+	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
 	return cmd
 }
 
@@ -44,8 +59,23 @@ func newMsgUnpinCmd(state *appState) *cobra.Command {
 	var messageID string
 
 	cmd := &cobra.Command{
-		Use:   "unpin",
+		Use:   "unpin <message-id>",
 		Short: "Unpin a message",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(messageID) == "" {
+					return errors.New("message-id is required")
+				}
+				return nil
+			}
+			if messageID != "" && messageID != args[0] {
+				return errors.New("message-id provided twice")
+			}
+			return cmd.Flags().Set("message-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -66,7 +96,6 @@ func newMsgUnpinCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID")
-	_ = cmd.MarkFlagRequired("message-id")
+	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
 	return cmd
 }

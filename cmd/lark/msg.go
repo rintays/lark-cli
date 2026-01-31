@@ -15,7 +15,7 @@ func newMsgCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "messages",
 		Aliases: []string{"msg"},
-		Short:   "Manage chat messages",
+		Short:   "Send chat messages",
 	}
 	cmd.AddCommand(newMsgSendCmd(state))
 	cmd.AddCommand(newMsgReplyCmd(state))
