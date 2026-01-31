@@ -13,7 +13,7 @@ import (
 	"lark/internal/output"
 )
 
-func TestConfigGetJSONOutputValid(t *testing.T) {
+func TestConfigInfoJSONOutputValid(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
@@ -31,9 +31,9 @@ func TestConfigGetJSONOutputValid(t *testing.T) {
 	}
 
 	cmd := newConfigCmd(state)
-	cmd.SetArgs([]string{"get"})
+	cmd.SetArgs([]string{"info"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("config get error: %v", err)
+		t.Fatalf("config info error: %v", err)
 	}
 
 	if !json.Valid(buf.Bytes()) {
@@ -61,7 +61,7 @@ func TestConfigGetJSONOutputValid(t *testing.T) {
 	}
 }
 
-func TestConfigGetHumanOutputRedactsTokens(t *testing.T) {
+func TestConfigInfoHumanOutputRedactsTokens(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
@@ -79,9 +79,9 @@ func TestConfigGetHumanOutputRedactsTokens(t *testing.T) {
 	}
 
 	cmd := newConfigCmd(state)
-	cmd.SetArgs([]string{"get"})
+	cmd.SetArgs([]string{"info"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("config get error: %v", err)
+		t.Fatalf("config info error: %v", err)
 	}
 
 	output := buf.String()

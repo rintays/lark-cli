@@ -77,7 +77,7 @@ func TestWikiMemberAdd(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"member", "add", "--space-id", "s1", "--member-type", "userid", "--member-id", "u1", "--role", "member", "--need-notification"})
+	cmd.SetArgs([]string{"member", "add", "--space-id", "s1", "userid", "u1", "--role", "member", "--need-notification"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("wiki member add error: %v", err)
 	}

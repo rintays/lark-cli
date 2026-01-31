@@ -19,8 +19,23 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 	var userAccessToken string
 
 	cmd := &cobra.Command{
-		Use:   "search",
+		Use:   "search <query>",
 		Short: "Search Wiki nodes (v1)",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(query) == "" {
+					return errors.New("query is required")
+				}
+				return nil
+			}
+			if query != "" && query != args[0] {
+				return errors.New("query provided twice")
+			}
+			return cmd.Flags().Set("query", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -86,19 +101,15 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 			for _, n := range nodes {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", n.NodeToken, n.ObjType, n.Title, n.URL))
 			}
-			text := "no nodes found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"node_token", "obj_type", "title", "url"}, lines, "no nodes found")
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search text")
+	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
 	cmd.Flags().StringVar(&spaceID, "space-id", "", "Wiki space ID")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of nodes to return")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
-	_ = cmd.MarkFlagRequired("query")
 
 	return cmd
 }

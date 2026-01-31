@@ -12,9 +12,10 @@ func newBaseAppGetCmd(state *appState) *cobra.Command {
 	var appToken string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a Bitable app",
-		Args:  cobra.NoArgs,
+		Use:     "info",
+		Aliases: []string{"get"},
+		Short:   "Get a Bitable app",
+		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")

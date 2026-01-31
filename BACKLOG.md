@@ -173,12 +173,12 @@ Deliverables:
     - [x] `drive search` → SDK (`/drive/v1/files/search`)
     - [x] `drive list` → SDK types (no legacy `larkapi` types)
     - [x] `drive download` → SDK typed service (`Drive.V1.File.Download`)
-    - [x] `drive get` → SDK-native `core.ApiReq` wrapper (`GET /drive/v1/files/:file_token`)
+    - [x] `drive info` → SDK-native `core.ApiReq` wrapper (`GET /drive/v1/files/:file_token`)
   - [x] `drive upload` → SDK typed service (`Drive.V1.File.UploadAll`)
   - [x] `drive export` → SDK typed service (`Drive.V1.ExportTask.*`)
   - [x] remaining drive subcommands: none (drive fully migrated)
   - [ ] `docs`
-    - [x] `docs get` → SDK typed service (`Docx.V1.Document.Get`)
+    - [x] `docs info` → SDK typed service (`Docx.V1.Document.Get`)
     - [x] `docs create` → SDK typed service (`Docx.V1.Document.Create`)
     - [x] `docs export/cat` → Export task + download (supports `txt` and `md` output)
     - [ ] **Docs Markdown ⇄ Docx bidirectional sync** (requested)
@@ -192,9 +192,9 @@ Deliverables:
         - otherwise evaluate any official “import markdown” endpoint/workflow
       - [ ] Integration tests: roundtrip `md → docx → md` for a small fixture
   - [ ] `sheets`
-    - [x] `sheets metadata` → SDK typed service (`Sheets.V3.Spreadsheet.Get`)
+    - [x] `sheets info` → SDK typed service (`Sheets.V3.Spreadsheet.Get`)
   - [ ] `mail`
-    - [x] `mail get` → SDK typed service (`Mail.V1.UserMailboxMessage.Get`)
+    - [x] `mail info` → SDK typed service (`Mail.V1.UserMailboxMessage.Get`)
     - [x] `mail public-mailboxes list` → SDK typed service (`Mail.V1.PublicMailbox.List`)
     - [x] `mail send` → SDK typed service (`Mail.V1.UserMailboxMessage.Send`)
     - [x] `mail list` → SDK-first: List IDs (`Mail.V1.UserMailboxMessage.List`) + Get details (`Mail.V1.UserMailboxMessage.Get`)
@@ -225,14 +225,14 @@ Deliverables:
   - [x] `mail public-mailboxes list` (returns `mailbox_id`)
 - [x] Make `--mailbox-id` optional for user-mailbox operations
   - [x] default precedence: `--mailbox-id` > `config.default_mailbox_id` > **`me`**
-  - [x] apply consistently across: `mail folders`, `mail list`, `mail get`, `mail send`
-  - Notes: default mailbox resolution applied across folders/list/get/send; tests cover precedence + defaults.
+  - [x] apply consistently across: `mail folders`, `mail list`, `mail info`, `mail send`
+  - Notes: default mailbox resolution applied across folders/list/info/send; tests cover precedence + defaults.
 - [x] Config helper commands
   - [x] `mail mailbox set` (persist default mailbox id)
 
 Acceptance criteria:
 - `mail send` works with no `--mailbox-id` (defaults to `me`).
-- `mail folders/list/get` work with no `--mailbox-id` if API supports `me`; otherwise they fall back to config/default with a clear error.
+- `mail folders/list/info` work with no `--mailbox-id` if API supports `me`; otherwise they fall back to config/default with a clear error.
 
 ---
 
@@ -241,16 +241,16 @@ Acceptance criteria:
 **Why:** common spreadsheet operations.
 
 Deliverables:
-- [ ] Add row/col operations (Sheets v3 sheet-rowcol):
+- [x] Add row/col operations (Sheets v3 sheet-rowcol):
   - [x] insert rows (v3 insert_dimension, `sheets rows insert`) (endpoint: `/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/insert_dimension`)
   - [x] insert cols (v3 insert_dimension, `sheets cols insert`)
   - [x] delete rows (`sheets rows delete`)
   - [x] delete cols (`sheets cols delete`)
-  - [ ] follow gog-style command tree
-  - [ ] SDK-first; otherwise `core.ApiReq` wrappers
+  - [x] follow gog-style command tree
+  - [x] SDK-first; otherwise `core.ApiReq` wrappers
 
 Acceptance criteria:
-- Integration tests cover at least one insert and one delete.
+- [x] Integration tests cover at least one insert and one delete.
 
 ---
 
@@ -262,7 +262,7 @@ P0 deliverables:
 - [x] `base table list`
 - [x] `base field list`
 - [x] `base view list`
-- [x] `base record get`
+- [x] `base record info`
 - [x] `base record search`
 - [x] `base record create`
 - [x] `base record update`
@@ -278,7 +278,7 @@ P1:
   - [ ] `base record batch-create/batch-update/batch-delete`
 
 P2:
-- [ ] `base app create/get/update/copy` (SDK supports; enables CLI-only lifecycle)
+- [ ] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
 - [ ] `base list` / `base app list` (discover app_token via Drive/Wiki)
   - [ ] implement via `drive search --type bitable --query ...` and parse `file.url` to extract app_token
 - [ ] attachments workflows across Drive
@@ -316,11 +316,11 @@ Mail CLI-only usability gaps:
 - [x] Make `--mailbox-id` optional across user-mailbox commands (default to `me`):
   - [x] `mail folders` (defaults mailbox-id via resolveMailboxID; help text updated)
   - [x] `mail list` (already defaults mailbox-id via resolveMailboxID + tests cover)
-  - [x] `mail get` (message-id only; mailbox defaults via resolveMailboxID + tests cover)
+  - [x] `mail info` (message-id only; mailbox defaults via resolveMailboxID + tests cover)
   - [x] `mail send` (defaults mailbox-id via resolveMailboxID + tests cover)
   - [x] Update help text + README examples
 - [ ] Config CRUD to support “CLI-only” setup (no manual editing config.json):
-  - [x] `lark config get`
+  - [x] `lark config info`
   - [x] `lark config set --base-url ...`
   - [x] `lark config set --platform feishu|lark`
   - [x] `lark config unset --base-url`
@@ -330,8 +330,8 @@ Mail CLI-only usability gaps:
     - [x] `lark config set --default-mailbox-id <id|me>` (parity with unset)
     - [x] `lark config set --app-id ... --app-secret ...` (optional; alternative to `lark auth login`)
     - [x] `lark config list-keys` (or document all supported keys in `lark config set --help`)
-    - [ ] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile get/set
-  - [ ] (Alternative) keep domain-specific where it’s clearer: `auth platform set/get`, `mail mailbox get-default/unset-default`, `auth user status/logout`
+    - [ ] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile info/set
+  - [ ] (Alternative) keep domain-specific where it’s clearer: `auth platform set/info`, `mail mailbox info-default/unset-default`, `auth user status/logout`
 
 
 **Why:** users build muscle memory; consistency beats features.
@@ -342,19 +342,22 @@ Deliverables:
   - `meeting` → `meetings` already done
   - [x] Policy: top-level resource collections use plural canonical names; abbreviations are aliases; keep backward-compatible aliases when renaming. Rationale: consistent help discovery and stable scripts.
   - [x] `calendar` → `calendars` (keep `calendar` as alias)
+  - [x] `base` → `bases` (keep `base` as alias)
+  - [x] `msg` → `messages` (keep `msg` as alias)
   - [x] `msg` short help clarified to "Send chat messages"
 - [ ] Align help text and examples.
   - [x] `users` top-level Short changed to "Manage users"
-  - [x] `mail mailbox get` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
+  - [x] `mail mailbox info` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
   - [x] README now points to the correct backlog path (`/Users/fredliang/clawd/lark/BACKLOG.md`)
+  - [x] `calendars` help text uses plural canonical naming and documents the `calendar` alias (+ test)
 - [x] Fix: `docs` command no longer registers `list` twice.
 
 Additional consistency work:
 - [ ] **Required flags validation**: use Cobra’s `MarkFlagRequired` / `Args` validators consistently across commands.
   - [x] `drive list` now rejects positional args (Args=cobra.NoArgs) + test
   - [x] `calendar list/create` now reject positional args (Args=cobra.NoArgs) + test
-  - [x] `drive get` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `drive info` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - Goal: missing required flags should fail *before* making API calls.
@@ -375,9 +378,9 @@ Known facts from prior research (must be reflected in code decisions):
 
 Deliverables:
 - [ ] P0 (v2 SDK-backed):
-  - [x] `wiki space list/get` implemented (v2)
-  - [x] `wiki node get/list`
-    - [x] `wiki node get` implemented (v2)
+  - [x] `wiki space list/info` implemented (v2)
+  - [x] `wiki node info/list`
+    - [x] `wiki node info` implemented (v2)
     - [x] `wiki node list` implemented (v2)
   - [x] `wiki member list` implemented (v2)
   - [ ] `wiki member` management (v2)
@@ -390,7 +393,7 @@ Deliverables:
         - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`) and cached user token (`lark auth user login`)
         - Command:
           - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
-  - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`); command alias: prefer `wiki task get`, keep `wiki task list` for compatibility
+  - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
 - [ ] P1 (gap fill):
   - [x] implement `internal/larksdk/wiki_search_v1.go` using `core.ApiReq`
   - [x] expose `wiki node search`
@@ -488,7 +491,7 @@ Deliverables:
 
 - [x] Add explicit persistent commands:
   - [x] `lark auth platform set feishu|lark`
-  - [x] `lark auth platform get`
+  - [x] `lark auth platform info`
 
 2) Runtime override (global)
 - [x] Add global flags on root (apply to every command that makes API calls):
@@ -522,3 +525,4 @@ Deliverables:
 - 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
+- 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).

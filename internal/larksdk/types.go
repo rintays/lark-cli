@@ -31,7 +31,10 @@ type ListChatsResult struct {
 type MessageRequest struct {
 	ReceiveID     string
 	ReceiveIDType string
+	MsgType       string
+	Content       string
 	Text          string
+	UUID          string
 }
 
 type DriveFile struct {
