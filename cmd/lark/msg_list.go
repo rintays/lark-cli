@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -123,14 +125,11 @@ func formatMessageBlock(message larksdk.Message) string {
 	}
 	contentLines := strings.Split(content, "\n")
 	lines := make([]string, 0, len(contentLines)+1)
-	lines = append(lines, contentLines[0])
-	for _, line := range contentLines[1:] {
-		lines = append(lines, "  "+line)
-	}
 	meta := formatMessageMeta(message)
 	if meta != "" {
-		lines = append(lines, "  "+meta)
+		lines = append(lines, meta)
 	}
+	lines = append(lines, contentLines...)
 	return strings.Join(lines, "\n")
 }
 
@@ -141,9 +140,6 @@ func formatMessageMeta(message larksdk.Message) string {
 	}
 	if message.MsgType != "" {
 		parts = append(parts, "type: "+message.MsgType)
-	}
-	if message.ChatID != "" {
-		parts = append(parts, "chat: "+message.ChatID)
 	}
 	if message.CreateTime != "" {
 		parts = append(parts, "time: "+message.CreateTime)
@@ -162,9 +158,107 @@ func messageContentForDisplay(message larksdk.Message) string {
 		}
 		if err := json.Unmarshal([]byte(raw), &payload); err == nil {
 			if text := strings.TrimSpace(payload.Text); text != "" {
-				return text
+				return applyMessageMentions(text, message.Mentions)
 			}
 		}
 	}
+	if rendered, ok := renderMessageTemplate(raw); ok {
+		return rendered
+	}
 	return raw
+}
+
+func applyMessageMentions(text string, mentions []larksdk.MessageMention) string {
+	if len(mentions) == 0 {
+		return text
+	}
+	seen := make(map[string]larksdk.MessageMention, len(mentions))
+	for _, mention := range mentions {
+		key := strings.TrimSpace(mention.Key)
+		if key == "" {
+			key = strings.TrimSpace(mention.Name)
+			if key != "" && !strings.HasPrefix(key, "@") {
+				key = "@" + key
+			}
+		}
+		if key == "" {
+			continue
+		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = mention
+	}
+
+	rendered := text
+	for key, mention := range seen {
+		id := strings.TrimSpace(mention.ID)
+		if id == "" {
+			continue
+		}
+		scheme := strings.TrimSpace(mention.IDType)
+		if scheme == "" {
+			scheme = "user_id"
+		}
+		link := fmt.Sprintf("[%s](%s://%s)", key, scheme, id)
+		rendered = strings.ReplaceAll(rendered, key, link)
+	}
+	return rendered
+}
+
+var templatePlaceholderPattern = regexp.MustCompile(`\{[^}]+\}`)
+
+func renderMessageTemplate(raw string) (string, bool) {
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return "", false
+	}
+	templateValue, ok := payload["template"].(string)
+	if !ok || strings.TrimSpace(templateValue) == "" {
+		return "", false
+	}
+	rendered := templateValue
+	for key, value := range payload {
+		if key == "template" {
+			continue
+		}
+		placeholder := "{" + key + "}"
+		if !strings.Contains(rendered, placeholder) {
+			continue
+		}
+		rendered = strings.ReplaceAll(rendered, placeholder, renderTemplateValue(value))
+	}
+	rendered = templatePlaceholderPattern.ReplaceAllString(rendered, "")
+	return strings.TrimSpace(rendered), true
+}
+
+func renderTemplateValue(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, item := range v {
+			if part := strings.TrimSpace(renderTemplateValue(item)); part != "" {
+				parts = append(parts, part)
+			}
+		}
+		return strings.Join(parts, ", ")
+	case map[string]any:
+		if text, ok := v["text"].(string); ok {
+			return text
+		}
+		if name, ok := v["name"].(string); ok {
+			return name
+		}
+		if title, ok := v["title"].(string); ok {
+			return title
+		}
+		if value, ok := v["value"].(string); ok {
+			return value
+		}
+		return ""
+	default:
+		return fmt.Sprint(v)
+	}
 }
