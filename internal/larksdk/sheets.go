@@ -269,7 +269,7 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 	}
 
 	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/values_clear",
+		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/values/clear",
 		HttpMethod:                http.MethodPost,
 		PathParams:                larkcore.PathParams{},
 		QueryParams:               larkcore.QueryParams{},

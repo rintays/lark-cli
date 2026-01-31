@@ -21,7 +21,11 @@ func TestDocsCreateIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "docs", "create", "--title", title, "--folder-id", folderToken})
+	args := []string{"--config", fx.ConfigPath, "--json", "docs", "create", "--title", title}
+	if folderToken != "" {
+		args = append(args, "--folder-id", folderToken)
+	}
+	cmd.SetArgs(args)
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs create failed: %v", err)

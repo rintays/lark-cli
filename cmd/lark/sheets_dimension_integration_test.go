@@ -18,7 +18,7 @@ func TestIntegrationSheetsRowsInsertDelete(t *testing.T) {
 	sdk := fx.SDK
 	tenantToken := fx.Token
 
-	startIndex := 0
+	startIndex := 1
 	count := 1
 	endIndex := startIndex + count
 
