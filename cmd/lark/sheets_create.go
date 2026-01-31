@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,11 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			spreadsheetToken, err := state.SDK.CreateSpreadsheet(context.Background(), token, title, folderID)
+			normalizedFolderID := strings.TrimSpace(folderID)
+			if strings.EqualFold(normalizedFolderID, "root") {
+				normalizedFolderID = ""
+			}
+			spreadsheetToken, err := state.SDK.CreateSpreadsheet(context.Background(), token, title, normalizedFolderID)
 			if err != nil {
 				return err
 			}
@@ -37,7 +42,7 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&title, "title", "", "spreadsheet title")
-	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root)")
+	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root; pass root or omit)")
 	_ = cmd.MarkFlagRequired("title")
 	return cmd
 }

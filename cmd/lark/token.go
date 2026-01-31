@@ -112,7 +112,7 @@ func resolveAccessToken(ctx context.Context, state *appState, allowed []tokenTyp
 			return "", chosen, err
 		}
 		if token == "" {
-			return "", chosen, errors.New("user access token missing; run `lark auth user login`")
+			return "", chosen, errors.New("user access token missing; set user_access_token in config or run `lark auth user login`")
 		}
 		return token, chosen, nil
 	default:
