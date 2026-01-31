@@ -421,10 +421,16 @@ Behavior:
 
 ## Integration tests
 
-Integration tests run only when explicitly enabled (real network + credentials):
+Integration tests run only when explicitly enabled (real network + credentials). `LARK_INTEGRATION` must be exactly `1`:
 
 ```bash
 export LARK_INTEGRATION=1
+```
+
+Recommended (all integration tests):
+
+```bash
+make it
 ```
 
 Run the Wiki SpaceMember.Create role-upsert verification test:

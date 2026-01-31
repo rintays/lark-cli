@@ -278,9 +278,36 @@ type SpreadsheetMetadata struct {
 	Sheets     []SpreadsheetSheet    `json:"sheets"`
 }
 
+type MailFolderType string
+
+func (t *MailFolderType) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || string(data) == "null" {
+		*t = ""
+		return nil
+	}
+	if data[0] == '"' {
+		var value string
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		*t = MailFolderType(value)
+		return nil
+	}
+	var value json.Number
+	if err := json.Unmarshal(data, &value); err == nil {
+		*t = MailFolderType(value.String())
+		return nil
+	}
+	return fmt.Errorf("folder_type must be a string or number, got %s", string(data))
+}
+
+func (t MailFolderType) String() string {
+	return string(t)
+}
+
 type MailFolder struct {
-	FolderID       string `json:"folder_id"`
-	Name           string `json:"name"`
-	ParentFolderID string `json:"parent_folder_id,omitempty"`
-	FolderType     string `json:"folder_type,omitempty"`
+	FolderID       string         `json:"folder_id"`
+	Name           string         `json:"name"`
+	ParentFolderID string         `json:"parent_folder_id,omitempty"`
+	FolderType     MailFolderType `json:"folder_type,omitempty"`
 }

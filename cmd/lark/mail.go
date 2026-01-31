@@ -434,8 +434,8 @@ func newMailSendCmd(state *appState) *cobra.Command {
 
 func formatMailFolderLine(folder larksdk.MailFolder) string {
 	parts := []string{folder.FolderID, folder.Name}
-	if folder.FolderType != "" {
-		parts = append(parts, folder.FolderType)
+	if folder.FolderType.String() != "" {
+		parts = append(parts, folder.FolderType.String())
 	}
 	return strings.Join(parts, "\t")
 }
@@ -501,12 +501,12 @@ func resolveMailFolderID(ctx context.Context, state *appState, token, mailboxID,
 		return "", err
 	}
 	for _, folder := range folders {
-		if strings.EqualFold(folder.FolderType, "INBOX") {
+		if strings.EqualFold(folder.FolderType.String(), "INBOX") {
 			return folder.FolderID, nil
 		}
 	}
 	for _, folder := range folders {
-		if strings.EqualFold(folder.Name, "Inbox") {
+		if strings.EqualFold(folder.Name, "Inbox") || folder.Name == "\u6536\u4ef6\u7bb1" {
 			return folder.FolderID, nil
 		}
 	}
