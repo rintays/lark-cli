@@ -278,7 +278,7 @@ Acceptance criteria:
 - P0 has unit tests + at least one integration test for create/update/delete.
   - Integration env: set `LARK_INTEGRATION=1` (or `INTEGRATION=1`) and:
     - `LARK_APP_ID`, `LARK_APP_SECRET`
-    - `LARK_TEST_APP_TOKEN`, `LARK_TEST_TABLE_ID`
+    - (optional) `LARK_TEST_APP_TOKEN`, `LARK_TEST_TABLE_ID` (Base/Bitable tests now auto-create/find a dedicated Base app and manage temporary tables unless overridden)
     - optional `LARK_TEST_FIELD_NAME` (otherwise auto-pick first text field)
 
 ---
@@ -407,7 +407,7 @@ Fixture strategy:
 Still-required env vars (fail-fast by default; can opt into skip with `LARK_INTEGRATION_ALLOW_SKIP=1`):
 - `LARK_TEST_USER_EMAIL` (needed to resolve a real user and create a chat / send messages)
 - `LARK_TEST_MAIL_TO` (recipient for `mail send`)
-- `LARK_TEST_APP_TOKEN` + `LARK_TEST_TABLE_ID` (Base/Bitable integration tests)
+- (optional) `LARK_TEST_APP_TOKEN` + `LARK_TEST_TABLE_ID` (Base/Bitable integration tests; otherwise tests create/find the `lark-cli-it-base` app and manage temporary tables automatically)
 
 Optional env vars:
 - `LARK_TEST_FIELD_NAME` (Base field override; auto-detected when possible)

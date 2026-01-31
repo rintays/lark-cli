@@ -26,6 +26,10 @@ type listBaseTablesResponseData struct {
 func (r *listBaseTablesResponse) Success() bool { return r.Code == 0 }
 
 func (c *Client) ListBaseTables(ctx context.Context, token, appToken string) (ListBaseTablesResult, error) {
+	return c.ListBaseTablesPage(ctx, token, appToken, "", 0)
+}
+
+func (c *Client) ListBaseTablesPage(ctx context.Context, token, appToken, pageToken string, pageSize int) (ListBaseTablesResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return ListBaseTablesResult{}, ErrUnavailable
 	}
@@ -45,6 +49,12 @@ func (c *Client) ListBaseTables(ctx context.Context, token, appToken string) (Li
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
 	}
 	apiReq.PathParams.Set("app_token", appToken)
+	if pageToken != "" {
+		apiReq.QueryParams.Set("page_token", pageToken)
+	}
+	if pageSize > 0 {
+		apiReq.QueryParams.Set("page_size", strconv.Itoa(pageSize))
+	}
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -64,6 +74,23 @@ func (c *Client) ListBaseTables(ctx context.Context, token, appToken string) (Li
 		return ListBaseTablesResult{}, nil
 	}
 	return ListBaseTablesResult{Items: resp.Data.Items, PageToken: resp.Data.PageToken, HasMore: resp.Data.HasMore}, nil
+}
+
+func (c *Client) ListBaseTablesAll(ctx context.Context, token, appToken string) ([]BaseTable, error) {
+	items := make([]BaseTable, 0)
+	pageToken := ""
+	for {
+		res, err := c.ListBaseTablesPage(ctx, token, appToken, pageToken, 100)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, res.Items...)
+		if !res.HasMore || res.PageToken == "" {
+			break
+		}
+		pageToken = res.PageToken
+	}
+	return items, nil
 }
 
 type listBaseFieldsResponse struct {

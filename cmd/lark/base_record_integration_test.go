@@ -15,13 +15,15 @@ func TestIntegrationBaseRecordCreateGetDelete(t *testing.T) {
 
 	_ = testutil.RequireEnv(t, "LARK_APP_ID")
 	_ = testutil.RequireEnv(t, "LARK_APP_SECRET")
-	appToken := testutil.RequireEnv(t, "LARK_TEST_APP_TOKEN")
-	tableID := testutil.RequireEnv(t, "LARK_TEST_TABLE_ID")
 
 	fx := getIntegrationFixtures(t)
 	sdk := fx.SDK
 	ctx := context.Background()
 	tenantToken := fx.Token
+
+	appToken := fx.EnsureBaseAppToken(t)
+	tableID, cleanupTable := fx.CreateTempBaseTable(t, appToken)
+	defer cleanupTable()
 
 	fieldName := os.Getenv("LARK_TEST_FIELD_NAME")
 	if fieldName == "" {

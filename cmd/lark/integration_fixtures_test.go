@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"lark/internal/config"
 	"lark/internal/larksdk"
@@ -13,6 +18,11 @@ import (
 )
 
 const integrationFixturePrefix = "clawdbot-it-"
+
+const (
+	integrationBaseAppName     = "lark-cli-it-base"
+	integrationBaseTablePrefix = "lark-cli-it-"
+)
 
 type integrationFixtures struct {
 	ConfigPath string
@@ -30,6 +40,9 @@ type integrationFixtures struct {
 	SheetID          string
 	SheetTitle       string
 
+	// Base/Bitable fixtures.
+	BaseAppToken string
+
 	MailTo string
 }
 
@@ -39,6 +52,104 @@ func (fx integrationFixtures) EnsureChatID(t *testing.T) string {
 		t.Skip("missing LARK_TEST_CHAT_ID")
 	}
 	return fx.ChatID
+}
+
+func (fx *integrationFixtures) EnsureBaseAppToken(t *testing.T) string {
+	t.Helper()
+	if fx.BaseAppToken != "" {
+		return fx.BaseAppToken
+	}
+
+	ctx := t.Context()
+
+	res, err := fx.SDK.SearchDriveFiles(ctx, fx.Token, larksdk.SearchDriveFilesRequest{
+		Query:     integrationBaseAppName,
+		FileTypes: []string{"bitable"},
+		PageSize:  50,
+	})
+	if err != nil {
+		t.Fatalf("search drive for base app: %v", err)
+	}
+	files := res.Files
+	for res.HasMore {
+		res, err = fx.SDK.SearchDriveFiles(ctx, fx.Token, larksdk.SearchDriveFilesRequest{
+			Query:     integrationBaseAppName,
+			FileTypes: []string{"bitable"},
+			PageSize:  50,
+			PageToken: res.PageToken,
+		})
+		if err != nil {
+			t.Fatalf("search drive for base app (page): %v", err)
+		}
+		files = append(files, res.Files...)
+		if !res.HasMore {
+			break
+		}
+	}
+
+	for _, f := range files {
+		if f.Name != integrationBaseAppName {
+			continue
+		}
+		if token, ok := parseBitableAppTokenFromURL(f.URL); ok {
+			fx.BaseAppToken = token
+			return fx.BaseAppToken
+		}
+	}
+
+	app, err := fx.SDK.CreateBitableApp(ctx, fx.Token, integrationBaseAppName, fx.DriveFolderToken)
+	if err != nil {
+		t.Fatalf("create bitable app: %v", err)
+	}
+	fx.BaseAppToken = app.AppToken
+	return fx.BaseAppToken
+}
+
+func (fx integrationFixtures) SweepBaseTables(t *testing.T, appToken string) {
+	t.Helper()
+	if appToken == "" {
+		return
+	}
+	ctx := t.Context()
+	tables, err := fx.SDK.ListBaseTablesAll(ctx, fx.Token, appToken)
+	if err != nil {
+		t.Fatalf("list base tables: %v", err)
+	}
+	for _, tbl := range tables {
+		if tbl.Name == "" || !strings.HasPrefix(tbl.Name, integrationBaseTablePrefix) {
+			continue
+		}
+		_, err := fx.SDK.DeleteBaseTable(ctx, fx.Token, appToken, tbl.TableID)
+		if err != nil {
+			// Best-effort: avoid failing the whole suite on cleanup.
+			t.Logf("sweep: delete table %s (%s): %v", tbl.Name, tbl.TableID, err)
+		}
+	}
+}
+
+func (fx integrationFixtures) CreateTempBaseTable(t *testing.T, appToken string) (string, func()) {
+	t.Helper()
+	if tableID := os.Getenv("LARK_TEST_TABLE_ID"); tableID != "" {
+		return tableID, func() {}
+	}
+	fx.SweepBaseTables(t, appToken)
+
+	ctx := t.Context()
+	tableName := fmt.Sprintf("%stable-%s-%d", integrationBaseTablePrefix, sanitizeForFixtureName(t.Name()), time.Now().UnixNano())
+	table, err := fx.SDK.CreateBaseTable(ctx, fx.Token, appToken, tableName, "")
+	if err != nil {
+		t.Fatalf("create base table: %v", err)
+	}
+	if table.TableID == "" {
+		t.Fatalf("create base table returned empty table_id")
+	}
+	cleanup := func() {
+		_, err := fx.SDK.DeleteBaseTable(context.Background(), fx.Token, appToken, table.TableID)
+		if err != nil {
+			t.Fatalf("delete base table: %v", err)
+		}
+	}
+	return table.TableID, cleanup
 }
 
 func getIntegrationFixtures(t *testing.T) integrationFixtures {
@@ -97,6 +208,57 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 		SheetID:          os.Getenv("LARK_TEST_SHEET_SHEET_ID"),
 		SheetTitle:       sheetTitle,
 
+		BaseAppToken: os.Getenv("LARK_TEST_APP_TOKEN"),
+
 		MailTo: os.Getenv("LARK_TEST_MAIL_TO"),
 	}
+}
+
+func sanitizeForFixtureName(name string) string {
+	name = strings.ToLower(name)
+	b := make([]rune, 0, len(name))
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z':
+			b = append(b, r)
+		case r >= '0' && r <= '9':
+			b = append(b, r)
+		default:
+			b = append(b, '-')
+		}
+	}
+	return strings.Trim(collapseDashes(string(b)), "-")
+}
+
+func collapseDashes(s string) string {
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+	return s
+}
+
+func parseBitableAppTokenFromURL(raw string) (string, bool) {
+	if raw == "" {
+		return "", false
+	}
+	if u, err := url.Parse(raw); err == nil {
+		parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+		for i := 0; i < len(parts)-1; i++ {
+			if parts[i] == "base" || parts[i] == "bitable" {
+				tok := parts[i+1]
+				if tok != "" {
+					return tok, true
+				}
+			}
+		}
+		if tok := u.Query().Get("app_token"); tok != "" {
+			return tok, true
+		}
+	}
+
+	re := regexp.MustCompile(`\b(bas[a-zA-Z0-9]{6,})\b`)
+	if m := re.FindStringSubmatch(raw); len(m) == 2 {
+		return m[1], true
+	}
+	return "", false
 }
