@@ -76,7 +76,9 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
-	_ = cmd.MarkFlagRequired("mailbox-id")
+	// mailbox-id is optional; defaults to config default_mailbox_id or me.
+	// (still allow explicit mailbox-id when needed)
+
 	return cmd
 }
 
@@ -103,7 +105,9 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
-	_ = cmd.MarkFlagRequired("mailbox-id")
+	// mailbox-id is optional; defaults to config default_mailbox_id or me.
+	// (still allow explicit mailbox-id when needed)
+
 	return cmd
 }
 
