@@ -147,7 +147,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [ ] Env > config precedence (e.g., `LARK_KEYRING_BACKEND`, `LARK_KEYRING_PASSWORD` for headless)
   - [ ] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
 - [ ] **Multi-profile / multi-account / multi-app isolation**
-  - [ ] `--profile` / `LARK_PROFILE` selection + default
+  - [x] `--profile` / `LARK_PROFILE` selection + default
   - [ ] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
 - [ ] **Auth status & remediation UX**
   - [x] `lark auth user status` shows: offline/refresh availability, expiry, and stored scope (minimal v1)
