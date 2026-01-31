@@ -316,13 +316,13 @@ lark sheets cols delete --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_I
 List events:
 
 ```bash
-lark calendar list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+lark calendars list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
 ```
 
 Create event:
 
 ```bash
-lark calendar create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
+lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
 ---

@@ -14,8 +14,9 @@ import (
 
 func newCalendarCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "calendar",
-		Short: "Manage calendar events",
+		Use:     "calendars",
+		Aliases: []string{"calendar"},
+		Short:   "Manage calendar events",
 	}
 	cmd.AddCommand(newCalendarListCmd(state))
 	cmd.AddCommand(newCalendarCreateCmd(state))
