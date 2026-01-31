@@ -269,3 +269,93 @@ func convertWikiNode(n *larkwiki.Node) WikiNode {
 	}
 	return out
 }
+
+type WikiSpaceMember struct {
+	MemberType string `json:"member_type,omitempty"`
+	MemberID   string `json:"member_id,omitempty"`
+	MemberRole string `json:"member_role,omitempty"`
+	Type       string `json:"type,omitempty"`
+}
+
+type ListWikiSpaceMembersRequest struct {
+	SpaceID   string
+	PageSize  int
+	PageToken string
+}
+
+type ListWikiSpaceMembersResult struct {
+	Members   []WikiSpaceMember `json:"members"`
+	HasMore   bool              `json:"has_more"`
+	PageToken string            `json:"page_token"`
+}
+
+func (c *Client) ListWikiSpaceMembersV2(ctx context.Context, token string, req ListWikiSpaceMembersRequest) (ListWikiSpaceMembersResult, error) {
+	if !c.available() {
+		return ListWikiSpaceMembersResult{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return ListWikiSpaceMembersResult{}, errors.New("tenant access token is required")
+	}
+	if req.SpaceID == "" {
+		return ListWikiSpaceMembersResult{}, errors.New("space id is required")
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+
+	builder := larkwiki.NewListSpaceMemberReqBuilder().SpaceId(req.SpaceID).PageSize(req.PageSize)
+	if req.PageToken != "" {
+		builder = builder.PageToken(req.PageToken)
+	}
+
+	resp, err := c.sdk.Wiki.V2.SpaceMember.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return ListWikiSpaceMembersResult{}, err
+	}
+	if resp == nil {
+		return ListWikiSpaceMembersResult{}, errors.New("wiki member list failed: empty response")
+	}
+	if !resp.Success() {
+		return ListWikiSpaceMembersResult{}, fmt.Errorf("wiki member list failed: %s", resp.Msg)
+	}
+
+	out := ListWikiSpaceMembersResult{}
+	if resp.Data == nil {
+		return out, nil
+	}
+	if resp.Data.HasMore != nil {
+		out.HasMore = *resp.Data.HasMore
+	}
+	if resp.Data.PageToken != nil {
+		out.PageToken = *resp.Data.PageToken
+	}
+	if resp.Data.Members == nil {
+		return out, nil
+	}
+	out.Members = make([]WikiSpaceMember, 0, len(resp.Data.Members))
+	for _, m := range resp.Data.Members {
+		if m == nil {
+			continue
+		}
+		out.Members = append(out.Members, convertWikiSpaceMember(m))
+	}
+	return out, nil
+}
+
+func convertWikiSpaceMember(m *larkwiki.Member) WikiSpaceMember {
+	out := WikiSpaceMember{}
+	if m.MemberType != nil {
+		out.MemberType = *m.MemberType
+	}
+	if m.MemberId != nil {
+		out.MemberID = *m.MemberId
+	}
+	if m.MemberRole != nil {
+		out.MemberRole = *m.MemberRole
+	}
+	if m.Type != nil {
+		out.Type = *m.Type
+	}
+	return out
+}
