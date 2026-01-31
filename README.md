@@ -321,6 +321,8 @@ Current behavior:
 - Run `lark auth user login` to launch OAuth and store tokens locally
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
+- Mail commands `mail folders/list/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
+- Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
 
 Example:
 
@@ -338,6 +340,7 @@ Example:
 ./lark wiki node search --help
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
+./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
 ```
 
 ---
