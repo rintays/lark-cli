@@ -64,7 +64,7 @@ func TestWikiTaskListAliasRequiresTaskID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"task-id\" not set" {
+	if err.Error() != "task-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -131,7 +131,7 @@ func TestWikiTaskGetCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"task", "get", "--task-id", "t1"})
+	cmd.SetArgs([]string{"task", "get", "t1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("wiki task get error: %v", err)
 	}

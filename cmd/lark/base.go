@@ -107,6 +107,21 @@ func newBaseFieldListCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List Bitable fields",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(tableID) == "" {
+					return errors.New("table-id is required")
+				}
+				return nil
+			}
+			if tableID != "" && tableID != args[0] {
+				return errors.New("table-id provided twice")
+			}
+			return cmd.Flags().Set("table-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -134,9 +149,8 @@ func newBaseFieldListCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
+	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
 	return cmd
 }
 
@@ -147,6 +161,21 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List Bitable views",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(tableID) == "" {
+					return errors.New("table-id is required")
+				}
+				return nil
+			}
+			if tableID != "" && tableID != args[0] {
+				return errors.New("table-id provided twice")
+			}
+			return cmd.Flags().Set("table-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -174,9 +203,8 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
+	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
 	return cmd
 }
 
@@ -186,8 +214,36 @@ func newBaseRecordGetCmd(state *appState) *cobra.Command {
 	var recordID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "get <table-id> <record-id>",
 		Short: "Get a Bitable record",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if tableID != "" && tableID != args[0] {
+					return errors.New("table-id provided twice")
+				}
+				if err := cmd.Flags().Set("table-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if recordID != "" && recordID != args[1] {
+					return errors.New("record-id provided twice")
+				}
+				if err := cmd.Flags().Set("record-id", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(tableID) == "" {
+				return errors.New("table-id is required")
+			}
+			if strings.TrimSpace(recordID) == "" {
+				return errors.New("record-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -207,10 +263,8 @@ func newBaseRecordGetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
-	cmd.Flags().StringVar(&recordID, "record-id", "", "Bitable record id")
+	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
+	cmd.Flags().StringVar(&recordID, "record-id", "", "Bitable record id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
-	_ = cmd.MarkFlagRequired("record-id")
 	return cmd
 }

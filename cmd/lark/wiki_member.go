@@ -104,9 +104,39 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 	var needNotification bool
 
 	cmd := &cobra.Command{
-		Use:   "add",
+		Use:   "add <member-type> <member-id>",
 		Short: "Add a Wiki space member (v2)",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if memberType != "" && memberType != args[0] {
+					return errors.New("member-type provided twice")
+				}
+				if err := cmd.Flags().Set("member-type", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if memberID != "" && memberID != args[1] {
+					return errors.New("member-id provided twice")
+				}
+				if err := cmd.Flags().Set("member-id", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spaceID) == "" {
+				return errors.New("space-id is required")
+			}
+			if strings.TrimSpace(memberType) == "" {
+				return errors.New("member-type is required")
+			}
+			if strings.TrimSpace(memberID) == "" {
+				return errors.New("member-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -139,13 +169,11 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spaceID, "space-id", "", "Wiki space ID")
-	cmd.Flags().StringVar(&memberType, "member-type", "", "member type (userid, email, openid, unionid, openchat, opendepartmentid)")
-	cmd.Flags().StringVar(&memberID, "member-id", "", "member id")
+	cmd.Flags().StringVar(&memberType, "member-type", "", "member type (userid, email, openid, unionid, openchat, opendepartmentid) (or provide as positional argument)")
+	cmd.Flags().StringVar(&memberID, "member-id", "", "member id (or provide as positional argument)")
 	cmd.Flags().StringVar(&memberRole, "role", "member", "member role (member, admin)")
 	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after adding permissions")
 	_ = cmd.MarkFlagRequired("space-id")
-	_ = cmd.MarkFlagRequired("member-type")
-	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }
 
@@ -155,9 +183,39 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 	var memberID string
 
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <member-type> <member-id>",
 		Short: "Delete a Wiki space member (v2)",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if memberType != "" && memberType != args[0] {
+					return errors.New("member-type provided twice")
+				}
+				if err := cmd.Flags().Set("member-type", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if memberID != "" && memberID != args[1] {
+					return errors.New("member-id provided twice")
+				}
+				if err := cmd.Flags().Set("member-id", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spaceID) == "" {
+				return errors.New("space-id is required")
+			}
+			if strings.TrimSpace(memberType) == "" {
+				return errors.New("member-type is required")
+			}
+			if strings.TrimSpace(memberID) == "" {
+				return errors.New("member-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -186,10 +244,8 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spaceID, "space-id", "", "Wiki space ID")
-	cmd.Flags().StringVar(&memberType, "member-type", "", "member type (userid, email, openid, unionid, openchat, opendepartmentid)")
-	cmd.Flags().StringVar(&memberID, "member-id", "", "member id")
+	cmd.Flags().StringVar(&memberType, "member-type", "", "member type (userid, email, openid, unionid, openchat, opendepartmentid) (or provide as positional argument)")
+	cmd.Flags().StringVar(&memberID, "member-id", "", "member id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("space-id")
-	_ = cmd.MarkFlagRequired("member-type")
-	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }

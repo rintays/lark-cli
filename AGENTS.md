@@ -55,3 +55,4 @@
 - 2026-01-31: Switched docs cat to docx raw_content API to avoid export task validation errors for txt/md.
 - 2026-01-31: Mail user mailbox operations now use user access tokens (list/get/folders/mailbox get) to avoid field validation errors; public mailboxes remain tenant-token.
 - 2026-01-31: Mail list now resolves folder_id (defaults to Inbox) to satisfy API validation; SDK enforces folder_id requirement.
+- 2026-01-31: Promoted required identifiers to positional args for docs/drive/sheets/base/wiki/minutes/meetings/auth scopes/mailbox set (keeping base app-token and wiki space-id as flags), updated tests and README examples.

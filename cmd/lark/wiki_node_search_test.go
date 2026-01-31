@@ -70,7 +70,7 @@ func TestWikiNodeSearchCommandUsesUserTokenAndEndpoint(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"node", "search", "--query", "hello", "--space-id", "spc1", "--user-access-token", "usertoken"})
+	cmd.SetArgs([]string{"node", "search", "hello", "--space-id", "spc1", "--user-access-token", "usertoken"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("wiki node search error: %v", err)
 	}

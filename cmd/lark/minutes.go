@@ -41,6 +41,10 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("minute-token", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(minuteToken) == "" {
+				return errors.New("minute-token is required")
 			}
 			return nil
 		},
@@ -64,7 +68,6 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&minuteToken, "minute-token", "", "minute token (or provide as positional argument)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
-	_ = cmd.MarkFlagRequired("minute-token")
 	return cmd
 }
 

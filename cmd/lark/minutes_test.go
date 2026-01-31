@@ -59,7 +59,7 @@ func TestMinutesGetCommand(t *testing.T) {
 		state.SDK = sdkClient
 
 		cmd := newMinutesCmd(state)
-		cmd.SetArgs([]string{"get", "--minute-token", "m1", "--user-id-type", "open_id"})
+		cmd.SetArgs([]string{"get", "m1", "--user-id-type", "open_id"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("minutes get error: %v", err)
 		}
@@ -82,7 +82,7 @@ func TestMinutesGetCommand(t *testing.T) {
 		}
 
 		cmd := newMinutesCmd(state)
-		cmd.SetArgs([]string{"get", "--minute-token", "m1"})
+		cmd.SetArgs([]string{"get", "m1"})
 		err := cmd.Execute()
 		if err == nil {
 			t.Fatal("expected error")
@@ -99,7 +99,7 @@ func TestMinutesGetCommand(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if err.Error() != "required flag(s) \"minute-token\" not set" {
+		if err.Error() != "minute-token is required" {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

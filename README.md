@@ -188,7 +188,7 @@ lark drive list --folder-id <FOLDER_TOKEN> --limit 20
 Search files:
 
 ```bash
-lark drive search --query "budget" --limit 10 --type sheet --type docx
+lark drive search "budget" --limit 10 --type sheet --type docx
 ```
 
 Drive search uses a **user access token**. Make sure your app has `drive:drive`, `drive:drive:readonly`, or `search:docs:read` user scopes, then run `lark auth user login` to refresh user authorization.
@@ -196,13 +196,13 @@ Drive search uses a **user access token**. Make sure your app has `drive:drive`,
 Download:
 
 ```bash
-lark drive download --file-token <FILE_TOKEN> --out ./downloaded.bin
+lark drive download <FILE_TOKEN> --out ./downloaded.bin
 ```
 
 Upload:
 
 ```bash
-lark drive upload --file ./report.pdf --folder-token <FOLDER_TOKEN> --name "report.pdf"
+lark drive upload ./report.pdf --folder-token <FOLDER_TOKEN> --name "report.pdf"
 ```
 
 Update share:
@@ -222,19 +222,19 @@ lark docs list --folder-id <FOLDER_TOKEN> --limit 50
 Create:
 
 ```bash
-lark docs create --title "Weekly Update" --folder-id <FOLDER_TOKEN>
+lark docs create "Weekly Update" --folder-id <FOLDER_TOKEN>
 ```
 
 Export:
 
 ```bash
-lark docs export --doc-id <DOCUMENT_ID> --format pdf --out ./document.pdf
+lark docs export <DOCUMENT_ID> --format pdf --out ./document.pdf
 ```
 
 Cat:
 
 ```bash
-lark docs cat --doc-id <DOCUMENT_ID> --format txt
+lark docs cat <DOCUMENT_ID> --format txt
 ```
 
 ### Sheets
@@ -248,61 +248,61 @@ lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
 Read:
 
 ```bash
-lark sheets read --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
 ```
 
 Search:
 
 ```bash
-lark sheets search --query <TEXT> --limit 50
+lark sheets search <TEXT> --limit 50
 ```
 
 Update:
 
 ```bash
-lark sheets update --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
 ```
 
 Append:
 
 ```bash
-lark sheets append --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
 ```
 
 Clear:
 
 ```bash
-lark sheets clear --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
 ```
 
 Metadata:
 
 ```bash
-lark sheets metadata --spreadsheet-id <SPREADSHEET_TOKEN>
+lark sheets metadata <SPREADSHEET_TOKEN>
 ```
 
 Insert rows:
 
 ```bash
-lark sheets rows insert --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets rows insert <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 Delete rows:
 
 ```bash
-lark sheets rows delete --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets rows delete <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 Insert cols:
 
 ```bash
-lark sheets cols insert --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets cols insert <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 Delete cols:
 
 ```bash
-lark sheets cols delete --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets cols delete <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 ### Calendar
@@ -327,9 +327,9 @@ Manage default user OAuth scopes:
 
 ```bash
 lark auth user scopes list
-lark auth user scopes set --scopes "offline_access drive:drive:readonly"
-lark auth user scopes add --scopes "drive:drive"
-lark auth user scopes remove --scopes "drive:drive:readonly"
+lark auth user scopes set offline_access drive:drive:readonly
+lark auth user scopes add drive:drive
+lark auth user scopes remove drive:drive:readonly
 ```
 
 Log in with explicit scopes:

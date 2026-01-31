@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -13,9 +14,23 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 	var tableID string
 
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <table-id>",
 		Short: "Delete a Bitable table",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(tableID) == "" {
+					return errors.New("table-id is required")
+				}
+				return nil
+			}
+			if tableID != "" && tableID != args[0] {
+				return errors.New("table-id provided twice")
+			}
+			return cmd.Flags().Set("table-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -35,8 +50,7 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
+	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
 	return cmd
 }

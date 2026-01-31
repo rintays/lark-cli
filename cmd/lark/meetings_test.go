@@ -99,7 +99,7 @@ func TestMeetingGetRequiresMeetingID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"meeting-id\" not set" {
+	if err.Error() != "meeting-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

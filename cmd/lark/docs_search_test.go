@@ -87,7 +87,7 @@ func TestDocsSearchCommandUsesDocsSearchEndpoint(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "spec", "--limit", "10"})
+	cmd.SetArgs([]string{"search", "spec", "--limit", "10"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs search error: %v", err)
 	}
