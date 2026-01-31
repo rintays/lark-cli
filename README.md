@@ -537,6 +537,20 @@ Example:
 
 ---
 
+## Bitable (Base) concepts
+
+Bitable is Lark/Feishu's database product. In the API, a **base** is also called an **app**.
+
+- **App/Base:** the top-level container; identified by an app token.
+- **Table:** a grid inside the base; defines fields (columns) and stores records (rows).
+- **Field:** a column definition (type + name) used by every record in the table.
+- **Record:** a single row of data for the table's fields.
+- **View:** a saved presentation of a table (filters/sorts/grouping/hidden columns); it doesn't change the underlying records.
+
+Relationships: app/base → tables → fields + records; views belong to a table.
+
+---
+
 
 ## Token selection (tenant vs user)
 

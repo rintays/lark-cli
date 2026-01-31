@@ -16,6 +16,11 @@ func newSheetsCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sheets",
 		Short: "Read Sheets data",
+		Long: `Sheets are spreadsheet files stored in Drive.
+
+- spreadsheet-id identifies the file.
+- Each spreadsheet contains sheets (tabs) with sheet_id.
+- Ranges use A1 notation: <sheet_id>!A1:B2; rows/cols act on a sheet.`,
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
 	cmd.AddCommand(newSheetsCreateCmd(state))

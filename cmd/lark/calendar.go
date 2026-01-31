@@ -17,7 +17,13 @@ func newCalendarCmd(state *appState) *cobra.Command {
 		Use:     "calendars",
 		Aliases: []string{"calendar"},
 		Short:   "Manage calendars (events)",
-		Long:    "Manage calendar events.\n\nCanonical command name: calendars (alias: calendar).",
+		Long: `Calendars contain events scheduled for users.
+
+- calendar_id identifies a calendar (default: primary).
+- Events have event_id plus start/end times.
+- list/search operate on time ranges; create/update manage event details.
+
+Canonical command name: calendars (alias: calendar).`,
 	}
 	cmd.AddCommand(newCalendarListCmd(state))
 	cmd.AddCommand(newCalendarCreateCmd(state))

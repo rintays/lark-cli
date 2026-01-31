@@ -14,6 +14,16 @@ func newBaseCmd(state *appState) *cobra.Command {
 		Use:     "bases",
 		Aliases: []string{"base"},
 		Short:   "Manage Bitable bases",
+		Long: `Bitable (Base) is Lark/Feishu's database product.
+
+A base (also called an app) is the top-level container. Each base contains one or more tables.
+- Table: a grid that defines fields (columns) and stores records (rows).
+- Field: a column definition (type + name) used by every record in the table.
+- Record: a single row of data for the table's fields.
+- View: a saved presentation of a table (filters/sorts/grouping/hidden columns); it doesn't change the underlying records.
+
+Relationships: app -> tables -> fields + records; views belong to a table.
+Most subcommands require the Bitable app token to identify the base.`,
 	}
 	cmd.AddCommand(newBaseAppCmd(state))
 	cmd.AddCommand(newBaseTableCmd(state))

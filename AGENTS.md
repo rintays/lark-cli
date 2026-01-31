@@ -86,3 +86,5 @@
 - 2026-01-31: Adjusted Sheets dimension payloads for better API compatibility, switched columns to COLUMNS, clarified sheet range help/examples, normalized sheets create folder-id root handling, and clarified user token help/error text for Sheets search.
 - 2026-01-31: Message search scope hints now include `im:message:get_as_user` alongside `search:message` for user OAuth guidance.
 - 2026-01-31: Mail list output now includes sender and internal_date columns for quick triage.
+- 2026-01-31: Added Bitable base concept explanations to the `bases` command help and README.
+- 2026-01-31: Added product concept explanations to top-level help for users/drive/docs/sheets/wiki/mail/messages/chats/calendars/meetings/minutes/contacts.

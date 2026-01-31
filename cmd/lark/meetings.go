@@ -17,6 +17,11 @@ func newMeetingsCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "meetings",
 		Short: "Manage meetings",
+		Long: `Meetings are scheduled video meetings.
+
+- meeting_id identifies a meeting; meeting_no is the join number.
+- Meetings have time ranges, status, and participants.
+- list requires a time range; create/update manage meeting details.`,
 	}
 	cmd.AddCommand(newMeetingInfoCmd(state))
 	cmd.AddCommand(newMeetingListCmd(state))

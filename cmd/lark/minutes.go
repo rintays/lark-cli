@@ -15,6 +15,11 @@ func newMinutesCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "minutes",
 		Short: "Manage Minutes",
+		Long: `Minutes are meeting recordings/transcripts stored as Drive files.
+
+- minute_token identifies a Minutes file; URL opens it.
+- list reads Minutes entries from Drive folders.
+- update manages sharing permissions; delete removes the file.`,
 	}
 	cmd.AddCommand(newMinutesInfoCmd(state))
 	cmd.AddCommand(newMinutesListCmd(state))

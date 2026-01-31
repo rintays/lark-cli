@@ -20,6 +20,11 @@ func newDriveCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "drive",
 		Short: "Manage Drive files",
+		Long: `Drive is the file storage for docs, sheets, slides, and files.
+
+- Files and folders are identified by tokens (file_token, folder_token).
+- A folder contains files; default folder-id is the root.
+- File types include docx, sheet, slide, mindnote, and file.`,
 	}
 	cmd.AddCommand(newDriveListCmd(state))
 	cmd.AddCommand(newDriveSearchCmd(state))

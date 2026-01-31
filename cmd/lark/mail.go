@@ -19,6 +19,11 @@ func newMailCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mail",
 		Short: "Manage Mail messages",
+		Long: `Mail is organized by mailbox, folders, and messages.
+
+- A mailbox represents a user or public mailbox.
+- Folders (e.g., Inbox) contain messages; folder_id identifies the folder.
+- Messages are identified by message_id; send/list/info operate within a mailbox.`,
 	}
 	cmd.AddCommand(newMailMailboxCmd(state))
 	cmd.AddCommand(newMailPublicMailboxesCmd(state))

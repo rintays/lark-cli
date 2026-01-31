@@ -16,6 +16,11 @@ func newMsgCmd(state *appState) *cobra.Command {
 		Use:     "messages",
 		Aliases: []string{"msg"},
 		Short:   "Send chat messages",
+		Long: `Messages are chat messages sent in conversations.
+
+- Chats have chat_id; messages have message_id.
+- Send uses receive_id + receive_id_type to target a chat or user.
+- Reply/reactions/pin operate on an existing message.`,
 	}
 	cmd.AddCommand(newMsgSendCmd(state))
 	cmd.AddCommand(newMsgReplyCmd(state))
