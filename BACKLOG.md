@@ -539,3 +539,4 @@ Deliverables:
 - 2026-02-01: Verified Wiki `SpaceMember.Create` role-update behavior (not an upsert; repeated adds return already-exists); updated integration test to assert/log behavior and restore initial state without privilege downgrades.
 - 2026-02-01: Auth registry: made `SuggestedUserOAuthScopesFromServices` variant selection fall back consistently (readonly/full/required) + added unit tests.
 - 2026-02-01: Documented `keyring_backend=auto` resolution (keychain on macOS/Windows) + aligned README token storage docs.
+- 2026-02-01: Base record batch ops: added `base record batch-delete` command + SDK wrapper + unit tests.
