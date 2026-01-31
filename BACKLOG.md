@@ -4,7 +4,7 @@
 **Where:** `/Users/fredliang/clawd/lark/BACKLOG.md` (single source of truth)  
 **Repo:** `/Users/fredliang/clawd/lark`  
 **Branch policy:** default development branch is **`main`** and changes must land on **`origin/main`** (unless Master explicitly requests a branch/PR flow).  
-**Last updated:** 2026-01-31 (Asia/Shanghai)
+**Last updated:** 2026-02-01 (Asia/Shanghai)
 
 ---
 
@@ -387,11 +387,12 @@ Deliverables:
   - [ ] `wiki member` management (v2)
     - [x] `wiki member delete`
     - [x] `wiki member add` (SpaceMember.Create)
-    - [ ] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
-      - Integration test added: `cmd/lark/wiki_member_role_update_integration_test.go`
+    - [x] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
+      - Conclusion: **not an upsert** (official docs list error `400131008 already exist` for repeated adds), so changing role requires `wiki member delete` then `wiki member add --role ...`.
+      - Integration test: `cmd/lark/wiki_member_role_update_integration_test.go`
       - How to run (single test in a real env):
         - Required env vars: `LARK_INTEGRATION=1`, `LARK_TEST_WIKI_SPACE_ID`, `LARK_TEST_USER_EMAIL`
-        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`)
+        - Prereqs: app creds configured (`lark auth login ...` or `LARK_APP_ID/LARK_APP_SECRET`) and the app/user is a **wiki space admin**.
         - Command:
           - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
   - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
@@ -528,4 +529,4 @@ Deliverables:
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
 - 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
 - 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.
-- 2026-02-01: Wiki member role-update integration test now uses tenant token (no user token prereq) and attempts best-effort cleanup (downgrade back to member).
+- 2026-02-01: Verified Wiki `SpaceMember.Create` role-update behavior (not an upsert; repeated adds return already-exists); updated integration test to assert/log behavior and restore initial state without privilege downgrades.
