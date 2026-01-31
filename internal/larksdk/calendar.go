@@ -15,9 +15,14 @@ type primaryCalendarResponse struct {
 	Data *primaryCalendarResponseData `json:"data"`
 }
 
+type primaryCalendarEntry struct {
+	Calendar Calendar `json:"calendar"`
+}
+
 type primaryCalendarResponseData struct {
-	CalendarID string   `json:"calendar_id"`
-	Calendar   Calendar `json:"calendar"`
+	CalendarID string                 `json:"calendar_id"`
+	Calendar   Calendar               `json:"calendar"`
+	Calendars  []primaryCalendarEntry `json:"calendars"`
 }
 
 func (r *primaryCalendarResponse) Success() bool {
@@ -39,6 +44,64 @@ type listCalendarEventsResponseData struct {
 }
 
 func (r *listCalendarEventsResponse) Success() bool {
+	return r.Code == 0
+}
+
+type searchCalendarEventsResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *searchCalendarEventsResponseData `json:"data"`
+}
+
+type searchCalendarEventsResponseData struct {
+	Items     []CalendarEvent `json:"items"`
+	PageToken string          `json:"page_token"`
+}
+
+func (r *searchCalendarEventsResponse) Success() bool {
+	return r.Code == 0
+}
+
+type getCalendarEventResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *getCalendarEventResponseData `json:"data"`
+}
+
+type getCalendarEventResponseData struct {
+	Event CalendarEvent `json:"event"`
+}
+
+func (r *getCalendarEventResponse) Success() bool {
+	return r.Code == 0
+}
+
+type updateCalendarEventResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *updateCalendarEventResponseData `json:"data"`
+}
+
+type updateCalendarEventResponseData struct {
+	Event CalendarEvent `json:"event"`
+}
+
+func (r *updateCalendarEventResponse) Success() bool {
+	return r.Code == 0
+}
+
+type deleteCalendarEventResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *deleteCalendarEventResponseData `json:"data"`
+}
+
+type deleteCalendarEventResponseData struct {
+	EventID string `json:"event_id"`
+	Deleted *bool  `json:"deleted"`
+}
+
+func (r *deleteCalendarEventResponse) Success() bool {
 	return r.Code == 0
 }
 
@@ -103,6 +166,14 @@ func (c *Client) PrimaryCalendar(ctx context.Context, token string) (Calendar, e
 	calendar := resp.Data.Calendar
 	if calendar.CalendarID == "" {
 		calendar.CalendarID = resp.Data.CalendarID
+	}
+	if calendar.CalendarID == "" {
+		for _, entry := range resp.Data.Calendars {
+			if entry.Calendar.CalendarID != "" {
+				calendar = entry.Calendar
+				break
+			}
+		}
 	}
 	if calendar.CalendarID == "" {
 		return Calendar{}, errors.New("primary calendar response missing calendar_id")
@@ -171,6 +242,256 @@ func (c *Client) ListCalendarEvents(ctx context.Context, token string, req ListC
 		result.PageToken = resp.Data.PageToken
 		result.HasMore = resp.Data.HasMore
 		result.SyncToken = resp.Data.SyncToken
+	}
+	return result, nil
+}
+
+func (c *Client) SearchCalendarEvents(ctx context.Context, token string, req SearchCalendarEventsRequest) (SearchCalendarEventsResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return SearchCalendarEventsResult{}, ErrUnavailable
+	}
+	if req.CalendarID == "" {
+		return SearchCalendarEventsResult{}, errors.New("calendar id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return SearchCalendarEventsResult{}, errors.New("tenant access token is required")
+	}
+
+	payload := map[string]any{
+		"query": req.Query,
+	}
+	filter := map[string]any{}
+	if req.StartTime != "" {
+		filter["start_time"] = map[string]string{
+			"timestamp": req.StartTime,
+		}
+	}
+	if req.EndTime != "" {
+		filter["end_time"] = map[string]string{
+			"timestamp": req.EndTime,
+		}
+	}
+	if len(req.UserIDs) > 0 {
+		filter["user_ids"] = req.UserIDs
+	}
+	if len(req.RoomIDs) > 0 {
+		filter["room_ids"] = req.RoomIDs
+	}
+	if len(req.ChatIDs) > 0 {
+		filter["chat_ids"] = req.ChatIDs
+	}
+	if len(filter) > 0 {
+		payload["filter"] = filter
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/calendar/v4/calendars/:calendar_id/events/search",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		Body:                      payload,
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	apiReq.PathParams.Set("calendar_id", req.CalendarID)
+	if req.PageSize > 0 {
+		apiReq.QueryParams.Set("page_size", fmt.Sprintf("%d", req.PageSize))
+	}
+	if req.PageToken != "" {
+		apiReq.QueryParams.Set("page_token", req.PageToken)
+	}
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return SearchCalendarEventsResult{}, err
+	}
+	if apiResp == nil {
+		return SearchCalendarEventsResult{}, errors.New("search calendar events failed: empty response")
+	}
+	resp := &searchCalendarEventsResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return SearchCalendarEventsResult{}, err
+	}
+	if !resp.Success() {
+		return SearchCalendarEventsResult{}, fmt.Errorf("search calendar events failed: %s", resp.Msg)
+	}
+
+	result := SearchCalendarEventsResult{}
+	if resp.Data != nil {
+		result.Items = resp.Data.Items
+		result.PageToken = resp.Data.PageToken
+	}
+	return result, nil
+}
+
+func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCalendarEventRequest) (CalendarEvent, error) {
+	if !c.available() || c.coreConfig == nil {
+		return CalendarEvent{}, ErrUnavailable
+	}
+	if req.CalendarID == "" {
+		return CalendarEvent{}, errors.New("calendar id is required")
+	}
+	if req.EventID == "" {
+		return CalendarEvent{}, errors.New("event id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return CalendarEvent{}, errors.New("tenant access token is required")
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/calendar/v4/calendars/:calendar_id/events/:event_id",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	apiReq.PathParams.Set("calendar_id", req.CalendarID)
+	apiReq.PathParams.Set("event_id", req.EventID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return CalendarEvent{}, err
+	}
+	if apiResp == nil {
+		return CalendarEvent{}, errors.New("get calendar event failed: empty response")
+	}
+	resp := &getCalendarEventResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return CalendarEvent{}, err
+	}
+	if !resp.Success() {
+		return CalendarEvent{}, fmt.Errorf("get calendar event failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return CalendarEvent{}, errors.New("get calendar event response missing data")
+	}
+	result := resp.Data.Event
+	if result.EventID == "" {
+		result.EventID = req.EventID
+	}
+	return result, nil
+}
+
+func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req UpdateCalendarEventRequest) (CalendarEvent, error) {
+	if !c.available() || c.coreConfig == nil {
+		return CalendarEvent{}, ErrUnavailable
+	}
+	if req.CalendarID == "" {
+		return CalendarEvent{}, errors.New("calendar id is required")
+	}
+	if req.EventID == "" {
+		return CalendarEvent{}, errors.New("event id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return CalendarEvent{}, errors.New("tenant access token is required")
+	}
+
+	payload := map[string]any{}
+	if req.Summary != "" {
+		payload["summary"] = req.Summary
+	}
+	if req.Description != "" {
+		payload["description"] = req.Description
+	}
+	if req.StartTime != nil {
+		payload["start_time"] = map[string]string{
+			"timestamp": fmt.Sprintf("%d", *req.StartTime),
+		}
+	}
+	if req.EndTime != nil {
+		payload["end_time"] = map[string]string{
+			"timestamp": fmt.Sprintf("%d", *req.EndTime),
+		}
+	}
+	if len(payload) == 0 {
+		return CalendarEvent{}, errors.New("update calendar event requires at least one field")
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/calendar/v4/calendars/:calendar_id/events/:event_id",
+		HttpMethod:                http.MethodPatch,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		Body:                      payload,
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	apiReq.PathParams.Set("calendar_id", req.CalendarID)
+	apiReq.PathParams.Set("event_id", req.EventID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return CalendarEvent{}, err
+	}
+	if apiResp == nil {
+		return CalendarEvent{}, errors.New("update calendar event failed: empty response")
+	}
+	resp := &updateCalendarEventResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return CalendarEvent{}, err
+	}
+	if !resp.Success() {
+		return CalendarEvent{}, fmt.Errorf("update calendar event failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return CalendarEvent{}, errors.New("update calendar event response missing data")
+	}
+	result := resp.Data.Event
+	if result.EventID == "" {
+		result.EventID = req.EventID
+	}
+	return result, nil
+}
+
+func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, req DeleteCalendarEventRequest) (DeleteCalendarEventResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return DeleteCalendarEventResult{}, ErrUnavailable
+	}
+	if req.CalendarID == "" {
+		return DeleteCalendarEventResult{}, errors.New("calendar id is required")
+	}
+	if req.EventID == "" {
+		return DeleteCalendarEventResult{}, errors.New("event id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return DeleteCalendarEventResult{}, errors.New("tenant access token is required")
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/calendar/v4/calendars/:calendar_id/events/:event_id",
+		HttpMethod:                http.MethodDelete,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	apiReq.PathParams.Set("calendar_id", req.CalendarID)
+	apiReq.PathParams.Set("event_id", req.EventID)
+	apiReq.QueryParams.Set("need_notification", fmt.Sprintf("%t", req.NeedNotification))
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return DeleteCalendarEventResult{}, err
+	}
+	if apiResp == nil {
+		return DeleteCalendarEventResult{}, errors.New("delete calendar event failed: empty response")
+	}
+	resp := &deleteCalendarEventResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return DeleteCalendarEventResult{}, err
+	}
+	if !resp.Success() {
+		return DeleteCalendarEventResult{}, fmt.Errorf("delete calendar event failed: %s", resp.Msg)
+	}
+	result := DeleteCalendarEventResult{EventID: req.EventID, Deleted: true}
+	if resp.Data != nil {
+		if resp.Data.EventID != "" {
+			result.EventID = resp.Data.EventID
+		}
+		if resp.Data.Deleted != nil {
+			result.Deleted = *resp.Data.Deleted
+		}
 	}
 	return result, nil
 }
