@@ -95,6 +95,18 @@ Set the platform base URL (optional):
 lark config set --platform feishu|lark
 ```
 
+Clear the persisted base URL:
+
+```bash
+lark config unset --base-url
+```
+
+Clear the default mailbox id:
+
+```bash
+lark config unset --default-mailbox-id
+```
+
 ### 2) Get tenant token
 
 ```bash
