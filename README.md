@@ -351,7 +351,9 @@ lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
 Read:
 
 ```bash
-lark sheets read <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+# or
+lark sheets read <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID>
 ```
 
 Search:
@@ -363,19 +365,25 @@ lark sheets search <TEXT> --limit 50 # requires user_access_token or `lark auth 
 Update:
 
 ```bash
-lark sheets update <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+# or
+lark sheets update <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values-file ./values.csv
 ```
 
 Append:
 
 ```bash
-lark sheets append <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+# or
+lark sheets append <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values @./values.json
 ```
 
 Clear:
 
 ```bash
-lark sheets clear <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+# or
+lark sheets clear <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID>
 ```
 
 Info:
