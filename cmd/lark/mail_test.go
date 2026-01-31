@@ -1008,7 +1008,7 @@ func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "run `lark auth user login`") {
+	if !strings.Contains(err.Error(), userOAuthReloginCommand) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

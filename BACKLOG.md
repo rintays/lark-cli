@@ -143,7 +143,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [ ] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
 - [ ] **Auth status & remediation UX**
   - [x] `lark auth user status` shows: offline/refresh availability, expiry, and stored scope (minimal v1)
-  - [ ] Standardized remediation messages:
+  - [x] Standardized remediation messages:
     - [x] missing refresh_token → tell user to rerun with `--force-consent` / correct scopes
     - [x] revoked refresh_token → clear + rerun login
     - [x] insufficient scope → suggest adding service/scope and re-login (best-effort: wiki node search adds re-login hint)
