@@ -104,6 +104,9 @@ func (c *Client) ListMeetings(ctx context.Context, token string, req ListMeeting
 	if !c.available() || c.coreConfig == nil {
 		return ListMeetingsResult{}, ErrUnavailable
 	}
+	if req.StartTime == "" || req.EndTime == "" {
+		return ListMeetingsResult{}, errors.New("start and end times are required")
+	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
 		return ListMeetingsResult{}, errors.New("tenant access token is required")
@@ -116,11 +119,37 @@ func (c *Client) ListMeetings(ctx context.Context, token string, req ListMeeting
 		QueryParams:               larkcore.QueryParams{},
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
+	apiReq.QueryParams.Set("start_time", req.StartTime)
+	apiReq.QueryParams.Set("end_time", req.EndTime)
+	if req.MeetingStatus != nil {
+		apiReq.QueryParams.Set("meeting_status", fmt.Sprintf("%d", *req.MeetingStatus))
+	}
+	if req.MeetingNo != "" {
+		apiReq.QueryParams.Set("meeting_no", req.MeetingNo)
+	}
+	if req.UserID != "" {
+		apiReq.QueryParams.Set("user_id", req.UserID)
+	}
+	if req.RoomID != "" {
+		apiReq.QueryParams.Set("room_id", req.RoomID)
+	}
+	if req.MeetingType != nil {
+		apiReq.QueryParams.Set("meeting_type", fmt.Sprintf("%d", *req.MeetingType))
+	}
 	if req.PageSize > 0 {
 		apiReq.QueryParams.Set("page_size", fmt.Sprintf("%d", req.PageSize))
 	}
 	if req.PageToken != "" {
 		apiReq.QueryParams.Set("page_token", req.PageToken)
+	}
+	if req.IncludeExternalMeetings != nil {
+		apiReq.QueryParams.Set("include_external_meetings", fmt.Sprint(*req.IncludeExternalMeetings))
+	}
+	if req.IncludeWebinar != nil {
+		apiReq.QueryParams.Set("include_webinar", fmt.Sprint(*req.IncludeWebinar))
+	}
+	if req.UserIDType != "" {
+		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
 	}
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
