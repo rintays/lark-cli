@@ -57,3 +57,4 @@
 - 2026-01-31: Mail list now resolves folder_id (defaults to Inbox) to satisfy API validation; SDK enforces folder_id requirement.
 - 2026-01-31: Mail folder_type now accepts string/number responses; inbox resolution also checks a zh-CN inbox name fallback.
 - 2026-01-31: Mail folders now accept `id` in API responses, mail list resolves system folder aliases, and the folder-id hint text is more explicit.
+- 2026-01-31: Added `lark sheets create` command plus README/design coverage updates.
