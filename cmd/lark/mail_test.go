@@ -464,7 +464,7 @@ func TestMailListCommandWithSDK(t *testing.T) {
 						"message_id":    "msg_1",
 						"subject":       "Hello",
 						"internal_date": "2026-01-30T12:00:00Z",
-						"from": map[string]any{
+						"head_from": map[string]any{
 							"mail_address": "alice@example.com",
 							"name":         "Alice",
 						},
@@ -482,7 +482,7 @@ func TestMailListCommandWithSDK(t *testing.T) {
 						"message_id":    "msg_2",
 						"subject":       "World",
 						"internal_date": "2026-01-30T13:00:00Z",
-						"from": map[string]any{
+						"head_from": map[string]any{
 							"mail_address": "bob@example.com",
 							"name":         "Bob",
 						},
@@ -598,7 +598,7 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 						"message_id":    "msg_1",
 						"subject":       "Hello",
 						"internal_date": "2026-01-30T12:00:00Z",
-						"from": map[string]any{
+						"head_from": map[string]any{
 							"mail_address": "alice@example.com",
 							"name":         "Alice",
 						},
@@ -708,7 +708,7 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 						"message_id":    "msg_1",
 						"subject":       "Hello",
 						"internal_date": "2026-01-30T12:00:00Z",
-						"from": map[string]any{
+						"head_from": map[string]any{
 							"mail_address": "alice@example.com",
 							"name":         "Alice",
 						},
