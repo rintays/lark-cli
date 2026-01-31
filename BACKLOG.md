@@ -362,8 +362,8 @@ Deliverables:
   - [x] `wiki node get/list`
     - [x] `wiki node get` implemented (v2)
     - [x] `wiki node list` implemented (v2)
-  - [x] `wiki member` management (skeleton: not implemented yet)
-  - [x] `wiki task` query (skeleton: not implemented yet)
+  - [ ] `wiki member` management (not implemented yet)
+  - [ ] `wiki task` query (not implemented yet)
 - [ ] P1 (gap fill):
   - [x] implement `internal/larksdk/wiki_search_v1.go` using `core.ApiReq`
   - [x] expose `wiki node search`
