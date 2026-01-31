@@ -210,6 +210,91 @@ func (c *Client) getDocxDocumentCore(ctx context.Context, tenantToken, documentI
 	return *resp.Data.Document, nil
 }
 
+type rawContentDocxResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *rawContentDocxResponseData `json:"data"`
+}
+
+type rawContentDocxResponseData struct {
+	Content string `json:"content"`
+}
+
+func (r *rawContentDocxResponse) Success() bool {
+	return r.Code == 0
+}
+
+func (c *Client) GetDocxRawContent(ctx context.Context, token, documentID string) (string, error) {
+	if !c.available() {
+		return "", ErrUnavailable
+	}
+	if documentID == "" {
+		return "", errors.New("document id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return "", errors.New("tenant access token is required")
+	}
+	if c.docxSDKAvailable() {
+		return c.getDocxRawContentSDK(ctx, tenantToken, documentID)
+	}
+	if c.coreConfig == nil {
+		return "", ErrUnavailable
+	}
+	return c.getDocxRawContentCore(ctx, tenantToken, documentID)
+}
+
+func (c *Client) getDocxRawContentSDK(ctx context.Context, tenantToken, documentID string) (string, error) {
+	resp, err := c.sdk.Docx.V1.Document.RawContent(
+		ctx,
+		larkdocx.NewRawContentDocumentReqBuilder().DocumentId(documentID).Build(),
+		larkcore.WithTenantAccessToken(tenantToken),
+	)
+	if err != nil {
+		return "", err
+	}
+	if resp == nil {
+		return "", errors.New("get docx raw content failed: empty response")
+	}
+	if !resp.Success() {
+		return "", fmt.Errorf("get docx raw content failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Content == nil {
+		return "", nil
+	}
+	return *resp.Data.Content, nil
+}
+
+func (c *Client) getDocxRawContentCore(ctx context.Context, tenantToken, documentID string) (string, error) {
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/docx/v1/documents/:document_id/raw_content",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	apiReq.PathParams.Set("document_id", documentID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return "", err
+	}
+	if apiResp == nil {
+		return "", errors.New("get docx raw content failed: empty response")
+	}
+	resp := &rawContentDocxResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return "", err
+	}
+	if !resp.Success() {
+		return "", fmt.Errorf("get docx raw content failed: %s", resp.Msg)
+	}
+	if resp.Data == nil {
+		return "", nil
+	}
+	return resp.Data.Content, nil
+}
+
 func (c *Client) docxSDKAvailable() bool {
 	return c != nil && c.sdk != nil && c.sdk.Docx != nil && c.sdk.Docx.V1 != nil && c.sdk.Docx.V1.Document != nil
 }

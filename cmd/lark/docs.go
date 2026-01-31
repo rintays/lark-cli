@@ -186,38 +186,19 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larksdk.CreateExportTaskRequest{
-				Token:         documentID,
-				Type:          "docx",
-				FileExtension: format,
-			})
+			content, err := state.SDK.GetDocxRawContent(context.Background(), token, documentID)
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(context.Background(), state.SDK, token, ticket)
-			if err != nil {
-				return err
-			}
-			reader, err := state.SDK.DownloadExportedFile(context.Background(), token, result.FileToken)
-			if err != nil {
-				return err
-			}
-			defer reader.Close()
 			if state.JSON {
-				content, err := io.ReadAll(reader)
-				if err != nil {
-					return err
-				}
 				payload := map[string]any{
 					"document_id": documentID,
 					"format":      format,
-					"file_token":  result.FileToken,
-					"file_name":   result.FileName,
-					"content":     string(content),
+					"content":     content,
 				}
 				return state.Printer.Print(payload, "")
 			}
-			_, err = io.Copy(state.Printer.Writer, reader)
+			_, err = io.WriteString(state.Printer.Writer, content)
 			return err
 		},
 	}

@@ -52,3 +52,4 @@
 - 2026-01-31: Added docs-api search support for drive/docs/sheets search (offset-based pagination, doc type normalization), keeping folder-scoped drive search on the legacy drive endpoint.
 - 2026-01-31: Removed drive search folder flags/legacy drive search path; drive search now consistently uses docs-api with offset window guard, README updated.
 - 2026-01-31: Added lipgloss-based output formatting for tabular CLI output with auto-tty detection.
+- 2026-01-31: Switched docs cat to docx raw_content API to avoid export task validation errors for txt/md.

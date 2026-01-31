@@ -340,7 +340,6 @@ func TestDocsGetCommandRequiresSDK(t *testing.T) {
 
 func TestDocsCatCommand(t *testing.T) {
 	exported := []byte("Hello doc\nLine two\n")
-	pollCount := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
@@ -348,60 +347,17 @@ func TestDocsCatCommand(t *testing.T) {
 		if r.URL.RawQuery != "" {
 			t.Fatalf("unexpected query: %q", r.URL.RawQuery)
 		}
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
-			w.Header().Set("Content-Type", "application/json")
-			var payload map[string]any
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-				t.Fatalf("decode payload: %v", err)
-			}
-			if payload["token"] != "doc1" {
-				t.Fatalf("unexpected token: %+v", payload)
-			}
-			if payload["type"] != "docx" {
-				t.Fatalf("unexpected type: %+v", payload)
-			}
-			if payload["file_extension"] != "txt" {
-				t.Fatalf("unexpected file_extension: %+v", payload)
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"code": 0,
-				"msg":  "ok",
-				"data": map[string]any{
-					"ticket": "ticket1",
-				},
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1":
-			w.Header().Set("Content-Type", "application/json")
-			pollCount++
-			result := map[string]any{
-				"file_extension": "txt",
-				"type":           "docx",
-				"file_name":      "Doc.txt",
-				"file_token":     "",
-				"file_size":      0,
-				"job_error_msg":  "running",
-				"job_status":     1,
-			}
-			if pollCount > 1 {
-				result["file_token"] = "file1"
-				result["file_size"] = int64(len(exported))
-				result["job_error_msg"] = "success"
-				result["job_status"] = 0
-			}
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"code": 0,
-				"msg":  "ok",
-				"data": map[string]any{
-					"result": result,
-				},
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/file/file1/download":
-			_, _ = w.Write(exported)
-		default:
+		if r.Method != http.MethodGet || r.URL.Path != "/open-apis/docx/v1/documents/doc1/raw_content" {
 			t.Fatalf("unexpected path: %s %s", r.Method, r.URL.Path)
 		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"content": string(exported),
+			},
+		})
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -422,11 +378,6 @@ func TestDocsCatCommand(t *testing.T) {
 	}
 	state.SDK = sdkClient
 
-	prevInterval := exportTaskPollInterval
-	exportTaskPollInterval = 0
-	defer func() {
-		exportTaskPollInterval = prevInterval
-	}()
 	cmd := newDocsCmd(state)
 	cmd.SetArgs([]string{"cat", "--doc-id", "doc1", "--format", "txt"})
 	if err := cmd.Execute(); err != nil {
