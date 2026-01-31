@@ -511,6 +511,7 @@ Example:
 ./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
+./lark mail send --raw-file ./message.eml
 ```
 
 ---
