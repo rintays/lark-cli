@@ -19,6 +19,7 @@ func TestServicesForCommandPathMapping(t *testing.T) {
 		{path: []string{"calendar"}, want: []string{"calendar"}},
 		{path: []string{"chats"}, want: []string{"im"}},
 		{path: []string{"msg"}, want: []string{"im"}},
+		{path: []string{"im"}, want: []string{"im"}},
 	}
 
 	for _, tt := range tests {
@@ -32,9 +33,52 @@ func TestServicesForCommandPathMapping(t *testing.T) {
 	}
 }
 
+func TestServicesForCommandPathPrefixMatch(t *testing.T) {
+	got, ok := ServicesForCommandPath([]string{"drive", "list"})
+	if !ok {
+		t.Fatalf("ServicesForCommandPath(drive list)=ok false, want true")
+	}
+	want := []string{"drive"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ServicesForCommandPath(drive list)=%v, want %v", got, want)
+	}
+}
+
+func TestServicesForCommandNormalization(t *testing.T) {
+	got, ok := ServicesForCommand("  DRIVE\t  LiSt  ")
+	if !ok {
+		t.Fatalf("ServicesForCommand(DRIVE LiSt)=ok false, want true")
+	}
+	want := []string{"drive"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ServicesForCommand(DRIVE LiSt)=%v, want %v", got, want)
+	}
+}
+
+func TestServicesForCommandPathLongestPrefixWins(t *testing.T) {
+	orig, had := commandServiceMap["drive list"]
+	commandServiceMap["drive list"] = []string{"docs"}
+	t.Cleanup(func() {
+		if had {
+			commandServiceMap["drive list"] = orig
+			return
+		}
+		delete(commandServiceMap, "drive list")
+	})
+
+	got, ok := ServicesForCommandPath([]string{"drive", "list"})
+	if !ok {
+		t.Fatalf("ServicesForCommandPath(drive list)=ok false, want true")
+	}
+	want := []string{"docs"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ServicesForCommandPath(drive list)=%v, want %v", got, want)
+	}
+}
+
 func TestServicesForCommandPathUnknown(t *testing.T) {
-	if _, ok := ServicesForCommandPath([]string{"drive", "list"}); ok {
-		t.Fatalf("ServicesForCommandPath(drive list)=ok true, want false")
+	if _, ok := ServicesForCommandPath([]string{"unknown", "cmd"}); ok {
+		t.Fatalf("ServicesForCommandPath(unknown cmd)=ok true, want false")
 	}
 }
 
