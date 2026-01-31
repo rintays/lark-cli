@@ -20,5 +20,6 @@ func newWikiNodeCmd(state *appState) *cobra.Command {
 		Short: "Manage Wiki nodes",
 	}
 	cmd.AddCommand(newWikiNodeSearchCmd(state))
+	cmd.AddCommand(newWikiNodeGetCmd(state))
 	return cmd
 }
