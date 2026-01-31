@@ -49,7 +49,7 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 		Use:   "get",
 		Short: "Get mailbox details",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+			token, err := tokenFor(context.Background(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
@@ -129,7 +129,7 @@ func newMailMailboxesListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
 			if err != nil {
 				return err
 			}
@@ -157,7 +157,7 @@ func newMailPublicMailboxesListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List public mailboxes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
 			if err != nil {
 				return err
 			}
@@ -191,7 +191,7 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 		Short: "List mail folders",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mailboxID = resolveMailboxID(state, mailboxID)
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(context.Background(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
@@ -200,7 +200,7 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 			}
 			folders, err := state.SDK.ListMailFolders(context.Background(), token, mailboxID)
 			if err != nil {
-				return err
+				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"folders": folders}
 			lines := make([]string, 0, len(folders))
@@ -236,7 +236,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(context.Background(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
@@ -257,7 +257,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 					OnlyUnread: onlyUnread,
 				})
 				if err != nil {
-					return err
+					return withUserScopeHintForCommand(state, err)
 				}
 				for _, message := range result.Items {
 					if len(messages) >= limit {
@@ -268,7 +268,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 					}
 					item, err := state.SDK.GetMailMessage(ctx, token, mailboxID, message.MessageID)
 					if err != nil {
-						return err
+						return withUserScopeHintForCommand(state, err)
 					}
 					if item.MessageID == "" {
 						item.MessageID = message.MessageID
@@ -333,13 +333,13 @@ func newMailGetCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(context.Background(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
 			message, err := state.SDK.GetMailMessage(context.Background(), token, mailboxID, messageID)
 			if err != nil {
-				return err
+				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"message": message}
 			return state.Printer.Print(payload, formatMailMessageLine(message.MessageID, message.Subject))

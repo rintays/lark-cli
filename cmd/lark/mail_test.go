@@ -24,7 +24,7 @@ func TestMailFoldersCommandWithSDK(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/folders" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -53,6 +53,8 @@ func TestMailFoldersCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -81,7 +83,7 @@ func TestMailFoldersCommandUsesDefaultMailboxID(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_default/folders" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -110,6 +112,8 @@ func TestMailFoldersCommandUsesDefaultMailboxID(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -138,7 +142,7 @@ func TestMailFoldersCommandDefaultsToMeMailboxID(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/me/folders" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -166,6 +170,8 @@ func TestMailFoldersCommandDefaultsToMeMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -223,6 +229,8 @@ func TestMailPublicMailboxesListCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -280,6 +288,8 @@ func TestMailMailboxesListAliasCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -308,7 +318,7 @@ func TestMailMailboxGetCommandWithSDK(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -335,6 +345,8 @@ func TestMailMailboxGetCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -408,7 +420,7 @@ func TestMailListCommandWithSDK(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		switch r.URL.Path {
@@ -474,6 +486,8 @@ func TestMailListCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -516,7 +530,7 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		switch r.URL.Path {
@@ -563,6 +577,8 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -596,7 +612,7 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		switch r.URL.Path {
@@ -642,6 +658,8 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -708,7 +726,7 @@ func TestMailGetCommandWithSDK(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/msg_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -734,6 +752,8 @@ func TestMailGetCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -762,7 +782,7 @@ func TestMailGetCommandUsesDefaultMailboxID(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_default/messages/msg_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -788,6 +808,8 @@ func TestMailGetCommandUsesDefaultMailboxID(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -816,7 +838,7 @@ func TestMailGetCommandDefaultsToMeMailboxID(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/me/messages/msg_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -841,6 +863,8 @@ func TestMailGetCommandDefaultsToMeMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},
 	}

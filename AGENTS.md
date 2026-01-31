@@ -53,3 +53,4 @@
 - 2026-01-31: Removed drive search folder flags/legacy drive search path; drive search now consistently uses docs-api with offset window guard, README updated.
 - 2026-01-31: Added lipgloss-based output formatting for tabular CLI output with auto-tty detection.
 - 2026-01-31: Switched docs cat to docx raw_content API to avoid export task validation errors for txt/md.
+- 2026-01-31: Mail user mailbox operations now use user access tokens (list/get/folders/mailbox get) to avoid field validation errors; public mailboxes remain tenant-token.
