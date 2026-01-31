@@ -37,16 +37,16 @@ func TestRequirementsForCommandMail(t *testing.T) {
 		t.Fatalf("RequirementsForCommand(mail send) ok=false, want true")
 	}
 
-	if want := []string{"mail"}; !reflect.DeepEqual(services, want) {
+	if want := []string{"mail-send"}; !reflect.DeepEqual(services, want) {
 		t.Fatalf("services=%v, want %v", services, want)
 	}
-	if want := []TokenType{TokenTenant, TokenUser}; !reflect.DeepEqual(tokenTypes, want) {
+	if want := []TokenType{TokenUser}; !reflect.DeepEqual(tokenTypes, want) {
 		t.Fatalf("tokenTypes=%v, want %v", tokenTypes, want)
 	}
 	if !offline {
 		t.Fatalf("offline=false, want true")
 	}
-	if want := []string{"mail:readonly"}; !reflect.DeepEqual(scopes, want) {
+	if want := []string{"mail:user_mailbox.message:send"}; !reflect.DeepEqual(scopes, want) {
 		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 }

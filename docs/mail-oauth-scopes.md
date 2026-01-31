@@ -2,6 +2,12 @@
 
 Goal: capture the exact user OAuth scope strings for Mail so we do not guess.
 
+Status: Verified scopes for user mailbox messages:
+- list/get: `mail:user_mailbox.message:readonly`
+- send: `mail:user_mailbox.message:send`
+
+Registry/tests updated to match these values.
+
 ## Step-by-step (Developer Console)
 1. Open the Feishu/Lark Developer Console and select the target app.
 2. Go to the permissions section (often labeled "Permissions/Scopes", "Permission Management", or "Permissions & Features").

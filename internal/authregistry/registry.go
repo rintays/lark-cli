@@ -63,9 +63,20 @@ var Registry = map[string]ServiceDef{
 	"sheets": {Name: "sheets", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
 
 	"calendar": {Name: "calendar", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"calendar:calendar"}, UserScopes: ServiceScopeSet{Full: []string{"calendar:calendar"}, Readonly: []string{"calendar:calendar:readonly"}}},
-	"mail":     {Name: "mail", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"mail:readonly"}, RequiresOffline: true}, // TODO: verify mail user OAuth scopes for message send
-	"wiki":     {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
-	"base":     {Name: "base", TokenTypes: []TokenType{TokenTenant}},
+	"mail": {
+		Name:               "mail",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"mail:user_mailbox.message:readonly"},
+		UserScopes: ServiceScopeSet{
+			Readonly: []string{"mail:user_mailbox.message:readonly"},
+			Full:     []string{"mail:user_mailbox.message:readonly", "mail:user_mailbox.message:send"},
+		},
+		RequiresOffline: true,
+	},
+	"mail-send":   {Name: "mail send", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"mail:user_mailbox.message:send"}, RequiresOffline: true},
+	"mail-public": {Name: "mail public", TokenTypes: []TokenType{TokenTenant}},
+	"wiki":        {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
+	"base":        {Name: "base", TokenTypes: []TokenType{TokenTenant}},
 }
 
 // AllServiceNames returns all known service names in stable-sorted order.

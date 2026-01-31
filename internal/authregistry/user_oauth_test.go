@@ -7,7 +7,7 @@ import (
 
 func TestListUserOAuthServicesStableSorted(t *testing.T) {
 	got := ListUserOAuthServices()
-	want := []string{"calendar", "docs", "docx", "drive", "mail", "search-message", "sheets", "wiki"}
+	want := []string{"calendar", "docs", "docx", "drive", "mail", "mail-send", "search-message", "sheets", "wiki"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ListUserOAuthServices()=%v, want %v", got, want)
 	}
@@ -55,7 +55,7 @@ func TestUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *testing.T
 	if err != nil {
 		t.Fatalf("scopes(drive,mail readonly): %v", err)
 	}
-	want := []string{"drive:drive:readonly", "mail:readonly"}
+	want := []string{"drive:drive:readonly", "mail:user_mailbox.message:readonly"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("scopes=%v, want %v", got, want)
 	}

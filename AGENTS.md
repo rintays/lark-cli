@@ -94,6 +94,7 @@
 - 2026-01-31: Added `lark mail get` for full message content; `mail info`/`mail list` now return metadata-only message fields.
 - 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.
 - 2026-01-31: Removed base table `--view-name`, added base view create command, and added base field types hints aligned to field properties.
+- 2026-01-31: Corrected Mail user OAuth scopes to `mail:user_mailbox.message:readonly` (list/get) and `mail:user_mailbox.message:send` (send), added mail-send/public service mappings, and updated auth registry tests/docs.
 - 2026-01-31: Made meetings list and calendars list/search accept optional start/end filters, removed required flags, and added calendar pagination to respect `--limit`.
 - 2026-01-31: Meetings list now defaults to the last 6 months when start/end are omitted.
 - 2026-01-31: Sheets rows/cols delete now use the v2 dimension_range delete API with 1-based index conversion in payloads, fixing delete failures.

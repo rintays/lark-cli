@@ -19,10 +19,10 @@ func TestUserOAuthScopesForCommand(t *testing.T) {
 	if len(undeclared) != 0 {
 		t.Fatalf("expected no undeclared services, got %v", undeclared)
 	}
-	if want := []string{"mail"}; !reflect.DeepEqual(services, want) {
+	if want := []string{"mail-send"}; !reflect.DeepEqual(services, want) {
 		t.Fatalf("services=%v, want %v", services, want)
 	}
-	if want := []string{"offline_access", "mail:readonly"}; !reflect.DeepEqual(scopes, want) {
+	if want := []string{"offline_access", "mail:user_mailbox.message:send"}; !reflect.DeepEqual(scopes, want) {
 		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 
@@ -69,7 +69,7 @@ func TestUserOAuthReloginCommandForCommand(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected ok")
 		}
-		if cmd != "lark auth user login --scopes \"offline_access mail:readonly\" --force-consent" {
+		if cmd != "lark auth user login --scopes \"offline_access mail:user_mailbox.message:send\" --force-consent" {
 			t.Fatalf("cmd=%q", cmd)
 		}
 		if note == "" {
@@ -105,13 +105,13 @@ func TestUserOAuthReloginCommandForCommand(t *testing.T) {
 }
 
 func TestUserOAuthReloginCommandForCommand_MissingScopeDeclarations(t *testing.T) {
-	orig := authregistry.Registry["mail"]
+	orig := authregistry.Registry["mail-send"]
 	origScopes := orig.RequiredUserScopes
 	orig.RequiredUserScopes = nil
-	authregistry.Registry["mail"] = orig
+	authregistry.Registry["mail-send"] = orig
 	t.Cleanup(func() {
 		orig.RequiredUserScopes = origScopes
-		authregistry.Registry["mail"] = orig
+		authregistry.Registry["mail-send"] = orig
 	})
 
 	cmd, note, ok, err := userOAuthReloginCommandForCommand("mail send")
