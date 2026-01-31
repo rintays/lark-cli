@@ -97,6 +97,31 @@ func ensureOfflineAccess(scopes []string) []string {
 	return canonicalizeUserOAuthScopes(scopes)
 }
 
+func requestedUserOAuthScopes(scopes []string, grantedScope string, incremental bool) []string {
+	scopes = normalizeScopes(scopes)
+	if !incremental || strings.TrimSpace(grantedScope) == "" {
+		return canonicalizeUserOAuthScopes(scopes)
+	}
+	granted := normalizeScopes(parseScopeList(grantedScope))
+	grantedSet := make(map[string]struct{}, len(granted))
+	for _, scope := range granted {
+		grantedSet[scope] = struct{}{}
+	}
+	delta := make([]string, 0, len(scopes))
+	for _, scope := range scopes {
+		if scope == "" {
+			continue
+		}
+		if scope != defaultUserOAuthScope {
+			if _, ok := grantedSet[scope]; ok {
+				continue
+			}
+		}
+		delta = append(delta, scope)
+	}
+	return canonicalizeUserOAuthScopes(delta)
+}
+
 func joinScopes(scopes []string) string {
 	return strings.Join(canonicalizeUserOAuthScopes(scopes), " ")
 }

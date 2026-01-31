@@ -131,8 +131,8 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] `lark auth explain --readonly` (use per-service UserScopes variants when available; fallback to RequiredUserScopes)
   - [x] `--readonly` mode (where feasible; use readonly scope variants per service when available, otherwise fall back)
   - [x] per-service scope variants (start with Drive: `drive:drive` vs `drive:drive:readonly`)
-- [ ] **Incremental authorization** (gog `include_granted_scopes=true` analogue)
-  - [ ] Default to incremental grant when adding services/scopes (avoid re-consenting everything)
+- [x] **Incremental authorization** (gog `include_granted_scopes=true` analogue) — DONE: `auth user login` defaults to incremental + delta scopes, with `--incremental=false` to request full scopes.
+  - [x] Default to incremental grant when adding services/scopes (avoid re-consenting everything)
 - [ ] **Explicit re-auth triggers** (gog `--force-consent` analogue)
   - [x] Add `lark auth user login --force-consent` (or equivalent) to force prompt/consent
   - [x] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
