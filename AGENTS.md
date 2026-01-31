@@ -22,6 +22,11 @@
 - Preserve dual output modes: human-readable by default, scriptable with `--json`.
 - Errors should include context (command, ID type, key parameters).
 
+## CLI Argument Principles
+- Required resource identifiers should be positional args (e.g., `lark docs info <doc-id>`), not mandatory `--id` flags.
+- Keep legacy flags as optional aliases when possible to avoid breaking users.
+- Exceptions: `base --app-token` and `wiki --space-id` remain flags.
+
 ## Testing Guidelines
 - Use Go’s standard `testing` package.
 - Keep tests in `*_test.go` beside the package under test.
