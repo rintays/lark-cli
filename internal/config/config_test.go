@@ -113,3 +113,58 @@ func TestLoadDefaultsKeyringBackendToFile(t *testing.T) {
 		t.Fatalf("expected default keyring backend file, got %q", cfg.KeyringBackend)
 	}
 }
+
+func TestUserRefreshTokenPayloadRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	cfg := &Config{
+		AppID:        "app-id",
+		RefreshToken: "legacy-refresh",
+		UserRefreshTokenPayload: &UserRefreshTokenPayload{
+			RefreshToken: "payload-refresh",
+			Services:     []string{"drive", "docs"},
+			Scopes:       "offline_access drive:drive",
+			CreatedAt:    1700000100,
+		},
+	}
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if loaded.UserRefreshTokenPayload == nil {
+		t.Fatalf("expected refresh token payload")
+	}
+	if loaded.UserRefreshTokenPayload.RefreshToken != "payload-refresh" {
+		t.Fatalf("expected payload refresh token, got %q", loaded.UserRefreshTokenPayload.RefreshToken)
+	}
+	if loaded.UserRefreshTokenPayload.CreatedAt != 1700000100 {
+		t.Fatalf("expected payload created_at, got %d", loaded.UserRefreshTokenPayload.CreatedAt)
+	}
+	if loaded.UserRefreshToken() != "payload-refresh" {
+		t.Fatalf("expected payload refresh token precedence, got %q", loaded.UserRefreshToken())
+	}
+}
+
+func TestUserRefreshTokenFallbackToLegacy(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	cfg := &Config{
+		AppID:        "app-id",
+		RefreshToken: "legacy-refresh",
+	}
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if loaded.UserRefreshTokenPayload != nil {
+		t.Fatalf("expected no payload")
+	}
+	if loaded.UserRefreshToken() != "legacy-refresh" {
+		t.Fatalf("expected legacy refresh token, got %q", loaded.UserRefreshToken())
+	}
+}

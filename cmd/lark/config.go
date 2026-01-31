@@ -271,6 +271,7 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 			state.Config.UserAccessToken = ""
 			state.Config.RefreshToken = ""
 			state.Config.UserAccessTokenExpiresAt = 0
+			state.Config.UserRefreshTokenPayload = nil
 			if err := state.saveConfig(); err != nil {
 				return err
 			}

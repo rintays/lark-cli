@@ -23,13 +23,31 @@ type Config struct {
 	// error at runtime.
 	KeyringBackend string `json:"keyring_backend,omitempty"`
 
-	UserScopes                 []string `json:"user_scopes,omitempty"`
-	TenantAccessToken          string   `json:"tenant_access_token"`
-	TenantAccessTokenExpiresAt int64    `json:"tenant_access_token_expires_at"`
-	UserAccessToken            string   `json:"user_access_token"`
-	UserAccessTokenScope       string   `json:"user_access_token_scope"`
-	RefreshToken               string   `json:"refresh_token"`
-	UserAccessTokenExpiresAt   int64    `json:"user_access_token_expires_at"`
+	UserScopes                 []string                 `json:"user_scopes,omitempty"`
+	TenantAccessToken          string                   `json:"tenant_access_token"`
+	TenantAccessTokenExpiresAt int64                    `json:"tenant_access_token_expires_at"`
+	UserAccessToken            string                   `json:"user_access_token"`
+	UserAccessTokenScope       string                   `json:"user_access_token_scope"`
+	RefreshToken               string                   `json:"refresh_token"`
+	UserRefreshTokenPayload    *UserRefreshTokenPayload `json:"user_refresh_token_payload,omitempty"`
+	UserAccessTokenExpiresAt   int64                    `json:"user_access_token_expires_at"`
+}
+
+type UserRefreshTokenPayload struct {
+	RefreshToken string   `json:"refresh_token"`
+	Services     []string `json:"services,omitempty"`
+	Scopes       string   `json:"scopes,omitempty"`
+	CreatedAt    int64    `json:"created_at,omitempty"`
+}
+
+func (cfg *Config) UserRefreshToken() string {
+	if cfg == nil {
+		return ""
+	}
+	if cfg.UserRefreshTokenPayload != nil && cfg.UserRefreshTokenPayload.RefreshToken != "" {
+		return cfg.UserRefreshTokenPayload.RefreshToken
+	}
+	return cfg.RefreshToken
 }
 
 func Default() *Config {
