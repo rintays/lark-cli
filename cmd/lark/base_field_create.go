@@ -81,8 +81,8 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&fieldName, "name", "", "Field name (or provide as positional argument)")
-	cmd.Flags().IntVar(&fieldType, "type", 0, "Field type (required)")
-	cmd.Flags().StringVar(&propertyJSON, "property-json", "", "Field property JSON (object)")
+	cmd.Flags().IntVar(&fieldType, "type", 0, "Field type (required; see `bases field types` for mappings)")
+	cmd.Flags().StringVar(&propertyJSON, "property-json", "", "Field property JSON (object; see `bases field types` for hints)")
 	cmd.Flags().StringVar(&descriptionJSON, "description-json", "", "Field description JSON (object)")
 	_ = cmd.MarkFlagRequired("app-token")
 	return cmd
