@@ -131,6 +131,11 @@ type BaseField struct {
 	Type      int    `json:"type"`
 }
 
+type BaseFieldDeleteResult struct {
+	FieldID string `json:"field_id"`
+	Deleted bool   `json:"deleted"`
+}
+
 type BaseView struct {
 	ViewID   string `json:"view_id"`
 	Name     string `json:"name"`

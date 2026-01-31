@@ -22,11 +22,6 @@ type deleteBaseFieldResponseData struct {
 
 func (r *deleteBaseFieldResponse) Success() bool { return r.Code == 0 }
 
-type BaseFieldDeleteResult struct {
-	FieldID string `json:"field_id"`
-	Deleted bool   `json:"deleted"`
-}
-
 func (c *Client) DeleteBaseField(ctx context.Context, token, appToken, tableID, fieldID string) (BaseFieldDeleteResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return BaseFieldDeleteResult{}, ErrUnavailable
