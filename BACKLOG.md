@@ -149,7 +149,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
 - [ ] **Multi-profile / multi-account / multi-app isolation**
   - [x] `--profile` / `LARK_PROFILE` selection + default
-  - [ ] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
+  - [x] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
 - [ ] **Auth status & remediation UX**
   - [x] `lark auth user status` shows: offline/refresh availability, expiry, and stored scope (minimal v1)
   - [x] Standardized remediation messages:
