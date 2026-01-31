@@ -132,7 +132,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [ ] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
     - [x] refresh_token missing: ensureUserToken/expireUserToken suggests `lark auth user login --scope offline_access --force-consent`
     - [ ] scopes changed
-    - [ ] insufficient_scope/permission errors
+    - [x] insufficient_scope/permission errors (best-effort: wiki node search adds re-login hint)
   - [x] Make remediation messages print the exact command to run next
 - [ ] **Token storage backend policy + implementation**
   - [ ] Backend selection: `auto|keychain|file` (keyring)
@@ -146,7 +146,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [ ] Standardized remediation messages:
     - [x] missing refresh_token → tell user to rerun with `--force-consent` / correct scopes
     - [x] revoked refresh_token → clear + rerun login
-    - [ ] insufficient scope → suggest adding service/scope and re-login
+    - [x] insufficient scope → suggest adding service/scope and re-login (best-effort: wiki node search adds re-login hint)
 
 ---
 
