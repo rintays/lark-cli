@@ -18,6 +18,6 @@ func newContactsUserCmd(state *appState) *cobra.Command {
 		Use:   "user",
 		Short: "Manage contact user",
 	}
-	cmd.AddCommand(newUserGetCmd(state))
+	cmd.AddCommand(newUserInfoCmd(state))
 	return cmd
 }

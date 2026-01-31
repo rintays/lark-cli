@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -20,8 +21,23 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 	var limit int
 
 	cmd := &cobra.Command{
-		Use:   "search",
+		Use:   "search <table-id>",
 		Short: "Search Bitable records",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(tableID) == "" {
+					return errors.New("table-id is required")
+				}
+				return nil
+			}
+			if tableID != "" && tableID != args[0] {
+				return errors.New("table-id provided twice")
+			}
+			return cmd.Flags().Set("table-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -58,7 +74,7 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id")
+	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&viewID, "view-id", "", "Bitable view id")
 	cmd.Flags().StringVar(&filterJSON, "filter", "", "Record filter JSON")
 	cmd.Flags().StringVar(&filterJSON, "filter-json", "", "Record filter JSON (raw)")
@@ -66,6 +82,5 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&sortJSON, "sort-json", "", "Record sort JSON (raw)")
 	cmd.Flags().IntVar(&limit, "limit", 20, "max records to return")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
 	return cmd
 }
