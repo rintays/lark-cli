@@ -17,6 +17,11 @@ func newUsersCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "users",
 		Short: "Manage users",
+		Long: `Users are people in your tenant directory.
+
+- User IDs: user_id (tenant-scoped), open_id (app-scoped), union_id (cross-app).
+- Departments group users; name search can be scoped by department_id.
+- Use search to resolve IDs before calling other APIs.`,
 	}
 	cmd.AddCommand(newUserInfoCmd(state))
 	cmd.AddCommand(newUsersSearchCmd(state))
