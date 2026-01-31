@@ -197,3 +197,32 @@ func TestConfigSetPlatformAndBaseURLErrors(t *testing.T) {
 		t.Fatalf("expected config set error for platform and base-url")
 	}
 }
+
+func TestConfigUnsetBaseURLClearsConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+	state.Config.BaseURL = "https://open.feishu.cn"
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"unset", "--base-url"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config unset error: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	var saved config.Config
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if saved.BaseURL != "" {
+		t.Fatalf("expected base_url cleared, got %q", saved.BaseURL)
+	}
+}
