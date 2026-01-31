@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -67,5 +68,54 @@ func TestContactsUserGetCommand(t *testing.T) {
 
 	if !strings.Contains(buf.String(), "u_1\tAda\tada@example.com\t+1-555-0100") {
 		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestContactsUserGetHelpCommand(t *testing.T) {
+	cmd := newContactsCmd(&appState{})
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"user", "get", "--help"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("contacts user get help error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "Get a contact user by ID") {
+		t.Fatalf("unexpected help output: %q", buf.String())
+	}
+}
+
+func TestContactsHelpPrefersUserCommand(t *testing.T) {
+	cmd := newContactsCmd(&appState{})
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--help"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("contacts help error: %v", err)
+	}
+
+	foundUser := false
+	scanner := bufio.NewScanner(strings.NewReader(buf.String()))
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimLeft(line, " \t")
+		if trimmed == "user" || strings.HasPrefix(trimmed, "user ") || strings.HasPrefix(trimmed, "user\t") {
+			foundUser = true
+		}
+		if trimmed == "users" || strings.HasPrefix(trimmed, "users ") || strings.HasPrefix(trimmed, "users\t") {
+			t.Fatalf("unexpected users command in help output: %q", line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("scan help output: %v", err)
+	}
+	if !foundUser {
+		t.Fatalf("expected user command in help output, got:\n%s", buf.String())
 	}
 }

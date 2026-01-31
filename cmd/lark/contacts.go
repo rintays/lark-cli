@@ -16,7 +16,7 @@ func newContactsCmd(state *appState) *cobra.Command {
 func newContactsUserCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "user",
-		Short: "Manage contact users",
+		Short: "Manage contact user",
 	}
 	cmd.AddCommand(newUserGetCmd(state))
 	return cmd
