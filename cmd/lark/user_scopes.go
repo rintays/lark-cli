@@ -39,9 +39,16 @@ func resolveUserOAuthScopes(state *appState, opts userOAuthScopeOptions) ([]stri
 		return canonicalizeUserOAuthScopes(scopes), "services", nil
 	}
 
-	if state != nil && state.Config != nil && len(state.Config.UserScopes) > 0 {
-		scopes := normalizeScopes(state.Config.UserScopes)
-		return canonicalizeUserOAuthScopes(scopes), "config", nil
+	if state != nil && state.Config != nil {
+		account := resolveUserAccountName(state)
+		if acct, ok := loadUserAccount(state.Config, account); ok && len(acct.UserScopes) > 0 {
+			scopes := normalizeScopes(acct.UserScopes)
+			return canonicalizeUserOAuthScopes(scopes), "account", nil
+		}
+		if len(state.Config.UserScopes) > 0 {
+			scopes := normalizeScopes(state.Config.UserScopes)
+			return canonicalizeUserOAuthScopes(scopes), "config", nil
+		}
 	}
 
 	return []string{defaultUserOAuthScope}, "default", nil

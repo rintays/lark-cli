@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 type authUserStatusPayload struct {
 	ConfigPath                      string   `json:"config_path"`
+	Account                         string   `json:"account,omitempty"`
 	UserAccessTokenPresent          bool     `json:"user_access_token_present"`
 	RefreshTokenPresent             bool     `json:"refresh_token_present"`
 	UserAccessTokenExpiresAt        int64    `json:"user_access_token_expires_at"`
@@ -27,22 +29,39 @@ func newAuthUserStatusCmd(state *appState) *cobra.Command {
 		Use:   "status",
 		Short: "Show stored user OAuth credential status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			scope := strings.TrimSpace(state.Config.UserAccessTokenScope)
-			refreshToken := state.Config.UserRefreshToken()
+			if state.Config == nil {
+				return errors.New("config is required")
+			}
+			account := resolveUserAccountName(state)
+			stored, ok, err := loadUserToken(state, account)
+			if err != nil {
+				return err
+			}
+			acct, _ := loadUserAccount(state.Config, account)
+			scope := strings.TrimSpace(acct.UserAccessTokenScope)
+			expiresAt := int64(0)
+			if ok {
+				expiresAt = stored.ExpiresAt
+			}
+			refreshToken := stored.RefreshToken
+			if refreshToken == "" {
+				refreshToken = acct.RefreshTokenValue()
+			}
 			payload := authUserStatusPayload{
 				ConfigPath:               state.ConfigPath,
-				UserAccessTokenPresent:   state.Config.UserAccessToken != "",
+				Account:                  account,
+				UserAccessTokenPresent:   ok && stored.AccessToken != "",
 				RefreshTokenPresent:      refreshToken != "",
-				UserAccessTokenExpiresAt: state.Config.UserAccessTokenExpiresAt,
+				UserAccessTokenExpiresAt: expiresAt,
 				UserAccessTokenScope:     scope,
 			}
 			if payload.UserAccessTokenExpiresAt != 0 {
 				payload.UserAccessTokenExpiresAtRFC3339 = time.Unix(payload.UserAccessTokenExpiresAt, 0).UTC().Format(time.RFC3339)
 			}
-			if state.Config.UserRefreshTokenPayload != nil {
-				payload.RefreshTokenServices = state.Config.UserRefreshTokenPayload.Services
-				payload.RefreshTokenScopes = strings.TrimSpace(state.Config.UserRefreshTokenPayload.Scopes)
-				payload.RefreshTokenCreatedAt = state.Config.UserRefreshTokenPayload.CreatedAt
+			if acct.UserRefreshTokenPayload != nil {
+				payload.RefreshTokenServices = acct.UserRefreshTokenPayload.Services
+				payload.RefreshTokenScopes = strings.TrimSpace(acct.UserRefreshTokenPayload.Scopes)
+				payload.RefreshTokenCreatedAt = acct.UserRefreshTokenPayload.CreatedAt
 				if payload.RefreshTokenCreatedAt != 0 {
 					payload.RefreshTokenCreatedAtRFC3339 = time.Unix(payload.RefreshTokenCreatedAt, 0).UTC().Format(time.RFC3339)
 				}
@@ -63,6 +82,9 @@ func newAuthUserStatusCmd(state *appState) *cobra.Command {
 			}
 			if payload.UserAccessTokenScope != "" {
 				text += fmt.Sprintf("\nuser_access_token_scope: %s", payload.UserAccessTokenScope)
+			}
+			if payload.Account != "" {
+				text += fmt.Sprintf("\naccount: %s", payload.Account)
 			}
 			if payload.RefreshTokenCreatedAt != 0 {
 				text += fmt.Sprintf("\nrefresh_token_created_at: %d", payload.RefreshTokenCreatedAt)

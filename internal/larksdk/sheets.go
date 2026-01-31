@@ -110,6 +110,17 @@ func dimensionRangePayload(majorDimension string, startIndex, endIndex int) map[
 	}
 }
 
+func dimensionDeletePayload(majorDimension string, sheetID string, startIndex, endIndex int) map[string]any {
+	return map[string]any{
+		"dimension": map[string]any{
+			"sheetId":        sheetID,
+			"majorDimension": majorDimension,
+			"startIndex":     startIndex,
+			"endIndex":       endIndex,
+		},
+	}
+}
+
 func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (SheetValueRange, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetValueRange{}, ErrUnavailable
@@ -373,19 +384,19 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	if tenantToken == "" {
 		return SheetDimensionDeleteResult{}, errors.New("tenant access token is required")
 	}
-	endIndex := startIndex + count
+	startIndexOneBased := startIndex + 1
+	endIndexOneBased := startIndex + count
 
 	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/delete_dimension",
-		HttpMethod:                http.MethodPost,
+		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/dimension_range",
+		HttpMethod:                http.MethodDelete,
 		PathParams:                larkcore.PathParams{},
 		QueryParams:               larkcore.QueryParams{},
 		Body:                      map[string]any{},
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
-	req.PathParams.Set("sheet_id", sheetID)
-	req.Body = dimensionRangePayload("ROWS", startIndex, endIndex)
+	req.Body = dimensionDeletePayload("ROWS", sheetID, startIndexOneBased, endIndexOneBased)
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -401,7 +412,7 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	if !resp.Success() {
 		return SheetDimensionDeleteResult{}, fmt.Errorf("delete sheet rows failed: %s", resp.Msg)
 	}
-	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
+	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: startIndex + count}, nil
 }
 
 func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionDeleteResult, error) {
@@ -424,19 +435,19 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 	if tenantToken == "" {
 		return SheetDimensionDeleteResult{}, errors.New("tenant access token is required")
 	}
-	endIndex := startIndex + count
+	startIndexOneBased := startIndex + 1
+	endIndexOneBased := startIndex + count
 
 	req := &larkcore.ApiReq{
-		ApiPath:                   "/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/delete_dimension",
-		HttpMethod:                http.MethodPost,
+		ApiPath:                   "/open-apis/sheets/v2/spreadsheets/:spreadsheet_token/dimension_range",
+		HttpMethod:                http.MethodDelete,
 		PathParams:                larkcore.PathParams{},
 		QueryParams:               larkcore.QueryParams{},
 		Body:                      map[string]any{},
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
-	req.PathParams.Set("sheet_id", sheetID)
-	req.Body = dimensionRangePayload("COLUMNS", startIndex, endIndex)
+	req.Body = dimensionDeletePayload("COLUMNS", sheetID, startIndexOneBased, endIndexOneBased)
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -452,7 +463,7 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 	if !resp.Success() {
 		return SheetDimensionDeleteResult{}, fmt.Errorf("delete sheet cols failed: %s", resp.Msg)
 	}
-	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
+	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: startIndex + count}, nil
 }
 
 func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionInsertResult, error) {

@@ -22,6 +22,11 @@ func newDocsCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "docs",
 		Short: "Manage Docs (docx) documents",
+		Long: `Docs (docx) are document files stored in Drive.
+
+- document_id is the docx file token.
+- Documents can live in a Drive folder (folder-id).
+- Use info/export/cat to inspect or download content.`,
 	}
 	cmd.AddCommand(newDocsListCmd(state))
 	cmd.AddCommand(newDocsCreateCmd(state))

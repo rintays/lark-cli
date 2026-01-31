@@ -30,18 +30,23 @@ func newAuthUserScopesListCmd(state *appState) *cobra.Command {
 			if state.Config == nil {
 				return errors.New("config is required")
 			}
+			account := resolveUserAccountName(state)
 			scopes, source, err := resolveUserOAuthScopes(state, userOAuthScopeOptions{})
 			if err != nil {
 				return err
 			}
 			payload := map[string]any{
 				"config_path": state.ConfigPath,
+				"account":     account,
 				"scopes":      scopes,
 				"source":      source,
 			}
 			text := "scopes: " + strings.Join(scopes, " ")
 			if source != "" {
 				text += fmt.Sprintf(" (source: %s)", source)
+			}
+			if account != "" {
+				text += fmt.Sprintf("\naccount: %s", account)
 			}
 			return state.Printer.Print(payload, text)
 		},
@@ -70,17 +75,21 @@ func newAuthUserScopesSetCmd(state *appState) *cobra.Command {
 			if state.Config == nil {
 				return errors.New("config is required")
 			}
+			account := resolveUserAccountName(state)
 			list := normalizeScopes(parseScopeList(scopes))
 			if len(list) == 0 {
 				return errors.New("scopes must not be empty")
 			}
-			state.Config.UserScopes = ensureOfflineAccess(list)
+			acct := ensureUserAccount(state.Config, account)
+			acct.UserScopes = ensureOfflineAccess(list)
+			saveUserAccount(state.Config, account, acct)
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
 			payload := map[string]any{
 				"config_path": state.ConfigPath,
-				"scopes":      state.Config.UserScopes,
+				"account":     account,
+				"scopes":      acct.UserScopes,
 			}
 			return state.Printer.Print(payload, "saved user scopes")
 		},
@@ -110,22 +119,26 @@ func newAuthUserScopesAddCmd(state *appState) *cobra.Command {
 			if state.Config == nil {
 				return errors.New("config is required")
 			}
+			account := resolveUserAccountName(state)
 			added := normalizeScopes(parseScopeList(scopes))
 			if len(added) == 0 {
 				return errors.New("scopes must not be empty")
 			}
-			current := normalizeScopes(state.Config.UserScopes)
+			acct := ensureUserAccount(state.Config, account)
+			current := normalizeScopes(acct.UserScopes)
 			if len(current) == 0 {
 				current = []string{defaultUserOAuthScope}
 			}
 			merged := append(current, added...)
-			state.Config.UserScopes = ensureOfflineAccess(normalizeScopes(merged))
+			acct.UserScopes = ensureOfflineAccess(normalizeScopes(merged))
+			saveUserAccount(state.Config, account, acct)
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
 			payload := map[string]any{
 				"config_path": state.ConfigPath,
-				"scopes":      state.Config.UserScopes,
+				"account":     account,
+				"scopes":      acct.UserScopes,
 			}
 			return state.Printer.Print(payload, "added user scopes")
 		},
@@ -155,11 +168,13 @@ func newAuthUserScopesRemoveCmd(state *appState) *cobra.Command {
 			if state.Config == nil {
 				return errors.New("config is required")
 			}
+			account := resolveUserAccountName(state)
 			remove := normalizeScopes(parseScopeList(scopes))
 			if len(remove) == 0 {
 				return errors.New("scopes must not be empty")
 			}
-			current := normalizeScopes(state.Config.UserScopes)
+			acct := ensureUserAccount(state.Config, account)
+			current := normalizeScopes(acct.UserScopes)
 			if len(current) == 0 {
 				current = []string{defaultUserOAuthScope}
 			}
@@ -174,13 +189,15 @@ func newAuthUserScopesRemoveCmd(state *appState) *cobra.Command {
 				}
 				remaining = append(remaining, scope)
 			}
-			state.Config.UserScopes = ensureOfflineAccess(normalizeScopes(remaining))
+			acct.UserScopes = ensureOfflineAccess(normalizeScopes(remaining))
+			saveUserAccount(state.Config, account, acct)
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
 			payload := map[string]any{
 				"config_path": state.ConfigPath,
-				"scopes":      state.Config.UserScopes,
+				"account":     account,
+				"scopes":      acct.UserScopes,
 			}
 			return state.Printer.Print(payload, "removed user scopes")
 		},

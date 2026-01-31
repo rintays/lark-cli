@@ -22,6 +22,7 @@ type appState struct {
 	JSON           bool
 	Verbose        bool
 	TokenType      string
+	UserAccount    string
 	Printer        output.Printer
 	SDK            *larksdk.Client
 	Platform       string
@@ -44,6 +45,9 @@ func newRootCmd() *cobra.Command {
 			state.Command = canonicalCommandPath(cmd)
 			if state.Profile == "" {
 				state.Profile = strings.TrimSpace(os.Getenv("LARK_PROFILE"))
+			}
+			if state.UserAccount == "" {
+				state.UserAccount = strings.TrimSpace(os.Getenv("LARK_ACCOUNT"))
 			}
 			if state.ConfigPath == "" {
 				if state.Profile != "" {
@@ -89,6 +93,7 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&state.JSON, "json", false, "output JSON")
 	cmd.PersistentFlags().BoolVar(&state.Verbose, "verbose", false, "verbose output")
 	cmd.PersistentFlags().StringVar(&state.TokenType, "token-type", "auto", "access token type (auto|tenant|user)")
+	cmd.PersistentFlags().StringVar(&state.UserAccount, "account", "", "user account label (default: config default or LARK_ACCOUNT)")
 	cmd.PersistentFlags().StringVar(&state.Platform, "platform", "", "platform (feishu|lark)")
 	cmd.PersistentFlags().StringVar(&state.BaseURL, "base-url", "", "base URL override")
 
@@ -216,11 +221,11 @@ func cachedTokenValid(cfg *config.Config, now time.Time) bool {
 	return cfg.TenantAccessTokenExpiresAt > now.Add(60*time.Second).Unix()
 }
 
-func cachedUserTokenValid(cfg *config.Config, now time.Time) bool {
-	if cfg.UserAccessToken == "" || cfg.UserAccessTokenExpiresAt == 0 {
+func cachedUserTokenValid(token userToken, now time.Time) bool {
+	if token.AccessToken == "" || token.ExpiresAt == 0 {
 		return false
 	}
-	return cfg.UserAccessTokenExpiresAt > now.Add(60*time.Second).Unix()
+	return token.ExpiresAt > now.Add(60*time.Second).Unix()
 }
 
 func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
@@ -258,15 +263,21 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	if err := requireCredentials(state.Config); err != nil {
 		return "", err
 	}
-	if strings.EqualFold(state.Config.KeyringBackend, "keychain") {
-		return "", errors.New("keychain backend is not implemented yet; please use keyring_backend=file (or set LARK_KEYRING_BACKEND=file)")
+	account := resolveUserAccountName(state)
+	stored, ok, err := loadUserToken(state, account)
+	if err != nil {
+		return "", err
 	}
-	if cachedUserTokenValid(state.Config, time.Now()) {
-		return state.Config.UserAccessToken, nil
+	if ok && cachedUserTokenValid(stored, time.Now()) {
+		return stored.AccessToken, nil
 	}
-	refreshToken := state.Config.UserRefreshToken()
+	acct, _ := loadUserAccount(state.Config, account)
+	refreshToken := stored.RefreshToken
 	if refreshToken == "" {
-		return "", expireUserToken(state, errors.New("refresh token missing"))
+		refreshToken = acct.RefreshTokenValue()
+	}
+	if refreshToken == "" {
+		return "", expireUserToken(state, account, errors.New("refresh token missing"))
 	}
 	if state.Verbose {
 		fmt.Fprintln(state.Printer.Writer, "refreshing user access token")
@@ -282,16 +293,25 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	}
 	token, newRefreshToken, expiresIn, err := sdk.RefreshUserAccessToken(ctx, refreshToken)
 	if err != nil {
-		return "", expireUserToken(state, err)
+		return "", expireUserToken(state, account, err)
 	}
-	state.Config.UserAccessToken = token
-	state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(expiresIn) * time.Second).Unix()
+	newToken := userToken{
+		AccessToken:  token,
+		RefreshToken: refreshToken,
+		ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second).Unix(),
+	}
 	if newRefreshToken != "" {
-		state.Config.RefreshToken = newRefreshToken
-		if state.Config.UserRefreshTokenPayload != nil {
-			state.Config.UserRefreshTokenPayload.RefreshToken = newRefreshToken
-			state.Config.UserRefreshTokenPayload.CreatedAt = time.Now().Unix()
+		newToken.RefreshToken = newRefreshToken
+		if acct.UserRefreshTokenPayload != nil {
+			if userTokenBackend(state.Config) == "file" {
+				acct.UserRefreshTokenPayload.RefreshToken = newRefreshToken
+			}
+			acct.UserRefreshTokenPayload.CreatedAt = time.Now().Unix()
+			saveUserAccount(state.Config, account, acct)
 		}
+	}
+	if err := storeUserToken(state, account, newToken); err != nil {
+		return "", err
 	}
 	if err := state.saveConfig(); err != nil {
 		return "", err
@@ -299,11 +319,10 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	return token, nil
 }
 
-func expireUserToken(state *appState, cause error) error {
-	state.Config.UserAccessToken = ""
-	state.Config.UserAccessTokenExpiresAt = 0
-	state.Config.RefreshToken = ""
-	state.Config.UserRefreshTokenPayload = nil
+func expireUserToken(state *appState, account string, cause error) error {
+	if err := clearUserToken(state, account); err != nil {
+		return err
+	}
 	saveErr := state.saveConfig()
 
 	reloginCmd, note := userOAuthReloginRecommendation(state)
@@ -312,12 +331,16 @@ func expireUserToken(state *appState, cause error) error {
 		suffix = "; " + note
 	}
 
-	base := fmt.Sprintf("user access token expired%s; run `%s`", suffix, reloginCmd)
+	accountNote := ""
+	if strings.TrimSpace(account) != "" {
+		accountNote = fmt.Sprintf(" for account %q", account)
+	}
+	base := fmt.Sprintf("user access token expired%s%s; run `%s`", accountNote, suffix, reloginCmd)
 	var refreshErr *larksdk.RefreshAccessTokenError
 	if errors.As(cause, &refreshErr) {
 		msg := strings.ToLower(refreshErr.Msg)
 		if strings.Contains(msg, "invalid") || strings.Contains(msg, "revok") || strings.Contains(msg, "expire") {
-			base = fmt.Sprintf("user access token expired (refresh token revoked or expired)%s; run `%s`", suffix, reloginCmd)
+			base = fmt.Sprintf("user access token expired (refresh token revoked or expired)%s%s; run `%s`", accountNote, suffix, reloginCmd)
 		}
 	}
 	if cause != nil {
@@ -327,7 +350,7 @@ func expireUserToken(state *appState, cause error) error {
 			mentionsRefreshToken := strings.Contains(msg, "refresh_token") || strings.Contains(msg, "refresh token")
 			looksRevoked := strings.Contains(msg, "invalid") || strings.Contains(msg, "expired") || strings.Contains(msg, "revoked")
 			if mentionsRefreshToken && looksRevoked {
-				base = fmt.Sprintf("refresh token revoked or expired; cleared cached credentials%s; run `%s`", suffix, reloginCmd)
+				base = fmt.Sprintf("refresh token revoked or expired%s; cleared cached credentials%s; run `%s`", accountNote, suffix, reloginCmd)
 			}
 		}
 	}

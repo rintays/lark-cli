@@ -17,10 +17,20 @@ func resolveDriveSearchToken(ctx context.Context, state *appState) (string, erro
 	if token := strings.TrimSpace(os.Getenv("LARK_USER_ACCESS_TOKEN")); token != "" {
 		return token, nil
 	}
-	if cachedUserTokenValid(state.Config, time.Now()) {
-		return state.Config.UserAccessToken, nil
+	account := resolveUserAccountName(state)
+	stored, ok, err := loadUserToken(state, account)
+	if err != nil {
+		return "", err
 	}
-	if state.Config.UserRefreshToken() == "" {
+	if ok && cachedUserTokenValid(stored, time.Now()) {
+		return stored.AccessToken, nil
+	}
+	acct, _ := loadUserAccount(state.Config, account)
+	refreshToken := stored.RefreshToken
+	if refreshToken == "" {
+		refreshToken = acct.RefreshTokenValue()
+	}
+	if refreshToken == "" {
 		return "", errors.New(driveSearchUserTokenHint)
 	}
 	token, err := ensureUserToken(ctx, state)

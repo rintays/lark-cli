@@ -129,6 +129,7 @@ Clear user access tokens:
 ```bash
 lark config unset --user-tokens
 ```
+Clears all stored user OAuth tokens (file or keychain).
 
 ### 2) Get tenant token
 
@@ -495,6 +496,30 @@ Read-only shortcut:
 lark auth user login --readonly --force-consent
 ```
 
+Manage user OAuth accounts:
+
+```bash
+lark auth user accounts list
+lark auth user accounts set <ACCOUNT>
+lark auth user accounts remove <ACCOUNT>
+```
+
+Set default via config:
+
+```bash
+lark config set --default-user-account <ACCOUNT>
+```
+
+Select an account per command:
+
+```bash
+lark --account <ACCOUNT> auth user status
+```
+
+Environment override: `LARK_ACCOUNT`.
+
+Token storage backend: `keyring_backend=file|keychain` (config).
+
 Explain auth requirements (services → token types/scopes) for a command:
 
 ```bash
@@ -513,8 +538,9 @@ Current behavior:
 - Run `lark auth user login` to launch OAuth and store tokens locally (add `--force-consent` if you need to re-grant scopes / refresh token)
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
-- Mail commands `mail folders/list/info/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
+- Mail commands `mail folders/list/info/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
 - Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
+- `mail info` shows metadata; `mail get` returns full message content (raw/body/attachments)
 
 Example:
 
@@ -543,9 +569,25 @@ Example:
 ./lark wiki task info --help
 ./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
+./lark mail info <MESSAGE_ID>
+./lark mail get <MESSAGE_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
 ./lark mail send --raw-file ./message.eml
 ```
+
+---
+
+## Bitable (Base) concepts
+
+Bitable is Lark/Feishu's database product. In the API, a **base** is also called an **app**.
+
+- **App/Base:** the top-level container; identified by an app token.
+- **Table:** a grid inside the base; defines fields (columns) and stores records (rows).
+- **Field:** a column definition (type + name) used by every record in the table.
+- **Record:** a single row of data for the table's fields.
+- **View:** a saved presentation of a table (filters/sorts/grouping/hidden columns); it doesn't change the underlying records.
+
+Relationships: app/base → tables → fields + records; views belong to a table.
 
 ---
 
@@ -561,6 +603,7 @@ Behavior:
 - If an API supports **only one** token type, the CLI uses it automatically and errors if you explicitly request the other.
 - If an API supports **both**, `--token-type=auto` uses `config.default_token_type` (default: `tenant`).
 - When `user` is selected and no user token is available, the CLI guides you to run `lark auth user login` with recommended `--scopes` (derived from the command→service registry).
+- When using user tokens, the selected account comes from `--account`, `LARK_ACCOUNT`, or `config.default_user_account`.
 
 ---
 

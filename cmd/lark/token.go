@@ -111,6 +111,9 @@ func resolveAccessToken(ctx context.Context, state *appState, allowed []tokenTyp
 		if err != nil {
 			return "", chosen, err
 		}
+		if err := preflightUserScopes(state); err != nil {
+			return "", chosen, err
+		}
 		if token == "" {
 			return "", chosen, errors.New("user access token missing; set user_access_token in config or run `lark auth user login`")
 		}
