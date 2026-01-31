@@ -397,7 +397,7 @@ Many OpenAPI endpoints accept **tenant** or **user** access tokens. You can cont
 Behavior:
 - If an API supports **only one** token type, the CLI uses it automatically and errors if you explicitly request the other.
 - If an API supports **both**, `--token-type=auto` uses `config.default_token_type` (default: `tenant`).
-- When `user` is selected and no user token is available, the CLI guides you to run `lark auth user login`.
+- When `user` is selected and no user token is available, the CLI guides you to run `lark auth user login` with recommended `--scopes` (derived from the command→service registry).
 
 ---
 

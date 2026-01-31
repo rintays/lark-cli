@@ -9,6 +9,10 @@ import (
 var scopeBracketPattern = regexp.MustCompile(`\[(.*?)\]`)
 
 func withUserScopeHint(err error) error {
+	return withUserScopeHintForCommand(nil, err)
+}
+
+func withUserScopeHintForCommand(state *appState, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -16,13 +20,23 @@ func withUserScopeHint(err error) error {
 	if strings.Contains(msg, "Re-authorize with:") {
 		return err
 	}
+
 	scopes := extractScopesFromErrorMessage(msg)
+	derivation := ""
+	if len(scopes) == 0 && state != nil {
+		_, inferred, _, ok, inferErr := userOAuthScopesForCommand(state.Command)
+		if inferErr == nil && ok {
+			scopes = inferred
+			derivation = fmt.Sprintf(" (based on command %q)", strings.TrimSpace(state.Command))
+		}
+	}
 	if len(scopes) == 0 {
 		return err
 	}
+
 	scopes = ensureOfflineAccess(selectPreferredScopes(scopes))
 	scopeArg := strings.Join(scopes, " ")
-	hint := fmt.Sprintf("Missing user OAuth scopes: %s.\nRe-authorize with:\n  lark auth user login --scopes %q --force-consent", strings.Join(scopes, ", "), scopeArg)
+	hint := fmt.Sprintf("Missing user OAuth scopes%s: %s.\nRe-authorize with:\n  lark auth user login --scopes %q --force-consent", derivation, strings.Join(scopes, ", "), scopeArg)
 	return fmt.Errorf("%s\n%s", msg, hint)
 }
 

@@ -26,6 +26,10 @@ type appState struct {
 	Platform       string
 	BaseURL        string
 	baseURLPersist string
+
+	// Command is the invoked command path (space-separated, excluding the root
+	// binary name). Example: "mail send".
+	Command string
 }
 
 func newRootCmd() *cobra.Command {
@@ -36,6 +40,7 @@ func newRootCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			state.Command = canonicalCommandPath(cmd)
 			if state.ConfigPath == "" {
 				path, err := config.DefaultPath()
 				if err != nil {
@@ -155,6 +160,30 @@ func (state *appState) saveConfig() error {
 	return config.Save(state.ConfigPath, &cfg)
 }
 
+func canonicalCommandPath(cmd *cobra.Command) string {
+	if cmd == nil {
+		return ""
+	}
+	path := strings.TrimSpace(cmd.CommandPath())
+	root := cmd.Root()
+	if root != nil {
+		name := strings.TrimSpace(root.Name())
+		if name != "" {
+			if path == name {
+				return ""
+			}
+			prefix := name + " "
+			if strings.HasPrefix(path, prefix) {
+				return strings.TrimSpace(strings.TrimPrefix(path, name))
+			}
+		}
+	}
+	if strings.HasPrefix(path, "lark ") {
+		return strings.TrimSpace(strings.TrimPrefix(path, "lark "))
+	}
+	return path
+}
+
 func requireCredentials(cfg *config.Config) error {
 	if cfg.AppID == "" || cfg.AppSecret == "" {
 		return errors.New("app_id and app_secret must be set in config")
@@ -249,12 +278,19 @@ func expireUserToken(state *appState, cause error) error {
 	state.Config.UserAccessTokenExpiresAt = 0
 	state.Config.RefreshToken = ""
 	saveErr := state.saveConfig()
-	base := fmt.Sprintf("user access token expired; run `%s`", userOAuthReloginCommand)
+
+	reloginCmd, note := userOAuthReloginRecommendation(state)
+	suffix := ""
+	if note != "" {
+		suffix = "; " + note
+	}
+
+	base := fmt.Sprintf("user access token expired%s; run `%s`", suffix, reloginCmd)
 	var refreshErr *larksdk.RefreshAccessTokenError
 	if errors.As(cause, &refreshErr) {
 		msg := strings.ToLower(refreshErr.Msg)
 		if strings.Contains(msg, "invalid") || strings.Contains(msg, "revok") || strings.Contains(msg, "expire") {
-			base = fmt.Sprintf("user access token expired (refresh token revoked or expired); run `%s`", userOAuthReloginCommand)
+			base = fmt.Sprintf("user access token expired (refresh token revoked or expired)%s; run `%s`", suffix, reloginCmd)
 		}
 	}
 	if cause != nil {
@@ -264,7 +300,7 @@ func expireUserToken(state *appState, cause error) error {
 			mentionsRefreshToken := strings.Contains(msg, "refresh_token") || strings.Contains(msg, "refresh token")
 			looksRevoked := strings.Contains(msg, "invalid") || strings.Contains(msg, "expired") || strings.Contains(msg, "revoked")
 			if mentionsRefreshToken && looksRevoked {
-				base = fmt.Sprintf("refresh token revoked or expired; cleared cached credentials; run `%s`", userOAuthReloginCommand)
+				base = fmt.Sprintf("refresh token revoked or expired; cleared cached credentials%s; run `%s`", suffix, reloginCmd)
 			}
 		}
 	}

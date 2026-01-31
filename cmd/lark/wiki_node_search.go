@@ -65,7 +65,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 					PageToken: pageToken,
 				})
 				if err != nil {
-					return withUserScopeHint(err)
+					return withUserScopeHintForCommand(state, err)
 				}
 				nodes = append(nodes, result.Items...)
 				if len(nodes) >= limit || !result.HasMore {

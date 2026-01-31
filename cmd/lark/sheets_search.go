@@ -46,7 +46,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 					PageToken: pageToken,
 				})
 				if err != nil {
-					return withUserScopeHint(err)
+					return withUserScopeHintForCommand(state, err)
 				}
 				for _, file := range result.Files {
 					if file.FileType == "sheet" {

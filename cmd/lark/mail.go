@@ -61,7 +61,7 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 			}
 			mailbox, err := state.SDK.GetMailbox(context.Background(), token, mailboxID)
 			if err != nil {
-				return withUserScopeHint(err)
+				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"mailbox": mailbox}
 			return state.Printer.Print(payload, formatMailMailboxLine(mailbox))
@@ -405,7 +405,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 			}
 			messageID, err := state.SDK.SendMail(context.Background(), token, mailboxID, request)
 			if err != nil {
-				return withUserScopeHint(err)
+				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"message_id": messageID}
 			return state.Printer.Print(payload, fmt.Sprintf("message_id: %s", messageID))

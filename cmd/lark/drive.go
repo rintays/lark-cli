@@ -135,7 +135,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 					PageToken:   pageToken,
 				})
 				if err != nil {
-					return withUserScopeHint(err)
+					return withUserScopeHintForCommand(state, err)
 				}
 				files = append(files, result.Files...)
 				if len(files) >= limit || !result.HasMore {
