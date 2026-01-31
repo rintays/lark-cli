@@ -382,7 +382,7 @@ Deliverables:
     - [x] `wiki member delete`
     - [x] `wiki member add` (SpaceMember.Create)
     - [ ] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
-  - [ ] `wiki task` query (not implemented yet)
+  - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
 - [ ] P1 (gap fill):
   - [x] implement `internal/larksdk/wiki_search_v1.go` using `core.ApiReq`
   - [x] expose `wiki node search`
