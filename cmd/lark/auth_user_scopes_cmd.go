@@ -196,24 +196,29 @@ func newAuthUserServicesCmd(state *appState) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			services := authregistry.ListUserOAuthServices()
 			serviceScopes := make(map[string]authregistry.ServiceScopeSet, len(services))
+			requiredScopes := make(map[string][]string, len(services))
 			for _, svc := range services {
-				serviceScopes[svc] = authregistry.Registry[svc].UserScopes
+				def := authregistry.Registry[svc]
+				serviceScopes[svc] = def.UserScopes
+				requiredScopes[svc] = def.RequiredUserScopes
 			}
 			payload := map[string]any{
-				"services":           services,
-				"default_services":   authregistry.DefaultUserOAuthServices,
-				"service_aliases":    authregistry.UserOAuthServiceAliases,
-				"service_scopes":     serviceScopes,
-				"drive_scope_values": []string{"full", "readonly"},
+				"services":                     services,
+				"default_services":             authregistry.DefaultUserOAuthServices,
+				"service_aliases":              authregistry.UserOAuthServiceAliases,
+				"service_scopes":               serviceScopes,
+				"service_required_user_scopes": requiredScopes,
+				"drive_scope_values":           []string{"full", "readonly"},
 			}
 			lines := make([]string, 0, len(services))
 			for _, svc := range services {
 				set := serviceScopes[svc]
 				full := strings.Join(set.Full, " ")
 				ro := strings.Join(set.Readonly, " ")
-				lines = append(lines, fmt.Sprintf("%s\tfull=%s\treadonly=%s", svc, full, ro))
+				required := strings.Join(requiredScopes[svc], " ")
+				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", svc, full, ro, required))
 			}
-			text := tableText([]string{"service", "full", "readonly"}, lines, "no services configured")
+			text := tableText([]string{"service", "full", "readonly", "required"}, lines, "no services configured")
 			return state.Printer.Print(payload, text)
 		},
 	}

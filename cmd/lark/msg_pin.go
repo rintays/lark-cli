@@ -20,15 +20,13 @@ func newMsgPinCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(messageID) == "" {
-					return errors.New("message-id is required")
-				}
-				return nil
+				return errors.New("message-id is required")
 			}
-			if messageID != "" && messageID != args[0] {
-				return errors.New("message-id provided twice")
+			messageID = strings.TrimSpace(args[0])
+			if messageID == "" {
+				return errors.New("message-id is required")
 			}
-			return cmd.Flags().Set("message-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -51,7 +49,6 @@ func newMsgPinCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
 	return cmd
 }
 
@@ -66,15 +63,13 @@ func newMsgUnpinCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(messageID) == "" {
-					return errors.New("message-id is required")
-				}
-				return nil
+				return errors.New("message-id is required")
 			}
-			if messageID != "" && messageID != args[0] {
-				return errors.New("message-id provided twice")
+			messageID = strings.TrimSpace(args[0])
+			if messageID == "" {
+				return errors.New("message-id is required")
 			}
-			return cmd.Flags().Set("message-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -96,6 +91,5 @@ func newMsgUnpinCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
 	return cmd
 }

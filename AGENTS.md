@@ -24,7 +24,7 @@
 
 ## CLI Argument Principles
 - Required resource identifiers should be positional args (e.g., `lark docs info <doc-id>`), not mandatory `--id` flags.
-- Keep legacy flags as optional aliases when possible to avoid breaking users.
+- Do not keep legacy `--id` style flags for required identifiers.
 - Exceptions: `base --app-token` and `wiki --space-id` remain flags.
 
 ## Testing Guidelines
@@ -78,3 +78,4 @@
 - 2026-01-31: Docs info now falls back to drive file metadata for URL when the docx info API omits it.
 - 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.
 - 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
+- 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.

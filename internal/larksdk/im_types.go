@@ -148,6 +148,27 @@ type ChatInfo struct {
 	ChatStatus             string                 `json:"chat_status,omitempty"`
 }
 
+type ChatMember struct {
+	MemberIDType string `json:"member_id_type,omitempty"`
+	MemberID     string `json:"member_id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	TenantKey    string `json:"tenant_key,omitempty"`
+}
+
+type ListChatMembersRequest struct {
+	ChatID       string
+	MemberIDType string
+	PageSize     int
+	PageToken    string
+}
+
+type ListChatMembersResult struct {
+	Items       []ChatMember
+	PageToken   string
+	HasMore     bool
+	MemberTotal int
+}
+
 type CreateChatRequest struct {
 	UserIDType             string
 	SetBotManager          *bool

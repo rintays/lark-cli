@@ -19,21 +19,42 @@ func TestChatsGetCommandWithSDK(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
 		}
-		if r.URL.Path != "/open-apis/im/v1/chats/oc_1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("user_id_type") != "open_id" {
-			t.Fatalf("unexpected user_id_type: %s", r.URL.Query().Get("user_id_type"))
-		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{"name": "Chat One"},
-		})
+		switch r.URL.Path {
+		case "/open-apis/im/v1/chats/oc_1":
+			if r.URL.Query().Get("user_id_type") != "open_id" {
+				t.Fatalf("unexpected user_id_type: %s", r.URL.Query().Get("user_id_type"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{"name": "Chat One"},
+			})
+		case "/open-apis/im/v1/chats/oc_1/members":
+			if r.URL.Query().Get("member_id_type") != "open_id" {
+				t.Fatalf("unexpected member_id_type: %s", r.URL.Query().Get("member_id_type"))
+			}
+			if r.URL.Query().Get("page_size") != "20" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items": []map[string]any{
+						{"member_id_type": "open_id", "member_id": "ou_1", "name": "User One"},
+					},
+					"has_more":     false,
+					"member_total": 1,
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 

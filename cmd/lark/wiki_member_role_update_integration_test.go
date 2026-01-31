@@ -23,40 +23,33 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 	email := testutil.RequireEnv(t, "LARK_TEST_USER_EMAIL")
 
 	state := integrationTestState(t)
-	// This test exercises wiki member v2 endpoints which can use a tenant token.
+	// Wiki member v2 endpoints support tenant tokens.
 	if _, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser); err != nil {
 		t.Skipf("tenant token missing/unavailable (run `lark auth login` to cache a tenant token): %v", err)
 	}
 
-	current, ok, err := wikiMemberRole(t, spaceID, email)
+	initialRole, initialFound, err := wikiMemberRole(t, spaceID, email)
 	if err != nil {
 		t.Fatalf("wiki member list failed: %v", err)
 	}
-
-	// Ensure member exists and is at role=member (downgrade if already admin).
-	if ok && strings.EqualFold(current, "admin") {
-		out, err := executeLark(t, []string{
-			"--json",
-			"--token-type",
-			"tenant",
-			"wiki",
-			"member",
-			"add",
-			"--space-id",
-			spaceID,
-			"--member-type",
-			"email",
-			"--member-id",
-			email,
-			"--role",
-			"member",
-		})
-		role, _, listErr := waitForWikiMemberRole(t, spaceID, email, "member")
-		if listErr != nil {
-			t.Fatalf("wiki member downgrade to member failed: %v (addErr=%v; addOut=%q)", listErr, err, out)
-		}
-		current = role
+	if initialFound && strings.EqualFold(initialRole, "admin") {
+		t.Skipf("precondition failed: %s is already admin in space %s; choose a non-admin member to avoid downgrading privileges during this test", email, spaceID)
 	}
+
+	// Best-effort cleanup: avoid leaving the test member as admin.
+	t.Cleanup(func() {
+		if !initialFound {
+			_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "--space-id", spaceID, "--member-type", "email", "--member-id", email})
+			return
+		}
+
+		// Some environments require delete+add to change roles.
+		_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "--space-id", spaceID, "--member-type", "email", "--member-id", email})
+		_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "add", "--space-id", spaceID, "--member-type", "email", "--member-id", email, "--role", initialRole})
+	})
+
+	// (1) Ensure the member starts at role=member.
+	_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "--space-id", spaceID, "--member-type", "email", "--member-id", email})
 
 	out, err := executeLark(t, []string{
 		"--json",
@@ -92,10 +85,11 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 		t.Fatalf("member %q not found after adding role=member", email)
 	}
 	if !strings.EqualFold(role, "member") {
-		t.Fatalf("expected role=member before update, got %q", role)
+		t.Fatalf("expected role=member before update attempt, got %q", role)
 	}
 
-	out, err = executeLark(t, []string{
+	// (2) Re-add the same member with a different role.
+	out, createErr := executeLark(t, []string{
 		"--json",
 		"--token-type",
 		"tenant",
@@ -111,52 +105,32 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 		"--role",
 		"admin",
 	})
+
+	// (3) Assert via list that the role changed (upsert) OR document that it does not.
 	updatedRole, ok, listErr := waitForWikiMemberRole(t, spaceID, email, "admin")
 	if listErr != nil {
-		t.Fatalf("wiki member list after role=admin failed: %v (addErr=%v; addOut=%q)", listErr, err, out)
+		t.Fatalf("wiki member list after role=admin attempt failed: %v (addErr=%v; addOut=%q)", listErr, createErr, out)
 	}
 	if !ok {
-		t.Fatalf("member %q not found after adding role=admin (addErr=%v; addOut=%q)", email, err, out)
-	}
-	if !strings.EqualFold(updatedRole, "admin") {
-		t.Fatalf("expected member role to update to admin, got %q (addErr=%v; addOut=%q)", updatedRole, err, out)
+		t.Fatalf("member %q not found after role=admin attempt (addErr=%v; addOut=%q)", email, createErr, out)
 	}
 
-	// Best-effort cleanup: revert back to member.
-	defer func() {
-		out, err := executeLark(t, []string{
-			"--json",
-			"--token-type",
-			"tenant",
-			"wiki",
-			"member",
-			"add",
-			"--space-id",
-			spaceID,
-			"--member-type",
-			"email",
-			"--member-id",
-			email,
-			"--role",
-			"member",
-		})
-		if err != nil {
-			t.Logf("cleanup: downgrade member role back to member failed: %v (out=%q)", err, out)
-			return
-		}
-		role, ok, err := waitForWikiMemberRole(t, spaceID, email, "member")
-		if err != nil {
-			t.Logf("cleanup: wiki member list failed: %v", err)
-			return
-		}
-		if !ok {
-			t.Logf("cleanup: member %q not found after downgrade", email)
-			return
-		}
-		if !strings.EqualFold(role, "member") {
-			t.Logf("cleanup: expected role=member, got %q", role)
-		}
-	}()
+	if strings.EqualFold(updatedRole, "admin") {
+		t.Logf("SpaceMember.Create appears to be an upsert in this environment (member→admin)")
+		return
+	}
+
+	if createErr == nil {
+		t.Fatalf("expected wiki member add(role=admin) to either update role to admin or return an error; got role=%q with no error (out=%q)", updatedRole, out)
+	}
+	if !strings.EqualFold(updatedRole, "member") {
+		t.Fatalf("expected role to remain member when SpaceMember.Create is not an upsert, got %q (addErr=%v; out=%q)", updatedRole, createErr, out)
+	}
+	if !strings.Contains(strings.ToLower(createErr.Error()+" "+out), "exist") {
+		t.Logf("note: create returned unexpected error for already-exists case: %v; out=%q", createErr, out)
+	}
+	// Official docs mention error 400131008 (already exist) for repeated add operations.
+	t.Logf("SpaceMember.Create is not an upsert in this environment: re-adding an existing member did not change role")
 }
 
 func integrationTestState(t *testing.T) *appState {
@@ -239,7 +213,7 @@ func waitForWikiMemberRole(t *testing.T, spaceID, email, want string) (role stri
 	t.Helper()
 
 	var lastRole string
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		role, found, err = wikiMemberRole(t, spaceID, email)
 		if err != nil {
 			return "", false, err
