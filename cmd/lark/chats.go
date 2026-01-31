@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -77,10 +76,7 @@ func newChatsListCmd(state *appState) *cobra.Command {
 			for _, chat := range chats {
 				lines = append(lines, fmt.Sprintf("%s\t%s", chat.ChatID, chat.Name))
 			}
-			text := "no chats found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"chat_id", "name"}, lines, "no chats found")
 			return state.Printer.Print(payload, text)
 		},
 	}

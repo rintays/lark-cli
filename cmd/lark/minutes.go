@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,20 +15,20 @@ const maxMinutesPageSize = 50
 func newMinutesCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "minutes",
-		Short: "Get Minutes details",
+		Short: "Manage Minutes",
 	}
-	cmd.AddCommand(newMinutesGetCmd(state))
+	cmd.AddCommand(newMinutesInfoCmd(state))
 	cmd.AddCommand(newMinutesListCmd(state))
 	return cmd
 }
 
-func newMinutesGetCmd(state *appState) *cobra.Command {
+func newMinutesInfoCmd(state *appState) *cobra.Command {
 	var minuteToken string
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "get <minute-token>",
-		Short: "Get Minutes details",
+		Use:   "info <minute-token>",
+		Short: "Show Minutes details",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -61,7 +60,10 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"minute": minute}
-			text := fmt.Sprintf("%s\t%s\t%s", minute.Token, minute.Title, minute.URL)
+			text := tableTextRow(
+				[]string{"minute_token", "title", "url"},
+				[]string{minute.Token, minute.Title, minute.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -123,10 +125,7 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 			for _, minute := range minutes {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", minute.Token, minute.Title, minute.URL))
 			}
-			text := "no minutes found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"minute_token", "title", "url"}, lines, "no minutes found")
 			return state.Printer.Print(payload, text)
 		},
 	}

@@ -17,7 +17,9 @@ func TestServicesForCommandPathMapping(t *testing.T) {
 		{path: []string{"wiki"}, want: []string{"wiki"}},
 		{path: []string{"base"}, want: []string{"base"}},
 		{path: []string{"calendar"}, want: []string{"calendar"}},
+		{path: []string{"calendars"}, want: []string{"calendar"}},
 		{path: []string{"chats"}, want: []string{"im"}},
+		{path: []string{"messages"}, want: []string{"im"}},
 		{path: []string{"msg"}, want: []string{"im"}},
 		{path: []string{"im"}, want: []string{"im"}},
 	}

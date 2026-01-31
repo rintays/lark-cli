@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -44,7 +44,7 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"result": res}
-			text := fmt.Sprintf("%t\t%s", res.Deleted, res.TableID)
+			text := tableTextRow([]string{"deleted", "table_id"}, []string{strconv.FormatBool(res.Deleted), res.TableID})
 			return state.Printer.Print(payload, text)
 		},
 	}

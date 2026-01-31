@@ -18,7 +18,7 @@ func newUsersCmd(state *appState) *cobra.Command {
 		Use:   "users",
 		Short: "Manage users",
 	}
-	cmd.AddCommand(newUserGetCmd(state))
+	cmd.AddCommand(newUserInfoCmd(state))
 	cmd.AddCommand(newUsersSearchCmd(state))
 	return cmd
 }
@@ -69,10 +69,7 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			for _, user := range users {
 				lines = append(lines, formatUserLine(user))
 			}
-			text := "no users found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"user_id", "name", "email", "mobile"}, lines, "no users found")
 			return state.Printer.Print(payload, text)
 		},
 	}

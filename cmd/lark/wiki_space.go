@@ -17,7 +17,7 @@ func newWikiSpaceCmd(state *appState) *cobra.Command {
 		Short: "Manage Wiki spaces",
 	}
 	cmd.AddCommand(newWikiSpaceListCmd(state))
-	cmd.AddCommand(newWikiSpaceGetCmd(state))
+	cmd.AddCommand(newWikiSpaceInfoCmd(state))
 	return cmd
 }
 
@@ -77,10 +77,7 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 			for _, s := range items {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", s.SpaceID, s.Name, s.SpaceType, s.Visibility))
 			}
-			text := "no spaces found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"space_id", "name", "space_type", "visibility"}, lines, "no spaces found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -90,12 +87,12 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newWikiSpaceGetCmd(state *appState) *cobra.Command {
+func newWikiSpaceInfoCmd(state *appState) *cobra.Command {
 	var spaceID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a Wiki space (v2)",
+		Use:   "info",
+		Short: "Show a Wiki space (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -109,7 +106,10 @@ func newWikiSpaceGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"space": space}
-			text := fmt.Sprintf("%s\t%s\t%s\t%s", space.SpaceID, space.Name, space.SpaceType, space.Visibility)
+			text := tableTextRow(
+				[]string{"space_id", "name", "space_type", "visibility"},
+				[]string{space.SpaceID, space.Name, space.SpaceType, space.Visibility},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

@@ -15,17 +15,17 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
 - **Auth**
   - Tenant token fetch + caching
   - Config file support + env fallback
-- **Users / Chats / Msg (IM)**
+- **Users / Chats / Messages (IM)**
   - search users
   - list chats
   - send messages (supports `--receive-id-type`)
 - **Drive**
-  - list/search/get/urls/download/upload
+  - list/search/info/urls/download/upload
   - share permission updates
 - **Docs (docx)**
-  - create/get/export/cat
+  - create/info/export/cat
 - **Sheets**
-  - read/update/append/clear/metadata
+  - read/update/append/clear/info
 - **Calendar**
   - list/create events
 - **Contacts**
@@ -47,8 +47,8 @@ go build -o lark ./cmd/lark
 ./lark --help
 ./lark chats list --help
 ./lark users list --help
-./lark users get --help
-./lark msg send --help
+./lark users info --help
+./lark messages send --help  # alias: msg
 ```
 
 ---
@@ -73,7 +73,7 @@ Set the default platform base URL (optional):
 
 ```bash
 lark auth platform set feishu|lark
-lark auth platform get
+lark auth platform info
 ```
 
 Or set env vars (used only when config is empty; config wins):
@@ -86,7 +86,7 @@ export LARK_APP_SECRET=<APP_SECRET>
 View the currently loaded config:
 
 ```bash
-lark config get
+lark config info
 ```
 
 Set the base URL directly (optional):
@@ -245,6 +245,12 @@ List:
 lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
 ```
 
+Create:
+
+```bash
+lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
+```
+
 Read:
 
 ```bash
@@ -275,10 +281,10 @@ Clear:
 lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
 ```
 
-Metadata:
+Info:
 
 ```bash
-lark sheets metadata <SPREADSHEET_TOKEN>
+lark sheets info <SPREADSHEET_TOKEN>
 ```
 
 Insert rows:
@@ -310,13 +316,13 @@ lark sheets cols delete <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 List events:
 
 ```bash
-lark calendar list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+lark calendars list --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
 ```
 
 Create event:
 
 ```bash
-lark calendar create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
+lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
 ---
@@ -370,7 +376,7 @@ Current behavior:
 - Run `lark auth user login` to launch OAuth and store tokens locally (add `--force-consent` if you need to re-grant scopes / refresh token)
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
-- Mail commands `mail folders/list/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
+- Mail commands `mail folders/list/info/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
 - Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
 
 Example:
@@ -382,15 +388,15 @@ Example:
 ./lark base field list --help
 ./lark base view list --help
 ./lark base record create --help
-./lark base record get --help
+./lark base record info --help
 ./lark base record search --help
 ./lark base record update --help
 ./lark base record delete --help
 ./lark wiki member list --help
 ./lark wiki member delete --help
 ./lark wiki node search --help
-./lark wiki task get --help # alias: wiki task list
-./lark mail mailbox get --help
+./lark wiki task info --help
+./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
 ```

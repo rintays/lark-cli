@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,12 +15,12 @@ func newMeetingsCmd(state *appState) *cobra.Command {
 		Use:   "meetings",
 		Short: "Manage meetings",
 	}
-	cmd.AddCommand(newMeetingGetCmd(state))
+	cmd.AddCommand(newMeetingInfoCmd(state))
 	cmd.AddCommand(newMeetingListCmd(state))
 	return cmd
 }
 
-func newMeetingGetCmd(state *appState) *cobra.Command {
+func newMeetingInfoCmd(state *appState) *cobra.Command {
 	var meetingID string
 	var withParticipants bool
 	var withMeetingAbility bool
@@ -29,8 +28,8 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 	var queryMode int
 
 	cmd := &cobra.Command{
-		Use:   "get <meeting-id>",
-		Short: "Get meeting details",
+		Use:   "info <meeting-id>",
+		Short: "Show meeting details",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -71,7 +70,16 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"meeting": meeting}
-			text := fmt.Sprintf("%s\t%s\t%d\t%s\t%s", meeting.ID, meeting.Topic, meeting.Status, meeting.StartTime, meeting.EndTime)
+			text := tableTextRow(
+				[]string{"meeting_id", "topic", "status", "start_time", "end_time"},
+				[]string{
+					meeting.ID,
+					meeting.Topic,
+					fmt.Sprintf("%d", meeting.Status),
+					meeting.StartTime,
+					meeting.EndTime,
+				},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -136,10 +144,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 				}
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s\t%s", meeting.ID, meeting.Topic, status, meeting.StartTime, meeting.EndTime))
 			}
-			text := "no meetings found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"meeting_id", "topic", "status", "start_time", "end_time"}, lines, "no meetings found")
 			return state.Printer.Print(payload, text)
 		},
 	}

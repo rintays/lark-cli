@@ -81,10 +81,7 @@ func newWikiMemberListCmd(state *appState) *cobra.Command {
 			for _, m := range items {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", m.MemberType, m.MemberID, m.MemberRole, m.Type))
 			}
-			text := "no members found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"member_type", "member_id", "member_role", "type"}, lines, "no members found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -160,10 +157,10 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 			}
 
 			payload := map[string]any{"member": member}
-			text := member.MemberID
-			if member.MemberType != "" {
-				text = fmt.Sprintf("%s\t%s\t%s\t%s", member.MemberType, member.MemberID, member.MemberRole, member.Type)
-			}
+			text := tableTextRow(
+				[]string{"member_type", "member_id", "member_role", "type"},
+				[]string{member.MemberType, member.MemberID, member.MemberRole, member.Type},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

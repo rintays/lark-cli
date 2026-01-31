@@ -13,7 +13,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestMailMailboxGetDefaultsMailboxID(t *testing.T) {
+func TestMailMailboxInfoDefaultsMailboxID(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -44,8 +44,8 @@ func TestMailMailboxGetDefaultsMailboxID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailMailboxCmd(state)
-	cmd.SetArgs([]string{"get"})
+	cmd.SetArgs([]string{"info"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("mailbox get error: %v", err)
+		t.Fatalf("mailbox info error: %v", err)
 	}
 }

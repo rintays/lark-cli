@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,8 +14,9 @@ import (
 
 func newCalendarCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "calendar",
-		Short: "Manage calendar events",
+		Use:     "calendars",
+		Aliases: []string{"calendar"},
+		Short:   "Manage calendar events",
 	}
 	cmd.AddCommand(newCalendarListCmd(state))
 	cmd.AddCommand(newCalendarCreateCmd(state))
@@ -80,10 +80,7 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 			for _, event := range events {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary))
 			}
-			text := "no events found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"event_id", "start_time", "end_time", "summary"}, lines, "no events found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -167,7 +164,10 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 				"event":       event,
 				"attendees":   attendees,
 			}
-			text := fmt.Sprintf("%s\t%s\t%s\t%s", event.EventID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), event.Summary)
+			text := tableTextRow(
+				[]string{"event_id", "start_time", "end_time", "summary"},
+				[]string{event.EventID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), event.Summary},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

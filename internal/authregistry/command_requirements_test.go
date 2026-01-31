@@ -51,7 +51,7 @@ func TestRequirementsForCommandMail(t *testing.T) {
 	}
 }
 
-func TestRequirementsForCommandChatsAndMsgMatch(t *testing.T) {
+func TestRequirementsForCommandChatsAndMessagesMatch(t *testing.T) {
 	svcs1, tts1, off1, scopes1, ok, err := RequirementsForCommand("chats list")
 	if err != nil {
 		t.Fatalf("RequirementsForCommand(chats list) err=%v", err)
@@ -60,12 +60,12 @@ func TestRequirementsForCommandChatsAndMsgMatch(t *testing.T) {
 		t.Fatalf("RequirementsForCommand(chats list) ok=false, want true")
 	}
 
-	svcs2, tts2, off2, scopes2, ok, err := RequirementsForCommand("msg send")
+	svcs2, tts2, off2, scopes2, ok, err := RequirementsForCommand("messages send")
 	if err != nil {
-		t.Fatalf("RequirementsForCommand(msg send) err=%v", err)
+		t.Fatalf("RequirementsForCommand(messages send) err=%v", err)
 	}
 	if !ok {
-		t.Fatalf("RequirementsForCommand(msg send) ok=false, want true")
+		t.Fatalf("RequirementsForCommand(messages send) ok=false, want true")
 	}
 
 	if !reflect.DeepEqual(svcs1, []string{"im"}) {
@@ -82,7 +82,16 @@ func TestRequirementsForCommandChatsAndMsgMatch(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(svcs1, svcs2) || !reflect.DeepEqual(tts1, tts2) || off1 != off2 || !reflect.DeepEqual(scopes1, scopes2) {
-		t.Fatalf("chats and msg requirements differ:\nchats: services=%v tokenTypes=%v offline=%v scopes=%v\nmsg:   services=%v tokenTypes=%v offline=%v scopes=%v", svcs1, tts1, off1, scopes1, svcs2, tts2, off2, scopes2)
+		t.Fatalf("chats and messages requirements differ:\nchats:    services=%v tokenTypes=%v offline=%v scopes=%v\nmessages: services=%v tokenTypes=%v offline=%v scopes=%v", svcs1, tts1, off1, scopes1, svcs2, tts2, off2, scopes2)
+	}
+
+	// Backward-compatible alias support for auth explain / scripted calls.
+	_, _, _, _, ok, err = RequirementsForCommand("msg send")
+	if err != nil {
+		t.Fatalf("RequirementsForCommand(msg send) err=%v", err)
+	}
+	if !ok {
+		t.Fatalf("RequirementsForCommand(msg send) ok=false, want true")
 	}
 }
 

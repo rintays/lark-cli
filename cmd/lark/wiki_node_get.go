@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -11,13 +10,13 @@ import (
 	"lark/internal/larksdk"
 )
 
-func newWikiNodeGetCmd(state *appState) *cobra.Command {
+func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 	var nodeToken string
 	var objType string
 
 	cmd := &cobra.Command{
-		Use:   "get <node-token> <obj-type>",
-		Short: "Get a Wiki node (v2)",
+		Use:   "info <node-token> <obj-type>",
+		Short: "Show a Wiki node (v2)",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
 				return err
@@ -62,7 +61,10 @@ func newWikiNodeGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"node": node}
-			text := fmt.Sprintf("%s\t%s\t%s\t%s", node.NodeToken, node.ObjType, node.Title, node.ObjToken)
+			text := tableTextRow(
+				[]string{"node_token", "obj_type", "title", "obj_token"},
+				[]string{node.NodeToken, node.ObjType, node.Title, node.ObjToken},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

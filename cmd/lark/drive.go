@@ -23,7 +23,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newDriveListCmd(state))
 	cmd.AddCommand(newDriveSearchCmd(state))
-	cmd.AddCommand(newDriveGetCmd(state))
+	cmd.AddCommand(newDriveInfoCmd(state))
 	cmd.AddCommand(newDriveExportCmd(state))
 	cmd.AddCommand(newDriveDownloadCmd(state))
 	cmd.AddCommand(newDriveUploadCmd(state))
@@ -85,10 +85,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 			for _, file := range files {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", file.Token, file.Name, file.FileType, file.URL))
 			}
-			text := "no files found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"token", "name", "type", "url"}, lines, "no files found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -155,10 +152,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			for _, file := range files {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", file.Token, file.Name, file.FileType, file.URL))
 			}
-			text := "no files found"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText([]string{"token", "name", "type", "url"}, lines, "no files found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -171,12 +165,12 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newDriveGetCmd(state *appState) *cobra.Command {
+func newDriveInfoCmd(state *appState) *cobra.Command {
 	var fileToken string
 
 	cmd := &cobra.Command{
-		Use:   "get <file-token>",
-		Short: "Get Drive file metadata",
+		Use:   "info <file-token>",
+		Short: "Show Drive file info",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -210,7 +204,10 @@ func newDriveGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"file": file}
-			text := fmt.Sprintf("%s\t%s\t%s\t%s", file.Token, file.Name, file.FileType, file.URL)
+			text := tableTextRow(
+				[]string{"token", "name", "type", "url"},
+				[]string{file.Token, file.Name, file.FileType, file.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -297,10 +294,10 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 				"file_token": fileInfo.Token,
 				"file":       fileInfo,
 			}
-			text := fileInfo.Token
-			if fileInfo.URL != "" {
-				text = fmt.Sprintf("%s\t%s\t%s\t%s", fileInfo.Token, fileInfo.Name, fileInfo.FileType, fileInfo.URL)
-			}
+			text := tableTextRow(
+				[]string{"token", "name", "type", "url"},
+				[]string{fileInfo.Token, fileInfo.Name, fileInfo.FileType, fileInfo.URL},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -363,7 +360,10 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 				"output_path":   outPath,
 				"bytes_written": written,
 			}
-			text := fmt.Sprintf("%s\t%s\t%d", fileToken, outPath, written)
+			text := tableTextRow(
+				[]string{"file_token", "output_path", "bytes_written"},
+				[]string{fileToken, outPath, fmt.Sprintf("%d", written)},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -448,7 +448,10 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 				"output_path":       outPath,
 				"bytes_written":     written,
 			}
-			text := fmt.Sprintf("%s\t%s\t%d", fileToken, outPath, written)
+			text := tableTextRow(
+				[]string{"file_token", "output_path", "bytes_written"},
+				[]string{fileToken, outPath, fmt.Sprintf("%d", written)},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -489,7 +492,8 @@ func newDriveURLsCmd(state *appState) *cobra.Command {
 			for _, file := range files {
 				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", file.Token, file.URL, file.Name))
 			}
-			return state.Printer.Print(payload, strings.Join(lines, "\n"))
+			text := tableText([]string{"token", "url", "name"}, lines, "no files found")
+			return state.Printer.Print(payload, text)
 		},
 	}
 
@@ -553,7 +557,16 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 				"file_token": fileToken,
 				"type":       fileType,
 			}
-			text := fmt.Sprintf("%s\t%s\t%s\t%t\t%t", fileToken, fileType, permission.LinkShareEntity, permission.ExternalAccess, permission.InviteExternal)
+			text := tableTextRow(
+				[]string{"file_token", "type", "link_share", "external_access", "invite_external"},
+				[]string{
+					fileToken,
+					fileType,
+					permission.LinkShareEntity,
+					fmt.Sprintf("%t", permission.ExternalAccess),
+					fmt.Sprintf("%t", permission.InviteExternal),
+				},
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}

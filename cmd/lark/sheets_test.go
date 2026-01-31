@@ -240,7 +240,104 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 	}
 }
 
-func TestSheetsMetadataCommand(t *testing.T) {
+func TestSheetsCreateCommandWithSDK(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["title"] != "Budget Q1" {
+			t.Fatalf("unexpected title: %v", payload["title"])
+		}
+		if payload["folder_token"] != "fld" {
+			t.Fatalf("unexpected folder_token: %v", payload["folder_token"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"spreadsheet": map[string]any{
+					"spreadsheet_token": "spreadsheet",
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"create", "--title", "Budget Q1", "--folder-id", "fld"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets create error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "spreadsheet") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestSheetsCreateCommandRequiresTitle(t *testing.T) {
+	requests := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"create"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected error for missing title")
+	}
+	if requests != 0 {
+		t.Fatalf("expected no HTTP requests, got %d", requests)
+	}
+}
+
+func TestSheetsInfoCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -284,9 +381,9 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"metadata", "--spreadsheet-id", "spreadsheet"})
+	cmd.SetArgs([]string{"info", "--spreadsheet-id", "spreadsheet"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("sheets metadata error: %v", err)
+		t.Fatalf("sheets info error: %v", err)
 	}
 
 	output := buf.String()
@@ -295,7 +392,7 @@ func TestSheetsMetadataCommand(t *testing.T) {
 	}
 }
 
-func TestSheetsMetadataCommandRequiresSpreadsheetID(t *testing.T) {
+func TestSheetsInfoCommandRequiresSpreadsheetID(t *testing.T) {
 	requests := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
@@ -320,7 +417,7 @@ func TestSheetsMetadataCommandRequiresSpreadsheetID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"metadata"})
+	cmd.SetArgs([]string{"info"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatalf("expected error for missing spreadsheet-id")
 	}

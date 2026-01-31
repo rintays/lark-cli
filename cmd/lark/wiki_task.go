@@ -16,18 +16,17 @@ func newWikiTaskCmd(state *appState) *cobra.Command {
 		Use:   "task",
 		Short: "Query Wiki task results",
 	}
-	cmd.AddCommand(newWikiTaskGetCmd(state))
+	cmd.AddCommand(newWikiTaskInfoCmd(state))
 	return cmd
 }
 
-func newWikiTaskGetCmd(state *appState) *cobra.Command {
+func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 	var taskID string
 	var taskType string
 
 	cmd := &cobra.Command{
-		Use:     "get <task-id>",
-		Aliases: []string{"list"},
-		Short:   "Get Wiki task results (v2)",
+		Use:   "info <task-id>",
+		Short: "Show Wiki task results (v2)",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -75,10 +74,11 @@ func newWikiTaskGetCmd(state *appState) *cobra.Command {
 				}
 				lines = append(lines, fmt.Sprintf("%d\t%s\t%s\t%s\t%s\t%s", mr.Status, mr.StatusMsg, nodeToken, objType, title, objToken))
 			}
-			text := "no task results"
-			if len(lines) > 0 {
-				text = strings.Join(lines, "\n")
-			}
+			text := tableText(
+				[]string{"status", "status_msg", "node_token", "obj_type", "title", "obj_token"},
+				lines,
+				"no task results",
+			)
 			return state.Printer.Print(payload, text)
 		},
 	}
