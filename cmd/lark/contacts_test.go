@@ -60,7 +60,7 @@ func TestContactsUserGetCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newContactsCmd(state)
-	cmd.SetArgs([]string{"users", "get", "--open-id", "ou_1"})
+	cmd.SetArgs([]string{"user", "get", "--open-id", "ou_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("contacts user get error: %v", err)
 	}

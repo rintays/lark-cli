@@ -15,9 +15,8 @@ func newContactsCmd(state *appState) *cobra.Command {
 
 func newContactsUserCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "users",
-		Aliases: []string{"user"},
-		Short:   "Manage contact users",
+		Use:   "user",
+		Short: "Manage contact users",
 	}
 	cmd.AddCommand(newUserGetCmd(state))
 	return cmd
