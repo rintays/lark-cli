@@ -231,6 +231,12 @@ lark docs cat --doc-id <DOCUMENT_ID> --format txt
 
 ### Sheets
 
+List:
+
+```bash
+lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
+```
+
 Read:
 
 ```bash
