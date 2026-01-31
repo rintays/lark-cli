@@ -73,6 +73,72 @@ func TestDriveListCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestDriveListCommandRejectsPositionalArgsDoesNotCallHTTP(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected HTTP call: %s", r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"list", "extra"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "unknown command") || !strings.Contains(err.Error(), "extra") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDriveListCommandLimitMustBePositiveDoesNotCallHTTP(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected HTTP call: %s", r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"list", "--limit", "0"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "limit must be greater than 0" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDriveSearchCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/open-apis/drive/v1/files/search" {
