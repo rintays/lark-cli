@@ -56,7 +56,12 @@ func newRootCmd() *cobra.Command {
 			if err := applyBaseURLOverrides(state, cfg); err != nil {
 				return err
 			}
-			state.Printer = output.Printer{Writer: cmd.OutOrStdout(), JSON: state.JSON}
+			out := cmd.OutOrStdout()
+			state.Printer = output.Printer{
+				Writer: out,
+				JSON:   state.JSON,
+				Styled: output.AutoStyle(out) && !state.JSON,
+			}
 			sdkClient, err := larksdk.New(cfg)
 			if err == nil {
 				state.SDK = sdkClient

@@ -51,3 +51,4 @@
 - 2026-01-31: Added verbose tracing for drive/docs/sheets search and capped search pagination with a new `--pages` flag; user-scope hints now skip non-permission errors.
 - 2026-01-31: Added docs-api search support for drive/docs/sheets search (offset-based pagination, doc type normalization), keeping folder-scoped drive search on the legacy drive endpoint.
 - 2026-01-31: Removed drive search folder flags/legacy drive search path; drive search now consistently uses docs-api with offset window guard, README updated.
+- 2026-01-31: Added lipgloss-based output formatting for tabular CLI output with auto-tty detection.
