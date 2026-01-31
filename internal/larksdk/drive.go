@@ -183,7 +183,24 @@ func (c *Client) GetDriveFileMetadata(ctx context.Context, token string, req Get
 	if tenantToken == "" {
 		return DriveFile{}, errors.New("tenant access token is required")
 	}
+	return c.getDriveFileMetadata(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+}
 
+func (c *Client) GetDriveFileMetadataWithUserToken(ctx context.Context, userAccessToken string, req GetDriveFileRequest) (DriveFile, error) {
+	if !c.available() || c.coreConfig == nil {
+		return DriveFile{}, ErrUnavailable
+	}
+	if req.FileToken == "" {
+		return DriveFile{}, errors.New("file token is required")
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return DriveFile{}, errors.New("user access token is required")
+	}
+	return c.getDriveFileMetadata(ctx, req, larkcore.WithUserAccessToken(userAccessToken))
+}
+
+func (c *Client) getDriveFileMetadata(ctx context.Context, req GetDriveFileRequest, option larkcore.RequestOptionFunc) (DriveFile, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/drive/v1/files/:file_token",
 		HttpMethod:                http.MethodGet,
@@ -193,7 +210,7 @@ func (c *Client) GetDriveFileMetadata(ctx context.Context, token string, req Get
 	}
 	apiReq.PathParams.Set("file_token", req.FileToken)
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return DriveFile{}, err
 	}
