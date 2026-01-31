@@ -12,6 +12,7 @@ func newWikiCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newWikiNodeCmd(state))
 	cmd.AddCommand(newWikiSpaceCmd(state))
 	cmd.AddCommand(newWikiMemberCmd(state))
+	cmd.AddCommand(newWikiTaskCmd(state))
 	return cmd
 }
 
