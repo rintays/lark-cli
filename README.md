@@ -182,7 +182,7 @@ lark drive list --folder-id <FOLDER_TOKEN> --limit 20
 Search files:
 
 ```bash
-lark drive search --query "budget" --limit 10
+lark drive search --query "budget" --limit 10 --type sheet --type docx
 ```
 
 Download:

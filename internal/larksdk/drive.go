@@ -88,6 +88,9 @@ func (c *Client) SearchDriveFiles(ctx context.Context, token string, req SearchD
 	payload := map[string]any{
 		"query": req.Query,
 	}
+	if len(req.FileTypes) > 0 {
+		payload["file_types"] = req.FileTypes
+	}
 	if req.PageSize > 0 {
 		payload["page_size"] = req.PageSize
 	}

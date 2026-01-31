@@ -74,6 +74,7 @@ type ListDriveFilesResult struct {
 
 type SearchDriveFilesRequest struct {
 	Query     string
+	FileTypes []string
 	PageSize  int
 	PageToken string
 }

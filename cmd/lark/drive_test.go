@@ -92,6 +92,20 @@ func TestDriveSearchCommand(t *testing.T) {
 		if payload["page_size"].(float64) != 2 {
 			t.Fatalf("unexpected page_size: %+v", payload)
 		}
+		types, ok := payload["file_types"].([]any)
+		if !ok || len(types) != 2 {
+			t.Fatalf("expected file_types, got: %+v", payload["file_types"])
+		}
+		if types[0].(string) != "docx" || types[1].(string) != "sheet" {
+			t.Fatalf("unexpected file_types: %+v", types)
+		}
+		fileTypes, ok := payload["file_types"].([]any)
+		if !ok {
+			t.Fatalf("missing file_types: %+v", payload)
+		}
+		if len(fileTypes) != 2 || fileTypes[0] != "docx" || fileTypes[1] != "sheet" {
+			t.Fatalf("unexpected file_types: %+v", fileTypes)
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
@@ -121,12 +135,71 @@ func TestDriveSearchCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "budget", "--limit", "2"})
+	cmd.SetArgs([]string{"search", "--query", "budget", "--limit", "2", "--type", "docx", "--type", "sheet"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "f2\tBudget\tsheet\thttps://example.com/sheet") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestDriveSearchCommandSingleFileType(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/open-apis/drive/v1/files/search" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		fileTypes, ok := payload["file_types"].([]any)
+		if !ok {
+			t.Fatalf("missing file_types: %+v", payload)
+		}
+		if len(fileTypes) != 1 || fileTypes[0] != "docx" {
+			t.Fatalf("unexpected file_types: %+v", fileTypes)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"files":    []map[string]any{{"token": "f9", "name": "Spec", "type": "docx", "url": "https://example.com/doc"}},
+				"has_more": false,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDriveCmd(state)
+	cmd.SetArgs([]string{"search", "--query", "spec", "--limit", "1", "--type", "docx"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("drive search error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "f9\tSpec\tdocx\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

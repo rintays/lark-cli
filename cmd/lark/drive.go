@@ -99,6 +99,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 
 func newDriveSearchCmd(state *appState) *cobra.Command {
 	var query string
+	var fileTypes []string
 	var limit int
 
 	cmd := &cobra.Command{
@@ -125,6 +126,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 				}
 				result, err := state.SDK.SearchDriveFiles(context.Background(), token, larksdk.SearchDriveFilesRequest{
 					Query:     query,
+					FileTypes: fileTypes,
 					PageSize:  pageSize,
 					PageToken: pageToken,
 				})
@@ -158,6 +160,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&query, "query", "", "search text")
+	cmd.Flags().StringArrayVar(&fileTypes, "type", nil, "filter by file type (docx|sheet|bitable|file|doc); repeatable")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	_ = cmd.MarkFlagRequired("query")
 	return cmd
