@@ -45,6 +45,48 @@ type ListCalendarEventsResult struct {
 	SyncToken string
 }
 
+type SearchCalendarEventsRequest struct {
+	CalendarID string
+	Query      string
+	StartTime  string
+	EndTime    string
+	UserIDs    []string
+	RoomIDs    []string
+	ChatIDs    []string
+	PageSize   int
+	PageToken  string
+}
+
+type SearchCalendarEventsResult struct {
+	Items     []CalendarEvent
+	PageToken string
+}
+
+type GetCalendarEventRequest struct {
+	CalendarID string
+	EventID    string
+}
+
+type UpdateCalendarEventRequest struct {
+	CalendarID  string
+	EventID     string
+	Summary     string
+	Description string
+	StartTime   *int64
+	EndTime     *int64
+}
+
+type DeleteCalendarEventRequest struct {
+	CalendarID       string
+	EventID          string
+	NeedNotification bool
+}
+
+type DeleteCalendarEventResult struct {
+	EventID string
+	Deleted bool
+}
+
 type CreateCalendarEventRequest struct {
 	CalendarID  string
 	Summary     string

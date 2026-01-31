@@ -325,6 +325,30 @@ Create event:
 lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
+Search events:
+
+```bash
+lark calendars search --query "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+```
+
+Get event:
+
+```bash
+lark calendars get --event-id <EVENT_ID>
+```
+
+Update event:
+
+```bash
+lark calendars update --event-id <EVENT_ID> --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z"
+```
+
+Delete event:
+
+```bash
+lark calendars delete --event-id <EVENT_ID> --notify=false
+```
+
 ---
 
 ## User OAuth scopes (important)
