@@ -52,17 +52,19 @@ type ServiceDef struct {
 //
 // Keep this list stable and append-only where possible.
 var Registry = map[string]ServiceDef{
-	"im":       {Name: "im", TokenTypes: []TokenType{TokenTenant}},
-	"drive":    {Name: "drive", TokenTypes: []TokenType{TokenTenant, TokenUser}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
-	"docs":     {Name: "docs", TokenTypes: []TokenType{TokenTenant, TokenUser}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
-	"sheets":   {Name: "sheets", TokenTypes: []TokenType{TokenTenant, TokenUser}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	"im": {Name: "im", TokenTypes: []TokenType{TokenTenant}},
+
+	// NOTE: "docs" is a legacy name used by existing commands; "docx" is the
+	// user-facing/API surface name for the same capability.
+	"drive":  {Name: "drive", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	"docs":   {Name: "docs", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	"docx":   {Name: "docx", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	"sheets": {Name: "sheets", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+
 	"calendar": {Name: "calendar", TokenTypes: []TokenType{TokenTenant}},
 	"mail":     {Name: "mail", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiresOffline: true},
 	"wiki":     {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiresOffline: true},
 	"base":     {Name: "base", TokenTypes: []TokenType{TokenTenant}},
-	"contacts": {Name: "contacts", TokenTypes: []TokenType{TokenTenant}},
-	"meetings": {Name: "meetings", TokenTypes: []TokenType{TokenTenant}},
-	"minutes":  {Name: "minutes", TokenTypes: []TokenType{TokenTenant}},
 }
 
 // AllServiceNames returns all known service names in stable-sorted order.

@@ -119,7 +119,7 @@ Credential/scopes management (research + design, gog-inspired):
 Work items (must follow the design, not ad-hoc patches):
 - [ ] **Service registry (gog-style)**
   - [x] Define fixed service set (im/drive/docx/sheets/calendar/mail/wiki/base/…)
-  - [ ] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
+  - [x] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
   - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
   - [ ] Map commands → services (so runtime can explain “why you need this token/scope”)
 - [ ] **Scope variants as first-class knobs**

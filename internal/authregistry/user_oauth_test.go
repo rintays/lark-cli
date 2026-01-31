@@ -7,7 +7,7 @@ import (
 
 func TestListUserOAuthServicesStableSorted(t *testing.T) {
 	got := ListUserOAuthServices()
-	want := []string{"docs", "drive", "sheets"}
+	want := []string{"docs", "docx", "drive", "sheets"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ListUserOAuthServices()=%v, want %v", got, want)
 	}
@@ -15,7 +15,7 @@ func TestListUserOAuthServicesStableSorted(t *testing.T) {
 
 func TestExpandUserOAuthServiceAliases(t *testing.T) {
 	got := ExpandUserOAuthServiceAliases([]string{"all"})
-	want := []string{"drive", "docs", "sheets"}
+	want := []string{"drive", "docs", "docx", "sheets"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ExpandUserOAuthServiceAliases(all)=%v, want %v", got, want)
 	}

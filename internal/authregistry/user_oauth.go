@@ -13,8 +13,8 @@ var DefaultUserOAuthServices = []string{"drive"}
 
 // UserOAuthServiceAliases maps user-facing aliases to service names.
 var UserOAuthServiceAliases = map[string][]string{
-	"all":  {"drive", "docs", "sheets"},
-	"user": {"drive", "docs", "sheets"},
+	"all":  {"drive", "docs", "docx", "sheets"},
+	"user": {"drive", "docs", "docx", "sheets"},
 }
 
 // ListUserOAuthServices returns services that currently declare user OAuth scopes.
