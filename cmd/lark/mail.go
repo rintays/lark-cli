@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -371,6 +372,8 @@ func newMailSendCmd(state *appState) *cobra.Command {
 	var bodyHTML string
 	var headFrom string
 	var userAccessToken string
+	var raw string
+	var rawFile string
 
 	cmd := &cobra.Command{
 		Use:   "send",
@@ -403,14 +406,46 @@ func newMailSendCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			rawValue := strings.TrimSpace(raw)
+			rawFile = strings.TrimSpace(rawFile)
+			if rawValue != "" && rawFile != "" {
+				return errors.New("raw and raw-file are mutually exclusive")
+			}
+			if rawFile != "" {
+				data, readErr := os.ReadFile(rawFile)
+				if readErr != nil {
+					return fmt.Errorf("read raw file: %w", readErr)
+				}
+				rawValue = base64.URLEncoding.EncodeToString(data)
+			}
+			if rawValue != "" {
+				if subject != "" || len(to) > 0 || len(cc) > 0 || len(bcc) > 0 || bodyText != "" || bodyHTML != "" {
+					return errors.New("raw is mutually exclusive with subject/to/cc/bcc/text/html")
+				}
+			} else {
+				if subject == "" {
+					return errors.New("subject is required")
+				}
+				if len(to) == 0 {
+					return errors.New("to is required")
+				}
+				if bodyText == "" && bodyHTML == "" {
+					return errors.New("text or html is required")
+				}
+			}
+
+			toInputs := buildMailAddressInputs(to)
+			ccInputs := buildMailAddressInputs(cc)
+			bccInputs := buildMailAddressInputs(bcc)
 			request := larksdk.SendMailRequest{
 				Subject:       subject,
-				To:            buildMailAddressInputs(to),
-				CC:            buildMailAddressInputs(cc),
-				BCC:           buildMailAddressInputs(bcc),
+				To:            toInputs,
+				CC:            ccInputs,
+				BCC:           bccInputs,
 				HeadFromName:  headFrom,
 				BodyPlainText: bodyText,
 				BodyHTML:      bodyHTML,
+				Raw:           rawValue,
 			}
 			messageID, err := state.SDK.SendMail(context.Background(), token, mailboxID, request)
 			if err != nil {
@@ -428,11 +463,10 @@ func newMailSendCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringArrayVar(&bcc, "bcc", nil, "bcc email (repeatable)")
 	cmd.Flags().StringVar(&bodyText, "text", "", "plain text body")
 	cmd.Flags().StringVar(&bodyHTML, "html", "", "HTML body")
+	cmd.Flags().StringVar(&raw, "raw", "", "raw EML content (base64url-encoded)")
+	cmd.Flags().StringVar(&rawFile, "raw-file", "", "path to .eml file (will be base64url-encoded)")
 	cmd.Flags().StringVar(&headFrom, "from-name", "", "display name for From header")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
-	_ = cmd.MarkFlagRequired("subject")
-	_ = cmd.MarkFlagRequired("to")
-	cmd.MarkFlagsOneRequired("text", "html")
 	return cmd
 }
 

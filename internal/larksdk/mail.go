@@ -165,6 +165,7 @@ type SendMailRequest struct {
 	To            []MailAddressInput
 	CC            []MailAddressInput
 	BCC           []MailAddressInput
+	Raw           string
 	HeadFromName  string
 	BodyHTML      string
 	BodyPlainText string
@@ -507,14 +508,16 @@ func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req Send
 	if mailboxID == "" {
 		return "", errors.New("mailbox id is required")
 	}
-	if len(req.To) == 0 {
-		return "", errors.New("to is required")
-	}
-	if req.Subject == "" {
-		return "", errors.New("subject is required")
-	}
-	if req.BodyHTML == "" && req.BodyPlainText == "" {
-		return "", errors.New("body_html or body_plain_text is required")
+	if req.Raw == "" {
+		if len(req.To) == 0 {
+			return "", errors.New("to is required")
+		}
+		if req.Subject == "" {
+			return "", errors.New("subject is required")
+		}
+		if req.BodyHTML == "" && req.BodyPlainText == "" {
+			return "", errors.New("body_html or body_plain_text is required")
+		}
 	}
 
 	to := make([]*larkmail.MailAddress, 0, len(req.To))
@@ -539,10 +542,14 @@ func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req Send
 		attachments = append(attachments, &larkmail.Attachment{Body: &att.Body, Filename: &att.Filename})
 	}
 
-	body := larkmail.NewSendUserMailboxMessageReqBodyBuilder().
-		Subject(req.Subject).
-		To(to).
-		Build()
+	builder := larkmail.NewSendUserMailboxMessageReqBodyBuilder()
+	if req.Raw != "" {
+		builder.Raw(req.Raw)
+	} else {
+		builder.Subject(req.Subject).
+			To(to)
+	}
+	body := builder.Build()
 	if len(cc) > 0 {
 		body.Cc = cc
 	}

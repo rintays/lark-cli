@@ -61,7 +61,7 @@ go build -o lark ./cmd/lark
 
 ### 1) Configure app credentials
 
-Store credentials in config (default: `~/.config/lark/config.json`):
+Store credentials in config (default: `~/.config/lark/config.json`, or `~/.config/lark/profiles/<profile>/config.json` with `--profile`/`LARK_PROFILE`):
 
 ```bash
 lark auth login --app-id <APP_ID> --app-secret <APP_SECRET>
@@ -80,11 +80,18 @@ lark auth platform set feishu|lark
 lark auth platform info
 ```
 
-Or set env vars (used only when config is empty; config wins):
+Or set env vars:
 
 ```bash
+# App credentials: used only when config is empty (config wins).
 export LARK_APP_ID=<APP_ID>
 export LARK_APP_SECRET=<APP_SECRET>
+
+# Optional profile selection.
+export LARK_PROFILE=<profile>
+
+# Token storage backend: env wins over config.keyring_backend.
+export LARK_KEYRING_BACKEND=file  # or: keychain|auto
 ```
 
 View the currently loaded config:
@@ -157,6 +164,7 @@ lark users search --email user@example.com --json
 ## Global flags
 
 - `--config <path>`: override config path
+- `--profile <name>`: use a named config profile (env: `LARK_PROFILE`)
 - `--json`: JSON output
 - `--verbose`: verbose output
 - `--platform feishu|lark`: runtime base URL selection (not saved)
@@ -204,6 +212,8 @@ Search messages (user token required):
 ```bash
 lark messages search "hello" --chat-id <CHAT_ID>
 ```
+
+Search results include message metadata and content in the default output.
 
 List recent messages:
 
@@ -318,6 +328,9 @@ lark docs export <DOCUMENT_ID> --format pdf --out ./document.pdf
 Cat:
 
 ```bash
+lark docs cat <DOCUMENT_ID> --format md
+
+# or plain text
 lark docs cat <DOCUMENT_ID> --format txt
 ```
 
@@ -338,31 +351,31 @@ lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
 Read:
 
 ```bash
-lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
 ```
 
 Search:
 
 ```bash
-lark sheets search <TEXT> --limit 50
+lark sheets search <TEXT> --limit 50 # requires user_access_token or `lark auth user login`
 ```
 
 Update:
 
 ```bash
-lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
 ```
 
 Append:
 
 ```bash
-lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
 ```
 
 Clear:
 
 ```bash
-lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
 ```
 
 Info:
@@ -521,6 +534,7 @@ Example:
 ./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
+./lark mail send --raw-file ./message.eml
 ```
 
 ---

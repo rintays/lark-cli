@@ -85,7 +85,7 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
 	return cmd
 }
 
@@ -245,7 +245,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
 	_ = cmd.MarkFlagRequired("values")
 	return cmd
@@ -311,7 +311,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
 	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
 	_ = cmd.MarkFlagRequired("values")
@@ -370,7 +370,7 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
 	return cmd
 }
 

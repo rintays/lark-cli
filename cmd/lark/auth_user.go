@@ -156,6 +156,9 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				warning = scopesChangedWarning(state.Config.UserAccessTokenScope, grantedScope)
 				state.Config.UserAccessTokenScope = grantedScope
 			}
+			if strings.EqualFold(state.Config.KeyringBackend, "keychain") {
+				return errors.New("keychain backend is not implemented yet; please use keyring_backend=file (or set LARK_KEYRING_BACKEND=file)")
+			}
 			state.Config.UserAccessToken = tokens.AccessToken
 			state.Config.RefreshToken = tokens.RefreshToken
 			state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()

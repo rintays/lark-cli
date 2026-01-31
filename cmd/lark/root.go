@@ -18,6 +18,7 @@ import (
 type appState struct {
 	ConfigPath     string
 	Config         *config.Config
+	Profile        string
 	JSON           bool
 	Verbose        bool
 	TokenType      string
@@ -41,12 +42,23 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			state.Command = canonicalCommandPath(cmd)
+			if state.Profile == "" {
+				state.Profile = strings.TrimSpace(os.Getenv("LARK_PROFILE"))
+			}
 			if state.ConfigPath == "" {
-				path, err := config.DefaultPath()
-				if err != nil {
-					return err
+				if state.Profile != "" {
+					path, err := config.DefaultPathForProfile(state.Profile)
+					if err != nil {
+						return err
+					}
+					state.ConfigPath = path
+				} else {
+					path, err := config.DefaultPath()
+					if err != nil {
+						return err
+					}
+					state.ConfigPath = path
 				}
-				state.ConfigPath = path
 			}
 			cfg, err := config.Load(state.ConfigPath)
 			if err != nil {
@@ -72,7 +84,8 @@ func newRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&state.ConfigPath, "config", "", "config path (default: ~/.config/lark/config.json)")
+	cmd.PersistentFlags().StringVar(&state.ConfigPath, "config", "", "config path (default: ~/.config/lark/config.json; uses profile path when --profile or LARK_PROFILE is set)")
+	cmd.PersistentFlags().StringVar(&state.Profile, "profile", "", "config profile (env: LARK_PROFILE)")
 	cmd.PersistentFlags().BoolVar(&state.JSON, "json", false, "output JSON")
 	cmd.PersistentFlags().BoolVar(&state.Verbose, "verbose", false, "verbose output")
 	cmd.PersistentFlags().StringVar(&state.TokenType, "token-type", "auto", "access token type (auto|tenant|user)")
@@ -244,6 +257,9 @@ func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
 func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	if err := requireCredentials(state.Config); err != nil {
 		return "", err
+	}
+	if strings.EqualFold(state.Config.KeyringBackend, "keychain") {
+		return "", errors.New("keychain backend is not implemented yet; please use keyring_backend=file (or set LARK_KEYRING_BACKEND=file)")
 	}
 	if cachedUserTokenValid(state.Config, time.Now()) {
 		return state.Config.UserAccessToken, nil

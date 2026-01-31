@@ -141,11 +141,14 @@ Work items (must follow the design, not ad-hoc patches):
     - [x] insufficient_scope/permission errors (best-effort: wiki node search adds re-login hint)
   - [x] Make remediation messages print the exact command to run next
 - [ ] **Token storage backend policy + implementation**
-  - [ ] Backend selection: `auto|keychain|file` (keyring)
-  - [ ] Env > config precedence (e.g., `LARK_KEYRING_BACKEND`, `LARK_KEYRING_PASSWORD` for headless)
+  - [x] Backend selection knob (config `keyring_backend` + env `LARK_KEYRING_BACKEND`) parsed + defaulted to `file`
+  - [x] Env fallback when config missing (currently: config takes precedence when set; env fills when missing)
+  - [ ] Implement keychain backend (actual secure storage; today `keychain` errors with a clear message)
+  - [x] Env > config precedence for keyring backend (`LARK_KEYRING_BACKEND` > config `keyring_backend`)
+  - [ ] Define whether we need `LARK_KEYRING_PASSWORD` (and/or config knob) for headless secure storage (design TBD)
   - [ ] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
 - [ ] **Multi-profile / multi-account / multi-app isolation**
-  - [ ] `--profile` / `LARK_PROFILE` selection + default
+  - [x] `--profile` / `LARK_PROFILE` selection + default
   - [ ] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
 - [ ] **Auth status & remediation UX**
   - [x] `lark auth user status` shows: offline/refresh availability, expiry, and stored scope (minimal v1)
@@ -183,7 +186,7 @@ Deliverables:
     - [x] `docs export/cat` → Export task + download (supports `txt` and `md` output)
     - [ ] **Docs Markdown ⇄ Docx bidirectional sync** (requested)
       - Goal: support keeping a local `.md` file and a Docx document in sync.
-      - [ ] Export: already supported via `docs cat --format md` (ensure docs + integration test)
+      - [x] Export: already supported via `docs cat --format md` (integration test: `TestDocsCatMarkdownIntegration`)
       - [ ] Import/overwrite: add a command (TBD):
         - candidate: `lark docs import --doc-id <ID> --file <path.md> [--mode overwrite|append]`
         - or: `lark docs sync --doc-id <ID> --file <path.md> [--direction push|pull|both]`
