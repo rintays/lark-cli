@@ -15,16 +15,16 @@ func newConfigCmd(state *appState) *cobra.Command {
 		Use:   "config",
 		Short: "Manage CLI configuration",
 	}
-	cmd.AddCommand(newConfigGetCmd(state))
+	cmd.AddCommand(newConfigInfoCmd(state))
 	cmd.AddCommand(newConfigSetCmd(state))
 	cmd.AddCommand(newConfigUnsetCmd(state))
 	cmd.AddCommand(newConfigListKeysCmd(state))
 	return cmd
 }
 
-func newConfigGetCmd(state *appState) *cobra.Command {
+func newConfigInfoCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "info",
 		Short: "Show the loaded configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.Config == nil {

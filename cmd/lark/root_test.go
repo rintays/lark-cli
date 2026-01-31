@@ -310,7 +310,62 @@ func TestRootCalendarAliasWorks(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "Manage calendar events") {
+	if !strings.Contains(buf.String(), "Usage:\n  lark calendars [command]") {
+		t.Fatalf("expected canonical calendars usage in help output, got: %q", buf.String())
+	}
+	// Ensure the canonical command name is used in the usage line.
+	// Note: "lark calendars" contains the substring "lark calendar", so we must match a trailing space.
+	if strings.Contains(buf.String(), "Usage:\n  lark calendar ") {
+		t.Fatalf("unexpected singular calendar usage in help output: %q", buf.String())
+	}
+}
+
+func TestRootHelpShowsBasesCommand(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.PersistentPreRunE = nil
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--help"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("help error: %v", err)
+	}
+
+	foundBases := false
+	scanner := bufio.NewScanner(strings.NewReader(buf.String()))
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimLeft(line, " \t")
+		if trimmed == "bases" || strings.HasPrefix(trimmed, "bases ") || strings.HasPrefix(trimmed, "bases\t") {
+			foundBases = true
+		}
+		if trimmed == "base" || strings.HasPrefix(trimmed, "base ") || strings.HasPrefix(trimmed, "base\t") {
+			t.Fatalf("unexpected base command in help output: %q", line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("scan help output: %v", err)
+	}
+	if !foundBases {
+		t.Fatalf("expected bases command in help output, got:\n%s", buf.String())
+	}
+}
+
+func TestRootBaseAliasWorks(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.PersistentPreRunE = nil
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"base", "--help"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("help error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Manage Bitable bases") {
 		t.Fatalf("unexpected help output: %q", buf.String())
 	}
 }

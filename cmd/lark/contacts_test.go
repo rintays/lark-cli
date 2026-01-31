@@ -15,7 +15,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestContactsUserGetCommand(t *testing.T) {
+func TestContactsUserInfoCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/open-apis/contact/v3/users/ou_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -61,9 +61,9 @@ func TestContactsUserGetCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newContactsCmd(state)
-	cmd.SetArgs([]string{"user", "get", "--open-id", "ou_1"})
+	cmd.SetArgs([]string{"user", "info", "--open-id", "ou_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("contacts user get error: %v", err)
+		t.Fatalf("contacts user info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "u_1\tAda\tada@example.com\t+1-555-0100") {
@@ -71,19 +71,19 @@ func TestContactsUserGetCommand(t *testing.T) {
 	}
 }
 
-func TestContactsUserGetHelpCommand(t *testing.T) {
+func TestContactsUserInfoHelpCommand(t *testing.T) {
 	cmd := newContactsCmd(&appState{})
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"user", "get", "--help"})
+	cmd.SetArgs([]string{"user", "info", "--help"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("contacts user get help error: %v", err)
+		t.Fatalf("contacts user info help error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "Get a contact user by ID") {
+	if !strings.Contains(buf.String(), "Show a contact user by ID") {
 		t.Fatalf("unexpected help output: %q", buf.String())
 	}
 }

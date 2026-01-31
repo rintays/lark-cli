@@ -14,7 +14,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestUsersGetCommand(t *testing.T) {
+func TestUsersInfoCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/open-apis/contact/v3/users/ou_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -60,9 +60,9 @@ func TestUsersGetCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newUsersCmd(state)
-	cmd.SetArgs([]string{"get", "--open-id", "ou_1"})
+	cmd.SetArgs([]string{"info", "--open-id", "ou_1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("users get error: %v", err)
+		t.Fatalf("users info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "u_1\tAda\tada@example.com\t+1-555-0100") {

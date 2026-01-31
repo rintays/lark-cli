@@ -73,7 +73,7 @@ func TestAuthPlatformSetLarkPersistsBaseURL(t *testing.T) {
 	}
 }
 
-func TestAuthPlatformGetKnownPlatform(t *testing.T) {
+func TestAuthPlatformInfoKnownPlatform(t *testing.T) {
 	tests := []struct {
 		name         string
 		baseURL      string
@@ -101,10 +101,10 @@ func TestAuthPlatformGetKnownPlatform(t *testing.T) {
 			}
 
 			cmd := newAuthCmd(state)
-			cmd.SetArgs([]string{"platform", "get"})
+			cmd.SetArgs([]string{"platform", "info"})
 
 			if err := cmd.Execute(); err != nil {
-				t.Fatalf("auth platform get error: %v", err)
+				t.Fatalf("auth platform info error: %v", err)
 			}
 
 			got := buf.String()
@@ -118,7 +118,7 @@ func TestAuthPlatformGetKnownPlatform(t *testing.T) {
 	}
 }
 
-func TestAuthPlatformGetCustomPlatform(t *testing.T) {
+func TestAuthPlatformInfoCustomPlatform(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		Config:         &config.Config{BaseURL: "https://example.com"},
@@ -127,10 +127,10 @@ func TestAuthPlatformGetCustomPlatform(t *testing.T) {
 	}
 
 	cmd := newAuthCmd(state)
-	cmd.SetArgs([]string{"platform", "get"})
+	cmd.SetArgs([]string{"platform", "info"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("auth platform get error: %v", err)
+		t.Fatalf("auth platform info error: %v", err)
 	}
 
 	got := buf.String()

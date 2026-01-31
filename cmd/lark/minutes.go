@@ -14,22 +14,22 @@ import (
 func newMinutesCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "minutes",
-		Short: "Get Minutes details",
+		Short: "Manage Minutes",
 	}
-	cmd.AddCommand(newMinutesGetCmd(state))
+	cmd.AddCommand(newMinutesInfoCmd(state))
 	cmd.AddCommand(newMinutesListCmd(state))
 	cmd.AddCommand(newMinutesDeleteCmd(state))
 	cmd.AddCommand(newMinutesUpdateCmd(state))
 	return cmd
 }
 
-func newMinutesGetCmd(state *appState) *cobra.Command {
+func newMinutesInfoCmd(state *appState) *cobra.Command {
 	var minuteToken string
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "get <minute-token>",
-		Short: "Get Minutes details",
+		Use:   "info <minute-token>",
+		Short: "Show Minutes details",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -41,6 +41,10 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("minute-token", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(minuteToken) == "" {
+				return errors.New("minute-token is required")
 			}
 			return nil
 		},
@@ -67,7 +71,6 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&minuteToken, "minute-token", "", "minute token (or provide as positional argument)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
-	_ = cmd.MarkFlagRequired("minute-token")
 	return cmd
 }
 
