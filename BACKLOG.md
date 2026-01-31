@@ -1,7 +1,7 @@
 # lark CLI — BACKLOG (maintained by AG)
 
 **Owner:** AG  
-**Where:** `/Users/fredliang/clawd/BACKLOG.md` (single source of truth)  
+**Where:** `/Users/fredliang/clawd/lark/BACKLOG.md` (single source of truth)  
 **Repo:** `/Users/fredliang/clawd/lark`  
 **Branch policy:** default development branch is **`main`** and changes must land on **`origin/main`** (unless Master explicitly requests a branch/PR flow).  
 **Last updated:** 2026-01-31 (Asia/Shanghai)
