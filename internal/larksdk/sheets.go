@@ -95,6 +95,21 @@ func (r *deleteSheetColsResponse) Success() bool {
 	return r.Code == 0
 }
 
+func dimensionRangePayload(majorDimension string, startIndex, endIndex int) map[string]any {
+	return map[string]any{
+		"dimension_range": map[string]any{
+			"major_dimension": majorDimension,
+			"start_index":     startIndex,
+			"end_index":       endIndex,
+		},
+		"dimensionRange": map[string]any{
+			"majorDimension": majorDimension,
+			"startIndex":     startIndex,
+			"endIndex":       endIndex,
+		},
+	}
+}
+
 func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (SheetValueRange, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetValueRange{}, ErrUnavailable
@@ -319,16 +334,7 @@ func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, s
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.PathParams.Set("sheet_id", sheetID)
-	req.Body = map[string]any{
-		"dimension_range": map[string]any{
-			"major_dimension": "ROWS",
-			"start_index":     startIndex,
-			"end_index":       endIndex,
-			"majorDimension":  "ROWS",
-			"startIndex":      startIndex,
-			"endIndex":        endIndex,
-		},
-	}
+	req.Body = dimensionRangePayload("ROWS", startIndex, endIndex)
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -379,16 +385,7 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.PathParams.Set("sheet_id", sheetID)
-	req.Body = map[string]any{
-		"dimension_range": map[string]any{
-			"major_dimension": "ROWS",
-			"start_index":     startIndex,
-			"end_index":       endIndex,
-			"majorDimension":  "ROWS",
-			"startIndex":      startIndex,
-			"endIndex":        endIndex,
-		},
-	}
+	req.Body = dimensionRangePayload("ROWS", startIndex, endIndex)
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -439,16 +436,7 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.PathParams.Set("sheet_id", sheetID)
-	req.Body = map[string]any{
-		"dimension_range": map[string]any{
-			"major_dimension": "COLS",
-			"start_index":     startIndex,
-			"end_index":       endIndex,
-			"majorDimension":  "COLS",
-			"startIndex":      startIndex,
-			"endIndex":        endIndex,
-		},
-	}
+	req.Body = dimensionRangePayload("COLUMNS", startIndex, endIndex)
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -499,16 +487,7 @@ func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, s
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.PathParams.Set("sheet_id", sheetID)
-	req.Body = map[string]any{
-		"dimension_range": map[string]any{
-			"major_dimension": "COLS",
-			"start_index":     startIndex,
-			"end_index":       endIndex,
-			"majorDimension":  "COLS",
-			"startIndex":      startIndex,
-			"endIndex":        endIndex,
-		},
-	}
+	req.Body = dimensionRangePayload("COLUMNS", startIndex, endIndex)
 
 	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {

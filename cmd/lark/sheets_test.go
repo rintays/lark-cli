@@ -556,7 +556,7 @@ func TestSheetsColsInsertCommandWithSDK(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing dimension_range")
 		}
-		if dimensionRange["major_dimension"] != "COLS" {
+		if dimensionRange["major_dimension"] != "COLUMNS" {
 			t.Fatalf("unexpected major_dimension: %#v", dimensionRange["major_dimension"])
 		}
 		if startIndex, ok := dimensionRange["start_index"].(float64); !ok || int(startIndex) != 4 {
@@ -564,6 +564,9 @@ func TestSheetsColsInsertCommandWithSDK(t *testing.T) {
 		}
 		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 7 {
 			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
+		}
+		if _, ok := payload["dimensionRange"]; !ok {
+			t.Fatalf("missing dimensionRange")
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -672,7 +675,7 @@ func TestSheetsColsDeleteCommandWithSDK(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing dimension_range")
 		}
-		if dimensionRange["major_dimension"] != "COLS" {
+		if dimensionRange["major_dimension"] != "COLUMNS" {
 			t.Fatalf("unexpected major_dimension: %#v", dimensionRange["major_dimension"])
 		}
 		if startIndex, ok := dimensionRange["start_index"].(float64); !ok || int(startIndex) != 3 {
@@ -680,6 +683,9 @@ func TestSheetsColsDeleteCommandWithSDK(t *testing.T) {
 		}
 		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 5 {
 			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
+		}
+		if _, ok := payload["dimensionRange"]; !ok {
+			t.Fatalf("missing dimensionRange")
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -797,6 +803,9 @@ func TestSheetsRowsInsertCommandWithSDK(t *testing.T) {
 		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 3 {
 			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
 		}
+		if _, ok := payload["dimensionRange"]; !ok {
+			t.Fatalf("missing dimensionRange")
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
@@ -868,6 +877,9 @@ func TestSheetsRowsDeleteCommandWithSDK(t *testing.T) {
 		}
 		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 6 {
 			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
+		}
+		if _, ok := payload["dimensionRange"]; !ok {
+			t.Fatalf("missing dimensionRange")
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{

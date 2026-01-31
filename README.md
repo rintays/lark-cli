@@ -338,31 +338,31 @@ lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
 Read:
 
 ```bash
-lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
 ```
 
 Search:
 
 ```bash
-lark sheets search <TEXT> --limit 50
+lark sheets search <TEXT> --limit 50 # requires user_access_token or `lark auth user login`
 ```
 
 Update:
 
 ```bash
-lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
 ```
 
 Append:
 
 ```bash
-lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
 ```
 
 Clear:
 
 ```bash
-lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "<SHEET_ID>!A1:B2"
 ```
 
 Info:

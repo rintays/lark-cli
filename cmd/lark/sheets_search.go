@@ -16,7 +16,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "search <query>",
-		Short: "Search Sheets (spreadsheets) by text",
+		Short: "Search Sheets (spreadsheets) by text (user access token required)",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -61,7 +61,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
+	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument; requires user_access_token or `lark auth user login`)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 
