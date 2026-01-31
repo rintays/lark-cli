@@ -16,6 +16,7 @@ func newConfigCmd(state *appState) *cobra.Command {
 		Short: "Manage CLI configuration",
 	}
 	cmd.AddCommand(newConfigGetCmd(state))
+	cmd.AddCommand(newConfigSetCmd(state))
 	return cmd
 }
 
@@ -32,6 +33,34 @@ func newConfigGetCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	return cmd
+}
+
+func newConfigSetCmd(state *appState) *cobra.Command {
+	var baseURL string
+
+	cmd := &cobra.Command{
+		Use:   "set",
+		Short: "Persist configuration values",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.Config == nil {
+				return errors.New("config is required")
+			}
+			normalized := normalizeBaseURL(baseURL)
+			state.Config.BaseURL = normalized
+			state.baseURLPersist = normalized
+			if err := state.saveConfig(); err != nil {
+				return err
+			}
+			payload := map[string]any{
+				"config_path": state.ConfigPath,
+				"base_url":    normalized,
+			}
+			return state.Printer.Print(payload, fmt.Sprintf("saved base_url to %s", state.ConfigPath))
+		},
+	}
+	cmd.Flags().StringVar(&baseURL, "base-url", "", "base URL to persist")
+	_ = cmd.MarkFlagRequired("base-url")
 	return cmd
 }
 

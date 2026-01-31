@@ -82,6 +82,12 @@ View the currently loaded config:
 lark config get
 ```
 
+Set the base URL directly (optional):
+
+```bash
+lark config set --base-url https://open.feishu.cn
+```
+
 ### 2) Get tenant token
 
 ```bash

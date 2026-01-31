@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -93,5 +96,33 @@ func TestConfigGetHumanOutputRedactsTokens(t *testing.T) {
 		if strings.Contains(output, token) {
 			t.Fatalf("expected token %q to be redacted, got %q", token, output)
 		}
+	}
+}
+
+func TestConfigSetBaseURLPersistsConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--base-url", "https://open.feishu.cn"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config set error: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	var saved config.Config
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if saved.BaseURL != "https://open.feishu.cn" {
+		t.Fatalf("expected base_url saved, got %s", saved.BaseURL)
 	}
 }
