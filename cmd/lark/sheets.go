@@ -18,6 +18,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 		Short: "Read Sheets data",
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
+	cmd.AddCommand(newSheetsCreateCmd(state))
 	cmd.AddCommand(newSheetsUpdateCmd(state))
 	cmd.AddCommand(newSheetsAppendCmd(state))
 	cmd.AddCommand(newSheetsMetadataCmd(state))

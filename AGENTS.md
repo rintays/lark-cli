@@ -55,3 +55,4 @@
 - 2026-01-31: Switched docs cat to docx raw_content API to avoid export task validation errors for txt/md.
 - 2026-01-31: Mail user mailbox operations now use user access tokens (list/get/folders/mailbox get) to avoid field validation errors; public mailboxes remain tenant-token.
 - 2026-01-31: Mail list now resolves folder_id (defaults to Inbox) to satisfy API validation; SDK enforces folder_id requirement.
+- 2026-01-31: Added `lark sheets create` command plus README/design coverage updates.

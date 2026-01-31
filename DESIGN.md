@@ -37,6 +37,7 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 | Drive export status | `/open-apis/drive/v1/export_tasks/:ticket` | Core ApiReq wrapper | tenant/user | v1 | Used by docs/drive export. |
 | Drive export download | `/open-apis/drive/v1/export_tasks/file/:file_token/download` | Custom HTTP wrapper | tenant | v1 | File download. |
 | Docs create/get | `/open-apis/docx/v1/documents` | Core ApiReq wrapper | tenant/user | v1 | `lark docs create/get`. |
+| Sheets create | `/open-apis/sheets/v3/spreadsheets` | Core ApiReq wrapper | tenant/user | v3 | `lark sheets create`. |
 | Sheets read | `/open-apis/sheets/v2/spreadsheets/:token/values/:range` | Core ApiReq wrapper | tenant/user | v2 | `lark sheets read`. |
 | Sheets update | `/open-apis/sheets/v2/spreadsheets/:token/values` | Core ApiReq wrapper | tenant/user | v2 | `lark sheets update`. |
 | Sheets append | `/open-apis/sheets/v2/spreadsheets/:token/values_append` | Core ApiReq wrapper | tenant/user | v2 | `lark sheets append`. |

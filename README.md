@@ -245,6 +245,12 @@ List:
 lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
 ```
 
+Create:
+
+```bash
+lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
+```
+
 Read:
 
 ```bash
