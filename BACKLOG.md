@@ -380,7 +380,7 @@ Deliverables:
   - [x] `wiki member list` implemented (v2)
   - [ ] `wiki member` management (v2)
     - [x] `wiki member delete`
-    - [ ] `wiki member add` (SpaceMember.Create)
+    - [x] `wiki member add` (SpaceMember.Create)
     - [ ] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
   - [ ] `wiki task` query (not implemented yet)
 - [ ] P1 (gap fill):

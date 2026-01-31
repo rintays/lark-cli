@@ -17,6 +17,7 @@ func newWikiMemberCmd(state *appState) *cobra.Command {
 		Short: "Manage Wiki members",
 	}
 	cmd.AddCommand(newWikiMemberListCmd(state))
+	cmd.AddCommand(newWikiMemberAddCmd(state))
 	cmd.AddCommand(newWikiMemberDeleteCmd(state))
 	return cmd
 }
@@ -92,6 +93,59 @@ func newWikiMemberListCmd(state *appState) *cobra.Command {
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of members to return")
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "page size (default: auto)")
 	_ = cmd.MarkFlagRequired("space-id")
+	return cmd
+}
+
+func newWikiMemberAddCmd(state *appState) *cobra.Command {
+	var spaceID string
+	var memberType string
+	var memberID string
+	var memberRole string
+	var needNotification bool
+
+	cmd := &cobra.Command{
+		Use:   "add",
+		Short: "Add a Wiki space member (v2)",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			accessToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			if err != nil {
+				return err
+			}
+
+			needNotificationSet := cmd.Flags().Changed("need-notification")
+			member, err := state.SDK.CreateWikiSpaceMemberV2(context.Background(), accessToken, larksdk.CreateWikiSpaceMemberRequest{
+				SpaceID:             strings.TrimSpace(spaceID),
+				MemberType:          strings.TrimSpace(memberType),
+				MemberID:            strings.TrimSpace(memberID),
+				MemberRole:          strings.TrimSpace(memberRole),
+				NeedNotification:    needNotification,
+				NeedNotificationSet: needNotificationSet,
+			})
+			if err != nil {
+				return err
+			}
+
+			payload := map[string]any{"member": member}
+			text := member.MemberID
+			if member.MemberType != "" {
+				text = fmt.Sprintf("%s\t%s\t%s\t%s", member.MemberType, member.MemberID, member.MemberRole, member.Type)
+			}
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&spaceID, "space-id", "", "Wiki space ID")
+	cmd.Flags().StringVar(&memberType, "member-type", "", "member type (userid, email, openid, unionid, openchat, opendepartmentid)")
+	cmd.Flags().StringVar(&memberID, "member-id", "", "member id")
+	cmd.Flags().StringVar(&memberRole, "role", "member", "member role (member, admin)")
+	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after adding permissions")
+	_ = cmd.MarkFlagRequired("space-id")
+	_ = cmd.MarkFlagRequired("member-type")
+	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }
 

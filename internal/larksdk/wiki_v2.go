@@ -343,6 +343,58 @@ func (c *Client) ListWikiSpaceMembersV2(ctx context.Context, token string, req L
 	return out, nil
 }
 
+type CreateWikiSpaceMemberRequest struct {
+	SpaceID             string
+	MemberType          string
+	MemberID            string
+	MemberRole          string
+	NeedNotification    bool
+	NeedNotificationSet bool
+}
+
+func (c *Client) CreateWikiSpaceMemberV2(ctx context.Context, token string, req CreateWikiSpaceMemberRequest) (WikiSpaceMember, error) {
+	if !c.available() {
+		return WikiSpaceMember{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return WikiSpaceMember{}, errors.New("tenant access token is required")
+	}
+	if req.SpaceID == "" {
+		return WikiSpaceMember{}, errors.New("space id is required")
+	}
+	if req.MemberType == "" {
+		return WikiSpaceMember{}, errors.New("member type is required")
+	}
+	if req.MemberID == "" {
+		return WikiSpaceMember{}, errors.New("member id is required")
+	}
+	if req.MemberRole == "" {
+		return WikiSpaceMember{}, errors.New("member role is required")
+	}
+
+	member := larkwiki.NewMemberBuilder().MemberType(req.MemberType).MemberId(req.MemberID).MemberRole(req.MemberRole).Build()
+	builder := larkwiki.NewCreateSpaceMemberReqBuilder().SpaceId(req.SpaceID).Member(member)
+	if req.NeedNotificationSet {
+		builder = builder.NeedNotification(req.NeedNotification)
+	}
+
+	resp, err := c.sdk.Wiki.V2.SpaceMember.Create(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiSpaceMember{}, err
+	}
+	if resp == nil {
+		return WikiSpaceMember{}, errors.New("wiki member create failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiSpaceMember{}, fmt.Errorf("wiki member create failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Member == nil {
+		return WikiSpaceMember{}, nil
+	}
+	return convertWikiSpaceMember(resp.Data.Member), nil
+}
+
 type DeleteWikiSpaceMemberRequest struct {
 	SpaceID    string
 	MemberType string
