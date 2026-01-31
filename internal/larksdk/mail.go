@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkmail "github.com/larksuite/oapi-sdk-go/v3/service/mail/v1"
@@ -399,22 +400,38 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 		return MailMessage{}, errors.New("message id is required")
 	}
 
+	message, resp, err := c.fetchMailMessage(ctx, token, mailboxID, messageID)
+	if err == nil {
+		return message, nil
+	}
+	if resp != nil && isMailMessageParamError(resp) {
+		if normalized, ok := normalizeMailMessageID(messageID); ok && normalized != messageID {
+			message, _, retryErr := c.fetchMailMessage(ctx, token, mailboxID, normalized)
+			if retryErr == nil {
+				return message, nil
+			}
+		}
+	}
+	return MailMessage{}, err
+}
+
+func (c *Client) fetchMailMessage(ctx context.Context, token, mailboxID, messageID string) (MailMessage, *larkmail.GetUserMailboxMessageResp, error) {
 	req := larkmail.NewGetUserMailboxMessageReqBuilder().
 		UserMailboxId(mailboxID).
 		MessageId(messageID).
 		Build()
 	resp, err := c.sdk.Mail.V1.UserMailboxMessage.Get(ctx, req, larkcore.WithUserAccessToken(token))
 	if err != nil {
-		return MailMessage{}, err
+		return MailMessage{}, nil, err
 	}
 	if resp == nil {
-		return MailMessage{}, errors.New("get mail message failed: empty response")
+		return MailMessage{}, nil, errors.New("get mail message failed: empty response")
 	}
 	if !resp.Success() {
-		return MailMessage{}, fmt.Errorf("get mail message failed: %s", resp.Msg)
+		return MailMessage{}, resp, fmt.Errorf("get mail message failed: %s", resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Message == nil {
-		return MailMessage{}, nil
+		return MailMessage{}, resp, nil
 	}
 
 	msg := resp.Data.Message
@@ -495,7 +512,37 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 		out.Attachments = append(out.Attachments, row)
 	}
 
-	return out, nil
+	return out, resp, nil
+}
+
+func isMailMessageParamError(resp *larkmail.GetUserMailboxMessageResp) bool {
+	if resp == nil {
+		return false
+	}
+	if resp.Code == 1234008 {
+		return true
+	}
+	msg := strings.ToLower(strings.TrimSpace(resp.Msg))
+	return strings.Contains(msg, "invalid params") || strings.Contains(msg, "wrong parameters")
+}
+
+func normalizeMailMessageID(messageID string) (string, bool) {
+	value := strings.TrimSpace(messageID)
+	if value == "" {
+		return messageID, false
+	}
+	normalized := strings.ReplaceAll(value, "-", "+")
+	normalized = strings.ReplaceAll(normalized, "_", "/")
+	if len(normalized)%4 != 0 {
+		normalized = strings.TrimRight(normalized, "=")
+		if mod := len(normalized) % 4; mod != 0 {
+			normalized += strings.Repeat("=", 4-mod)
+		}
+	}
+	if normalized == value {
+		return messageID, false
+	}
+	return normalized, true
 }
 
 func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req SendMailRequest) (string, error) {
