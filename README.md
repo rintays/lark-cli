@@ -345,15 +345,7 @@ Example:
 
 ---
 
-## Integration testing (planned)
-
-Goal: full end-to-end integration tests that validate:
-- flags behave as expected
-- `--json` output parses
-- real API requests (including writes) succeed with your test app
-
-Planned switch:
-- `LARK_INTEGRATION=1 go test ./...`
+...`/...`
 
 ---
 
