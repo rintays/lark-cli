@@ -16,7 +16,7 @@ const maxUsersPageSize = 50
 func newUsersCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "users",
-		Short: "Search users",
+		Short: "Manage users",
 	}
 	cmd.AddCommand(newUserGetCmd(state))
 	cmd.AddCommand(newUsersSearchCmd(state))
