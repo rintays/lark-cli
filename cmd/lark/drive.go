@@ -101,6 +101,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 func newDriveSearchCmd(state *appState) *cobra.Command {
 	var query string
 	var fileTypes []string
+	var folderID string
 	var limit int
 	var pages int
 
@@ -122,10 +123,18 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			files, err := docsSearchDriveFiles(ctx, state, token, "drive", query, fileTypes, limit, pages)
+
+			folderID = strings.TrimSpace(folderID)
+			var files []larksdk.DriveFile
+			if folderID != "" {
+				files, err = searchDriveFilesInFolder(ctx, state, token, query, fileTypes, folderID, limit, pages)
+			} else {
+				files, err = docsSearchDriveFiles(ctx, state, token, "drive", query, fileTypes, limit, pages)
+			}
 			if err != nil {
 				return err
 			}
+
 			payload := map[string]any{"files": files}
 			lines := make([]string, 0, len(files))
 			for _, file := range files {
@@ -141,6 +150,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&query, "query", "", "search text")
 	cmd.Flags().StringArrayVar(&fileTypes, "type", nil, "filter by doc type (docx|doc|sheet|slides|bitable|mindnote|file); repeatable")
+	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope the search")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	_ = cmd.MarkFlagRequired("query")
