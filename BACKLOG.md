@@ -530,3 +530,4 @@ Deliverables:
 - 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
 - 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.
 - 2026-02-01: Verified Wiki `SpaceMember.Create` role-update behavior (not an upsert; repeated adds return already-exists); updated integration test to assert/log behavior and restore initial state without privilege downgrades.
+- 2026-02-01: Auth registry: made `SuggestedUserOAuthScopesFromServices` variant selection fall back consistently (readonly/full/required) + added unit tests.
