@@ -128,7 +128,7 @@ Work items (must follow the design, not ad-hoc patches):
 - [ ] **Incremental authorization** (gog `include_granted_scopes=true` analogue)
   - [ ] Default to incremental grant when adding services/scopes (avoid re-consenting everything)
 - [ ] **Explicit re-auth triggers** (gog `--force-consent` analogue)
-  - [ ] Add `lark auth user login --force-consent` (or equivalent) to force prompt/consent
+  - [x] Add `lark auth user login --force-consent` (or equivalent) to force prompt/consent
   - [ ] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
   - [ ] Make remediation messages print the exact command to run next
 - [ ] **Token storage backend policy + implementation**
@@ -335,6 +335,7 @@ Deliverables:
   - [x] `users` top-level Short changed to "Manage users"
   - [x] `mail mailbox get` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
+  - [x] README now points to the correct backlog path (`<workspace>/lark/BACKLOG.md`)
 - [x] Fix: `docs` command no longer registers `list` twice.
 
 Additional consistency work:
