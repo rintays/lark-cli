@@ -121,7 +121,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Define fixed service set (im/drive/docx/sheets/calendar/mail/wiki/base/…)
   - [x] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
   - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
-  - [x] Declare RequiredUserScopes for wiki + mail (mail scope is best-effort; TODO verify against official Feishu/Lark docs)
+  - [x] Declare RequiredUserScopes for wiki + mail (mail scope is best-effort; TODO verify against official Feishu/Lark docs; see `docs/mail-oauth-scopes.md`)
   - [x] Map commands → services (so runtime can explain “why you need this token/scope”)
     - [x] Initial command→service mapping scaffold in `internal/authregistry` (unit-tested; wired into runtime remediation hints: tailored `auth user login --scopes ...` suggestions)
     - [x] Longest-prefix matching for command paths (e.g. "drive list" maps via "drive")
