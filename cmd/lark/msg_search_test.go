@@ -16,37 +16,68 @@ import (
 
 func TestMsgSearchCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Fatalf("unexpected method: %s", r.Method)
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/search/v2/message":
+			if r.URL.Query().Get("user_id_type") != "open_id" {
+				t.Fatalf("unexpected user_id_type: %s", r.URL.Query().Get("user_id_type"))
+			}
+			if r.URL.Query().Get("page_size") != "2" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
+			if r.Header.Get("Authorization") != "Bearer u-token" {
+				t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+			}
+			var payload map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+			if payload["query"] != "hello" {
+				t.Fatalf("unexpected query: %v", payload["query"])
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items":    []string{"m1", "m2"},
+					"has_more": false,
+				},
+			})
+			return
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/open-apis/im/v1/messages/"):
+			if r.URL.Query().Get("user_id_type") != "open_id" {
+				t.Fatalf("unexpected user_id_type: %s", r.URL.Query().Get("user_id_type"))
+			}
+			if r.Header.Get("Authorization") != "Bearer u-token" {
+				t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+			}
+			messageID := strings.TrimPrefix(r.URL.Path, "/open-apis/im/v1/messages/")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items": []map[string]any{
+						{
+							"message_id":  messageID,
+							"msg_type":    "text",
+							"create_time": "123",
+							"sender": map[string]any{
+								"id":          "ou_1",
+								"id_type":     "open_id",
+								"sender_type": "user",
+							},
+							"body": map[string]any{
+								"content": "{\"text\":\"hello " + messageID + "\"}",
+							},
+						},
+					},
+				},
+			})
+			return
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-		if r.URL.Path != "/open-apis/search/v2/message" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("user_id_type") != "open_id" {
-			t.Fatalf("unexpected user_id_type: %s", r.URL.Query().Get("user_id_type"))
-		}
-		if r.URL.Query().Get("page_size") != "2" {
-			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
-		}
-		if r.Header.Get("Authorization") != "Bearer u-token" {
-			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
-		}
-		var payload map[string]any
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Fatalf("decode payload: %v", err)
-		}
-		if payload["query"] != "hello" {
-			t.Fatalf("unexpected query: %v", payload["query"])
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"items":    []string{"m1", "m2"},
-				"has_more": false,
-			},
-		})
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -72,7 +103,14 @@ func TestMsgSearchCommandWithSDK(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("msg search error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "m1") {
-		t.Fatalf("unexpected output: %q", buf.String())
+	outputText := buf.String()
+	if !strings.Contains(outputText, "id: m1") {
+		t.Fatalf("unexpected output: %q", outputText)
+	}
+	if !strings.Contains(outputText, "from: user:open_id:ou_1") {
+		t.Fatalf("unexpected output: %q", outputText)
+	}
+	if !strings.Contains(outputText, "hello m1") {
+		t.Fatalf("unexpected output: %q", outputText)
 	}
 }
