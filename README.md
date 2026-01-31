@@ -352,6 +352,13 @@ Read-only shortcut:
 lark auth user login --readonly --force-consent
 ```
 
+Explain auth requirements (services → token types/scopes) for a command:
+
+```bash
+lark auth explain drive search
+lark auth explain mail send
+```
+
 ---
 
 ## Mail: user OAuth token (important)

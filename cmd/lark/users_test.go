@@ -160,7 +160,7 @@ func TestUsersSearchByName(t *testing.T) {
 					"items": []map[string]any{
 						{"user_id": "u1", "name": "Ada Lovelace"},
 					},
-					"has_more":  true,
+					"has_more":   true,
 					"page_token": "next",
 				},
 			})

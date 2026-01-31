@@ -12,10 +12,46 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"lark/internal/config"
 	"lark/internal/larksdk"
 	"lark/internal/testutil"
 )
+
+func TestCanonicalCommandPath(t *testing.T) {
+	if got := canonicalCommandPath(nil); got != "" {
+		t.Fatalf("canonicalCommandPath(nil)=%q, want empty", got)
+	}
+
+	{
+		root := &cobra.Command{Use: "lark"}
+		if got := canonicalCommandPath(root); got != "" {
+			t.Fatalf("canonicalCommandPath(root)=%q, want empty", got)
+		}
+
+		mail := &cobra.Command{Use: "mail"}
+		send := &cobra.Command{Use: "send"}
+		root.AddCommand(mail)
+		mail.AddCommand(send)
+
+		if got := canonicalCommandPath(send); got != "mail send" {
+			t.Fatalf("canonicalCommandPath(send)=%q, want %q", got, "mail send")
+		}
+	}
+
+	{
+		root := &cobra.Command{Use: "foo"}
+		mail := &cobra.Command{Use: "mail"}
+		send := &cobra.Command{Use: "send"}
+		root.AddCommand(mail)
+		mail.AddCommand(send)
+
+		if got := canonicalCommandPath(send); got != "mail send" {
+			t.Fatalf("canonicalCommandPath(send with non-lark root)=%q, want %q", got, "mail send")
+		}
+	}
+}
 
 func TestEnsureTenantTokenUsesCache(t *testing.T) {
 	called := false

@@ -2,7 +2,10 @@ package main
 
 import (
 	"reflect"
+	"strings"
 	"testing"
+
+	"lark/internal/authregistry"
 )
 
 func TestUserOAuthScopesForCommand(t *testing.T) {
@@ -58,6 +61,59 @@ func TestUserOAuthScopesForCommand(t *testing.T) {
 }
 
 func TestUserOAuthReloginCommandForCommand(t *testing.T) {
+	{
+		cmd, note, ok, err := userOAuthReloginCommandForCommand("mail send")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !ok {
+			t.Fatalf("expected ok")
+		}
+		if cmd != "lark auth user login --scopes \"offline_access mail:readonly\" --force-consent" {
+			t.Fatalf("cmd=%q", cmd)
+		}
+		if note == "" {
+			t.Fatalf("expected note")
+		}
+	}
+
+	{
+		cmd, note, ok, err := userOAuthReloginCommandForCommand("chats list")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if ok {
+			t.Fatalf("expected ok=false")
+		}
+		if cmd != "" || note != "" {
+			t.Fatalf("expected empty cmd/note for tenant-only command; got cmd=%q note=%q", cmd, note)
+		}
+	}
+
+	{
+		cmd, note, ok, err := userOAuthReloginCommandForCommand("unknown cmd")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if ok {
+			t.Fatalf("expected ok=false")
+		}
+		if cmd != "" || note != "" {
+			t.Fatalf("expected empty cmd/note for unmapped command; got cmd=%q note=%q", cmd, note)
+		}
+	}
+}
+
+func TestUserOAuthReloginCommandForCommand_MissingScopeDeclarations(t *testing.T) {
+	orig := authregistry.Registry["mail"]
+	origScopes := orig.RequiredUserScopes
+	orig.RequiredUserScopes = nil
+	authregistry.Registry["mail"] = orig
+	t.Cleanup(func() {
+		orig.RequiredUserScopes = origScopes
+		authregistry.Registry["mail"] = orig
+	})
+
 	cmd, note, ok, err := userOAuthReloginCommandForCommand("mail send")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -65,10 +121,10 @@ func TestUserOAuthReloginCommandForCommand(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected ok")
 	}
-	if cmd != "lark auth user login --scopes \"offline_access mail:readonly\" --force-consent" {
+	if cmd != "lark auth user login --scopes \"offline_access\" --force-consent" {
 		t.Fatalf("cmd=%q", cmd)
 	}
-	if note == "" {
-		t.Fatalf("expected note")
+	if !strings.Contains(note, "missing scope declarations") {
+		t.Fatalf("note=%q", note)
 	}
 }

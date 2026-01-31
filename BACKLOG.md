@@ -123,7 +123,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
   - [x] Declare RequiredUserScopes for wiki + mail (mail scope is best-effort; TODO verify against official Feishu/Lark docs)
   - [x] Map commands → services (so runtime can explain “why you need this token/scope”)
-    - [x] Initial command→service mapping scaffold in `internal/authregistry` (unit-tested; wired into runtime remediation hints)
+    - [x] Initial command→service mapping scaffold in `internal/authregistry` (unit-tested; wired into runtime remediation hints: tailored `auth user login --scopes ...` suggestions)
     - [x] Longest-prefix matching for command paths (e.g. "drive list" maps via "drive")
     - [x] Metadata aggregation helper: command → (services, token types, offline requirement, required user scopes)
     - [x] Detect TokenUser services missing declared RequiredUserScopes (so we don’t pretend we know scopes yet)
