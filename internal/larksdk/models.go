@@ -311,3 +311,24 @@ type MailFolder struct {
 	ParentFolderID string         `json:"parent_folder_id,omitempty"`
 	FolderType     MailFolderType `json:"folder_type,omitempty"`
 }
+
+func (f *MailFolder) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		ID             string         `json:"id"`
+		FolderID       string         `json:"folder_id"`
+		Name           string         `json:"name"`
+		ParentFolderID string         `json:"parent_folder_id"`
+		FolderType     MailFolderType `json:"folder_type"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	f.FolderID = aux.FolderID
+	if f.FolderID == "" {
+		f.FolderID = aux.ID
+	}
+	f.Name = aux.Name
+	f.ParentFolderID = aux.ParentFolderID
+	f.FolderType = aux.FolderType
+	return nil
+}

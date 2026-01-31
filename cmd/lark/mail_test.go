@@ -34,7 +34,7 @@ func TestMailFoldersCommandWithSDK(t *testing.T) {
 			"data": map[string]any{
 				"items": []map[string]any{
 					{
-						"folder_id":   "fld_1",
+						"id":          "fld_1",
 						"name":        "Inbox",
 						"folder_type": "INBOX",
 					},
@@ -93,7 +93,7 @@ func TestMailFoldersCommandUsesDefaultMailboxID(t *testing.T) {
 			"data": map[string]any{
 				"items": []map[string]any{
 					{
-						"folder_id":   "fld_1",
+						"id":          "fld_1",
 						"name":        "Inbox",
 						"folder_type": "INBOX",
 					},
@@ -152,7 +152,7 @@ func TestMailFoldersCommandDefaultsToMeMailboxID(t *testing.T) {
 			"data": map[string]any{
 				"items": []map[string]any{
 					{
-						"folder_id":   "fld_1",
+						"id":          "fld_1",
 						"name":        "Inbox",
 						"folder_type": "INBOX",
 					},
@@ -544,7 +544,7 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 				"data": map[string]any{
 					"items": []map[string]any{
 						{
-							"folder_id":   "fld_inbox",
+							"id":          "fld_inbox",
 							"name":        "Inbox",
 							"folder_type": "INBOX",
 						},
@@ -649,7 +649,7 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 				"data": map[string]any{
 					"items": []map[string]any{
 						{
-							"folder_id":   "fld_inbox",
+							"id":          "fld_inbox",
 							"name":        "Inbox",
 							"folder_type": "INBOX",
 						},
