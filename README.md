@@ -505,7 +505,9 @@ Example:
 ./lark bases app info --help
 ./lark bases app update --help
 ./lark bases table list --help  # alias: base
+./lark bases table create --help
 ./lark bases field list --help
+./lark bases field create --help
 ./lark bases view list --help
 ./lark bases record create --help
 ./lark bases record info --help

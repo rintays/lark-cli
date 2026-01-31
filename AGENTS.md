@@ -81,3 +81,4 @@
 - 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
 - 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.
 - 2026-01-31: Added `lark sheets delete` command backed by Drive delete, with README/design coverage and tests.
+- 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.

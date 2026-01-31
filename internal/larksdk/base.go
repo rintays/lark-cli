@@ -152,6 +152,84 @@ func (c *Client) ListBaseFields(ctx context.Context, token, appToken, tableID st
 	return ListBaseFieldsResult{Items: resp.Data.Items, PageToken: resp.Data.PageToken, HasMore: resp.Data.HasMore}, nil
 }
 
+type createBaseFieldRequestBody struct {
+	FieldName   string         `json:"field_name"`
+	Type        int            `json:"type"`
+	Property    map[string]any `json:"property,omitempty"`
+	Description map[string]any `json:"description,omitempty"`
+}
+
+type createBaseFieldResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *createBaseFieldResponseData `json:"data"`
+}
+
+type createBaseFieldResponseData struct {
+	Field BaseField `json:"field"`
+}
+
+func (r *createBaseFieldResponse) Success() bool { return r.Code == 0 }
+
+func (c *Client) CreateBaseField(ctx context.Context, token, appToken, tableID, fieldName string, fieldType int, property, description map[string]any) (BaseField, error) {
+	if !c.available() || c.coreConfig == nil {
+		return BaseField{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return BaseField{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return BaseField{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return BaseField{}, errors.New("table id is required")
+	}
+	if fieldName == "" {
+		return BaseField{}, errors.New("field name is required")
+	}
+	if fieldType == 0 {
+		return BaseField{}, errors.New("field type is required")
+	}
+
+	body := createBaseFieldRequestBody{
+		FieldName:   fieldName,
+		Type:        fieldType,
+		Property:    property,
+		Description: description,
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/fields",
+		HttpMethod:                http.MethodPost,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
+		Body:                      body,
+	}
+	apiReq.PathParams.Set("app_token", appToken)
+	apiReq.PathParams.Set("table_id", tableID)
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseField{}, err
+	}
+	if apiResp == nil {
+		return BaseField{}, errors.New("create base field failed: empty response")
+	}
+	resp := &createBaseFieldResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return BaseField{}, err
+	}
+	if !resp.Success() {
+		return BaseField{}, formatCodeError("create base field failed", resp.CodeError, resp.ApiResp)
+	}
+	if resp.Data == nil {
+		return BaseField{}, nil
+	}
+	return resp.Data.Field, nil
+}
+
 type listBaseViewsResponse struct {
 	*larkcore.ApiResp `json:"-"`
 	larkcore.CodeError
@@ -212,10 +290,6 @@ func (c *Client) ListBaseViews(ctx context.Context, token, appToken, tableID str
 }
 
 type createBaseRecordRequestBody struct {
-	Record createBaseRecordRequestRecord `json:"record"`
-}
-
-type createBaseRecordRequestRecord struct {
 	Fields map[string]any `json:"fields"`
 }
 
@@ -245,11 +319,45 @@ func (c *Client) CreateBaseRecord(ctx context.Context, token, appToken, tableID 
 	if tableID == "" {
 		return BaseRecord{}, errors.New("table id is required")
 	}
+	if fields == nil {
+		return BaseRecord{}, errors.New("fields are required")
+	}
+	if c.bitableRecordCreateSDKAvailable() {
+		return c.createBaseRecordSDK(ctx, tenantToken, appToken, tableID, fields)
+	}
+	return c.createBaseRecordCore(ctx, tenantToken, appToken, tableID, fields)
+}
 
+func (c *Client) bitableRecordCreateSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.AppTableRecord != nil
+}
+
+func (c *Client) createBaseRecordSDK(ctx context.Context, tenantToken, appToken, tableID string, fields map[string]any) (BaseRecord, error) {
+	record := larkbitable.NewAppTableRecordBuilder().Fields(fields).Build()
+	req := larkbitable.NewCreateAppTableRecordReqBuilder().
+		AppToken(appToken).
+		TableId(tableID).
+		AppTableRecord(record).
+		Build()
+	resp, err := c.sdk.Bitable.V1.AppTableRecord.Create(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseRecord{}, err
+	}
+	if resp == nil {
+		return BaseRecord{}, errors.New("create base record failed: empty response")
+	}
+	if !resp.Success() {
+		return BaseRecord{}, formatCodeError("create base record failed", resp.CodeError, resp.ApiResp)
+	}
+	if resp.Data == nil || resp.Data.Record == nil {
+		return BaseRecord{}, nil
+	}
+	return mapBaseRecordFromSDK(resp.Data.Record), nil
+}
+
+func (c *Client) createBaseRecordCore(ctx context.Context, tenantToken, appToken, tableID string, fields map[string]any) (BaseRecord, error) {
 	body := createBaseRecordRequestBody{
-		Record: createBaseRecordRequestRecord{
-			Fields: fields,
-		},
+		Fields: fields,
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -275,7 +383,7 @@ func (c *Client) CreateBaseRecord(ctx context.Context, token, appToken, tableID 
 		return BaseRecord{}, err
 	}
 	if !resp.Success() {
-		return BaseRecord{}, fmt.Errorf("create base record failed: %s", resp.Msg)
+		return BaseRecord{}, formatCodeError("create base record failed", resp.CodeError, resp.ApiResp)
 	}
 	if resp.Data == nil {
 		return BaseRecord{}, nil
@@ -419,7 +527,7 @@ func (c *Client) updateBaseRecordSDK(ctx context.Context, tenantToken, appToken,
 		return BaseRecord{}, errors.New("update base record failed: empty response")
 	}
 	if !resp.Success() {
-		return BaseRecord{}, fmt.Errorf("update base record failed: %s", resp.Msg)
+		return BaseRecord{}, formatCodeError("update base record failed", resp.CodeError, resp.ApiResp)
 	}
 	if resp.Data == nil || resp.Data.Record == nil {
 		return BaseRecord{}, nil
@@ -459,7 +567,7 @@ func (c *Client) updateBaseRecordCore(ctx context.Context, tenantToken, appToken
 		return BaseRecord{}, err
 	}
 	if !resp.Success() {
-		return BaseRecord{}, fmt.Errorf("update base record failed: %s", resp.Msg)
+		return BaseRecord{}, formatCodeError("update base record failed", resp.CodeError, resp.ApiResp)
 	}
 	if resp.Data == nil {
 		return BaseRecord{}, nil

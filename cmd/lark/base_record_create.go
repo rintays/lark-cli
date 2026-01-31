@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,6 +12,7 @@ func newBaseRecordCreateCmd(state *appState) *cobra.Command {
 	var appToken string
 	var tableID string
 	var fieldsJSON string
+	var fields []string
 
 	cmd := &cobra.Command{
 		Use:   "create <table-id>",
@@ -41,11 +40,11 @@ func newBaseRecordCreateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fields, err := parseBaseRecordFields(fieldsJSON)
+			fieldsMap, err := parseBaseRecordFields(fieldsJSON, fields)
 			if err != nil {
 				return err
 			}
-			record, err := state.SDK.CreateBaseRecord(context.Background(), token, appToken, tableID, fields)
+			record, err := state.SDK.CreateBaseRecord(context.Background(), token, appToken, tableID, fieldsMap)
 			if err != nil {
 				return err
 			}
@@ -60,22 +59,8 @@ func newBaseRecordCreateCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
-	cmd.Flags().StringVar(&fieldsJSON, "fields-json", "", "Record fields JSON (raw)")
+	cmd.Flags().StringVar(&fieldsJSON, "fields-json", "", "Record fields JSON (object)")
+	cmd.Flags().StringArrayVar(&fields, "field", nil, "Record field assignment (repeatable, e.g. --field Title=Task or --field name=Title,value=Task or --field Temp:=12.3)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("fields-json")
 	return cmd
-}
-
-func parseBaseRecordFields(raw string) (map[string]any, error) {
-	if strings.TrimSpace(raw) == "" {
-		return nil, errors.New("fields-json is required")
-	}
-	var fields map[string]any
-	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
-		return nil, fmt.Errorf("fields-json must be a JSON object: %w", err)
-	}
-	if fields == nil {
-		return nil, errors.New("fields-json must be a JSON object")
-	}
-	return fields, nil
 }
