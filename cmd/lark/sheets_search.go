@@ -30,6 +30,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			debugf(state, "sheets search: query=%q limit=%d\n", query, limit)
 
 			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
@@ -39,6 +40,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
+				debugf(state, "sheets search request: page_size=%d page_token=%q\n", pageSize, pageToken)
 
 				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
 					Query:     query,
@@ -48,6 +50,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 				if err != nil {
 					return withUserScopeHintForCommand(state, err)
 				}
+				debugf(state, "sheets search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
 				for _, file := range result.Files {
 					if file.FileType == "sheet" {
 						files = append(files, file)

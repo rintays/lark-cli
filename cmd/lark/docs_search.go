@@ -30,6 +30,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			debugf(state, "docs search: query=%q limit=%d\n", query, limit)
 
 			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
@@ -39,6 +40,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
+				debugf(state, "docs search request: page_size=%d page_token=%q\n", pageSize, pageToken)
 
 				// Thin wrapper over drive search: fetch then filter to docx.
 				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
@@ -49,6 +51,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 				if err != nil {
 					return withUserScopeHintForCommand(state, err)
 				}
+				debugf(state, "docs search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
 				for _, file := range result.Files {
 					if file.FileType == "docx" {
 						files = append(files, file)

@@ -138,7 +138,7 @@ func (c *Client) searchDriveFiles(ctx context.Context, req SearchDriveFilesReque
 		return SearchDriveFilesResult{}, err
 	}
 	if !resp.Success() {
-		return SearchDriveFilesResult{}, fmt.Errorf("search drive files failed: %s", resp.Msg)
+		return SearchDriveFilesResult{}, fmt.Errorf("search drive files failed (code=%d): %s", resp.Code, resp.Msg)
 	}
 	result := SearchDriveFilesResult{}
 	if resp.Data != nil {

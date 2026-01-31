@@ -119,6 +119,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			debugf(state, "drive search: query=%q folder=%q types=%v limit=%d\n", query, folderID, fileTypes, limit)
 			files := make([]larksdk.DriveFile, 0, limit)
 			pageToken := ""
 			remaining := limit
@@ -127,6 +128,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
+				debugf(state, "drive search request: page_size=%d page_token=%q\n", pageSize, pageToken)
 				result, err := state.SDK.SearchDriveFilesWithUserToken(ctx, token, larksdk.SearchDriveFilesRequest{
 					Query:       query,
 					FolderToken: folderID,
@@ -137,6 +139,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 				if err != nil {
 					return withUserScopeHintForCommand(state, err)
 				}
+				debugf(state, "drive search response: files=%d has_more=%t next_page_token=%q\n", len(result.Files), result.HasMore, result.PageToken)
 				files = append(files, result.Files...)
 				if len(files) >= limit || !result.HasMore {
 					break
