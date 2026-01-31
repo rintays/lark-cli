@@ -26,7 +26,7 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
   - list/search/info/urls/download/upload
   - share permission updates
 - **Docs (docx)**
-  - create/info/export/cat
+  - create/info/export/get
 - **Sheets**
   - read/update/append/clear/info/delete/list/search
 - **Calendar**
@@ -327,13 +327,13 @@ Export:
 lark docs export <DOCUMENT_ID> --format pdf --out ./document.pdf
 ```
 
-Cat:
+Get:
 
 ```bash
-lark docs cat <DOCUMENT_ID> --format md
+lark docs get <DOCUMENT_ID>
 
-# or plain text
-lark docs cat <DOCUMENT_ID> --format txt
+# or blocks
+lark docs get <DOCUMENT_ID> --format blocks
 ```
 
 Blocks:
@@ -344,11 +344,11 @@ lark docs blocks get <DOCUMENT_ID> <BLOCK_ID>
 lark docs blocks update <DOCUMENT_ID> <BLOCK_ID> --body-json '<UPDATE_REQUEST_JSON>'
 ```
 
-Markdown:
+Convert/Overwrite:
 
 ```bash
-lark docs markdown convert --content "# Title"
-lark docs markdown overwrite <DOCUMENT_ID> --content-file ./doc.md
+lark docs convert --content "# Title"
+lark docs overwrite <DOCUMENT_ID> --content-file ./doc.md
 ```
 
 ### Sheets

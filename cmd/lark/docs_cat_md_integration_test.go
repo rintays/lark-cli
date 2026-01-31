@@ -13,7 +13,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestDocsCatMarkdownIntegration(t *testing.T) {
+func TestDocsGetMarkdownIntegration(t *testing.T) {
 	testutil.RequireIntegration(t)
 
 	fx := getIntegrationFixtures(t)
@@ -22,7 +22,7 @@ func TestDocsCatMarkdownIntegration(t *testing.T) {
 	documentID := os.Getenv("LARK_TEST_DOC_ID")
 	createdTemp := false
 
-	title := integrationFixturePrefix + "docs-cat-md-" + time.Now().Format("20060102-150405")
+	title := integrationFixturePrefix + "docs-get-md-" + time.Now().Format("20060102-150405")
 	needle := integrationFixturePrefix + "hello-md-" + time.Now().Format("150405.000")
 
 	if documentID == "" {
@@ -38,7 +38,7 @@ func TestDocsCatMarkdownIntegration(t *testing.T) {
 		}
 		documentID = doc.DocumentID
 		createdTemp = true
-		t.Logf("created temp doc for docs cat test: document_id=%s title=%q", documentID, title)
+		t.Logf("created temp doc for docs get test: document_id=%s title=%q", documentID, title)
 	} else {
 		t.Logf("using existing doc from LARK_TEST_DOC_ID=%s", documentID)
 	}
@@ -61,10 +61,10 @@ func TestDocsCatMarkdownIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "docs", "cat", documentID, "--format", "md"})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "docs", "get", documentID})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("docs cat failed: %v; out=%q", err, buf.String())
+		t.Fatalf("docs get failed: %v; out=%q", err, buf.String())
 	}
 
 	var payload map[string]any

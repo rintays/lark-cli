@@ -75,7 +75,7 @@ func TestDocsBlocksGetCommand(t *testing.T) {
 	}
 }
 
-func TestDocsMarkdownConvertCommand(t *testing.T) {
+func TestDocsConvertCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -133,9 +133,9 @@ func TestDocsMarkdownConvertCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"markdown", "convert", "--content", "# Title"})
+	cmd.SetArgs([]string{"convert", "--content", "# Title"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("docs markdown convert error: %v", err)
+		t.Fatalf("docs convert error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "first_level_blocks: 1") {
@@ -146,7 +146,7 @@ func TestDocsMarkdownConvertCommand(t *testing.T) {
 	}
 }
 
-func TestDocsMarkdownOverwriteCommand(t *testing.T) {
+func TestDocsOverwriteCommand(t *testing.T) {
 	listCalls := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -247,9 +247,9 @@ func TestDocsMarkdownOverwriteCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"markdown", "overwrite", "doc1", "--content", "hello"})
+	cmd.SetArgs([]string{"overwrite", "doc1", "--content", "hello"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("docs markdown overwrite error: %v", err)
+		t.Fatalf("docs overwrite error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "doc1") {

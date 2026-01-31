@@ -425,7 +425,7 @@ func TestDocsInfoCommandRequiresSDK(t *testing.T) {
 	}
 }
 
-func TestDocsCatCommand(t *testing.T) {
+func TestDocsGetCommand(t *testing.T) {
 	exported := []byte("Hello doc\nLine two\n")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer token" {
@@ -466,13 +466,78 @@ func TestDocsCatCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"cat", "doc1", "--format", "txt"})
+	cmd.SetArgs([]string{"get", "doc1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("docs cat error: %v", err)
+		t.Fatalf("docs get error: %v", err)
 	}
 
 	if got := buf.String(); got != string(exported) {
 		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestDocsGetBlocksCommand(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.Method != http.MethodGet || r.URL.Path != "/open-apis/docx/v1/documents/doc1/blocks" {
+			t.Fatalf("unexpected path: %s %s", r.Method, r.URL.Path)
+		}
+		if got := r.URL.Query().Get("page_size"); got == "" {
+			t.Fatalf("expected page_size query param")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"items": []map[string]any{
+					{
+						"block_id":   "block1",
+						"block_type": 2,
+						"text": map[string]any{
+							"elements": []map[string]any{
+								{"text_run": map[string]any{"content": "hello"}},
+							},
+						},
+					},
+				},
+				"has_more":   false,
+				"page_token": "",
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"get", "doc1", "--format", "blocks"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs get blocks error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "block1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "hello") {
+		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
 

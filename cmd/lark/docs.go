@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
@@ -26,16 +27,17 @@ func newDocsCmd(state *appState) *cobra.Command {
 
 - document_id is the docx file token.
 - Documents can live in a Drive folder (folder-id).
-- Use info/export/cat to inspect or download content.`,
+- Use info/export/get to inspect or download content.`,
 	}
 	cmd.AddCommand(newDocsListCmd(state))
 	cmd.AddCommand(newDocsCreateCmd(state))
 	cmd.AddCommand(newDocsInfoCmd(state))
 	cmd.AddCommand(newDocsExportCmd(state))
-	cmd.AddCommand(newDocsCatCmd(state))
+	cmd.AddCommand(newDocsGetCmd(state))
 	cmd.AddCommand(newDocsSearchCmd(state))
 	cmd.AddCommand(newDocsBlocksCmd(state))
-	cmd.AddCommand(newDocsMarkdownCmd(state))
+	cmd.AddCommand(newDocsConvertCmd(state))
+	cmd.AddCommand(newDocsOverwriteCmd(state))
 	return cmd
 }
 
@@ -225,13 +227,13 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newDocsCatCmd(state *appState) *cobra.Command {
+func newDocsGetCmd(state *appState) *cobra.Command {
 	var documentID string
 	var format string
 
 	cmd := &cobra.Command{
-		Use:   "cat <doc-id> [--format txt|md]",
-		Short: "Print Docs (docx) document content",
+		Use:   "get <doc-id> [--format md|txt|blocks]",
+		Short: "Fetch Docs (docx) document content",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -248,15 +250,6 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 			return cmd.Flags().Set("doc-id", args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			format = strings.ToLower(strings.TrimSpace(format))
-			if format == "" {
-				format = "txt"
-			}
-			switch format {
-			case "txt", "md":
-			default:
-				return fmt.Errorf("format must be txt or md")
-			}
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -264,25 +257,69 @@ func newDocsCatCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			content, err := state.SDK.GetDocxRawContent(context.Background(), token, documentID)
-			if err != nil {
-				return err
+			format = strings.ToLower(strings.TrimSpace(format))
+			if format == "" {
+				format = "md"
 			}
-			if state.JSON {
+			switch format {
+			case "md", "markdown", "txt", "text":
+				if format == "markdown" {
+					format = "md"
+				}
+				if format == "text" {
+					format = "txt"
+				}
+				content, err := state.SDK.GetDocxRawContent(context.Background(), token, documentID)
+				if err != nil {
+					return err
+				}
+				if state.JSON {
+					payload := map[string]any{
+						"document_id": documentID,
+						"format":      format,
+						"content":     content,
+					}
+					return state.Printer.Print(payload, "")
+				}
+				_, err = io.WriteString(state.Printer.Writer, content)
+				return err
+			case "blocks":
+				blocks := make([]*larkdocx.Block, 0)
+				pageToken := ""
+				for {
+					items, nextToken, hasMore, err := state.SDK.ListDocxBlocks(
+						context.Background(),
+						token,
+						documentID,
+						docxBlocksMaxPageSize,
+						pageToken,
+						-1,
+						"",
+					)
+					if err != nil {
+						return err
+					}
+					blocks = append(blocks, items...)
+					if !hasMore || nextToken == "" {
+						break
+					}
+					pageToken = nextToken
+				}
 				payload := map[string]any{
 					"document_id": documentID,
-					"format":      format,
-					"content":     content,
+					"format":      "blocks",
+					"blocks":      blocks,
 				}
-				return state.Printer.Print(payload, "")
+				text := docxBlocksTable(blocks, "no blocks found")
+				return state.Printer.Print(payload, text)
+			default:
+				return fmt.Errorf("format must be md, txt, or blocks")
 			}
-			_, err = io.WriteString(state.Printer.Writer, content)
-			return err
 		},
 	}
 
 	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&format, "format", "txt", "output format (txt or md)")
+	cmd.Flags().StringVar(&format, "format", "md", "output format (md, txt, or blocks)")
 	return cmd
 }
 

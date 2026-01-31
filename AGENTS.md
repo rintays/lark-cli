@@ -81,3 +81,4 @@
 - 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
 - 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.
 - 2026-01-31: Added docx block operations (get/list/update/batch/children/descendant) and markdown convert/overwrite commands with docs/tests updates.
+- 2026-01-31: Moved docx convert/overwrite to `lark docs convert/overwrite`, replaced docs cat with docs get (default md + blocks format), and updated docs/tests.

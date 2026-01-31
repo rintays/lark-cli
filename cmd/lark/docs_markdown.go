@@ -14,18 +14,7 @@ import (
 
 const docxBlocksDeletePageSize = 200
 
-func newDocsMarkdownCmd(state *appState) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "markdown",
-		Short: "Convert or overwrite Docx with Markdown/HTML",
-	}
-
-	cmd.AddCommand(newDocsMarkdownConvertCmd(state))
-	cmd.AddCommand(newDocsMarkdownOverwriteCmd(state))
-	return cmd
-}
-
-func newDocsMarkdownConvertCmd(state *appState) *cobra.Command {
+func newDocsConvertCmd(state *appState) *cobra.Command {
 	var contentType string
 	var content string
 	var contentFile string
@@ -72,7 +61,7 @@ func newDocsMarkdownConvertCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newDocsMarkdownOverwriteCmd(state *appState) *cobra.Command {
+func newDocsOverwriteCmd(state *appState) *cobra.Command {
 	var documentID string
 	var contentType string
 	var content string
