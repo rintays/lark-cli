@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
-	im "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
 // NOTE: The helpers in this file are primarily used by integration tests.
@@ -186,36 +185,17 @@ func (c *Client) CreateSpreadsheet(ctx context.Context, token string, title stri
 
 // CreateChat creates a group chat. userIDs should be user_id values.
 func (c *Client) CreateChat(ctx context.Context, token string, name string, userIDs []string) (string, error) {
-	if !c.available() {
-		return "", ErrUnavailable
-	}
-	if name == "" {
-		return "", errors.New("chat name is required")
-	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return "", errors.New("tenant access token is required")
-	}
-
-	body := im.NewCreateChatReqBodyBuilder().Name(name)
-	if len(userIDs) > 0 {
-		body = body.UserIdList(userIDs)
-	}
-	req := im.NewCreateChatReqBuilder().Body(body.Build()).Build()
-	resp, err := c.sdk.Im.V1.Chat.Create(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	chat, err := c.CreateChatDetail(ctx, token, CreateChatRequest{
+		Name:       name,
+		UserIDList: userIDs,
+	})
 	if err != nil {
 		return "", err
 	}
-	if resp == nil {
-		return "", errors.New("create chat failed: empty response")
-	}
-	if !resp.Success() {
-		return "", fmt.Errorf("create chat failed: %s", resp.Msg)
-	}
-	if resp.Data == nil || resp.Data.ChatId == nil || *resp.Data.ChatId == "" {
+	if chat.ChatID == "" {
 		return "", errors.New("create chat failed: missing chat_id")
 	}
-	return *resp.Data.ChatId, nil
+	return chat.ChatID, nil
 }
 
 // Best-effort delete chat. This might not be supported for all app types/permissions.
