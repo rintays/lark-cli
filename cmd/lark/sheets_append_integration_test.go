@@ -15,7 +15,8 @@ func TestSheetsAppendIntegration(t *testing.T) {
 
 	fx := getIntegrationFixtures(t)
 	sheetID := fx.SpreadsheetToken
-	sheetRange := fmt.Sprintf("%s!A1:B1", fx.SheetTitle)
+	// Sheets v2 values endpoints expect ranges prefixed with sheet_id.
+	sheetRange := fmt.Sprintf("%s!A1:B1", fx.SheetID)
 
 	values := "[[\"it-append\",\"" + time.Now().Format(time.RFC3339) + "\"]]"
 

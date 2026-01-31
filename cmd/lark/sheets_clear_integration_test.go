@@ -14,7 +14,8 @@ func TestSheetsClearIntegration(t *testing.T) {
 
 	fx := getIntegrationFixtures(t)
 	sheetID := fx.SpreadsheetToken
-	sheetRange := fmt.Sprintf("%s!A1:B10", fx.SheetTitle)
+	// Sheets v2 values endpoints expect ranges prefixed with sheet_id.
+	sheetRange := fmt.Sprintf("%s!A1:B10", fx.SheetID)
 
 	var buf bytes.Buffer
 	cmd := newRootCmd()
