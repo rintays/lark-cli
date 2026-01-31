@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkwiki "github.com/larksuite/oapi-sdk-go/v3/service/wiki/v2"
@@ -29,6 +30,58 @@ type ListWikiSpacesResult struct {
 
 type GetWikiSpaceRequest struct {
 	SpaceID string
+}
+
+type CreateWikiSpaceRequest struct {
+	Name        string
+	Description string
+	SpaceType   string
+	Visibility  string
+	OpenSharing string
+}
+
+func (c *Client) CreateWikiSpaceV2(ctx context.Context, token string, req CreateWikiSpaceRequest) (WikiSpace, error) {
+	if !c.available() {
+		return WikiSpace{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return WikiSpace{}, errors.New("tenant access token is required")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return WikiSpace{}, errors.New("space name is required")
+	}
+	space := &larkwiki.Space{}
+	space.Name = &name
+	if desc := strings.TrimSpace(req.Description); desc != "" {
+		space.Description = &desc
+	}
+	if spaceType := strings.TrimSpace(req.SpaceType); spaceType != "" {
+		space.SpaceType = &spaceType
+	}
+	if visibility := strings.TrimSpace(req.Visibility); visibility != "" {
+		space.Visibility = &visibility
+	}
+	if openSharing := strings.TrimSpace(req.OpenSharing); openSharing != "" {
+		space.OpenSharing = &openSharing
+	}
+
+	builder := larkwiki.NewCreateSpaceReqBuilder().Space(space)
+	resp, err := c.sdk.Wiki.V2.Space.Create(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiSpace{}, err
+	}
+	if resp == nil {
+		return WikiSpace{}, errors.New("wiki space create failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiSpace{}, fmt.Errorf("wiki space create failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Space == nil {
+		return WikiSpace{}, errors.New("wiki space create failed: missing space")
+	}
+	return convertWikiSpace(resp.Data.Space), nil
 }
 
 func (c *Client) GetWikiSpaceV2(ctx context.Context, token string, req GetWikiSpaceRequest) (WikiSpace, error) {

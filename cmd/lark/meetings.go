@@ -21,7 +21,7 @@ func newMeetingsCmd(state *appState) *cobra.Command {
 
 - meeting_id identifies a meeting; meeting_no is the join number.
 - Meetings have time ranges, status, and participants.
-- list requires a time range; create/update manage meeting details.`,
+- list defaults to the last 6 months when start/end are omitted; create/update manage meeting details.`,
 	}
 	cmd.AddCommand(newMeetingInfoCmd(state))
 	cmd.AddCommand(newMeetingListCmd(state))

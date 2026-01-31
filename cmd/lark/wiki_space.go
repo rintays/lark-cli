@@ -16,6 +16,7 @@ func newWikiSpaceCmd(state *appState) *cobra.Command {
 		Use:   "space",
 		Short: "Manage Wiki spaces",
 	}
+	cmd.AddCommand(newWikiSpaceCreateCmd(state))
 	cmd.AddCommand(newWikiSpaceListCmd(state))
 	cmd.AddCommand(newWikiSpaceInfoCmd(state))
 	return cmd

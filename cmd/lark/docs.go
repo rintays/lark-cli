@@ -26,6 +26,7 @@ func newDocsCmd(state *appState) *cobra.Command {
 		Long: `Docs (docx) are document files stored in Drive.
 
 - document_id is the docx file token.
+- A doc contains blocks (paragraphs, headings, lists, tables, images) that make up its structure and content.
 - Documents can live in a Drive folder (folder-id).
 - Use info/export/get to inspect or download content.`,
 	}
