@@ -89,3 +89,4 @@
 - 2026-01-31: Mail list output now includes sender and internal_date columns for quick triage.
 - 2026-01-31: Sheets create now includes default sheet id/range, sheets read/update/append/clear accept `--sheet-id` with range shorthand, sheets update/append accept JSON/CSV values files (`--values-file` or `--values @file`), and sheets read defaults missing major_dimension to ROWS.
 - 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.
+- 2026-01-31: Removed base table `--view-name`, added base view create command, and added base field types hints aligned to field properties.

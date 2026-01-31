@@ -289,6 +289,49 @@ func (c *Client) ListBaseViews(ctx context.Context, token, appToken, tableID str
 	return ListBaseViewsResult{Items: resp.Data.Items, PageToken: resp.Data.PageToken, HasMore: resp.Data.HasMore}, nil
 }
 
+func (c *Client) CreateBaseView(ctx context.Context, token, appToken, tableID, viewName, viewType string) (BaseView, error) {
+	if !c.available() || c.sdk == nil || c.sdk.Bitable == nil || c.sdk.Bitable.V1 == nil || c.sdk.Bitable.V1.AppTableView == nil {
+		return BaseView{}, ErrUnavailable
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return BaseView{}, errors.New("tenant access token is required")
+	}
+	if appToken == "" {
+		return BaseView{}, errors.New("app token is required")
+	}
+	if tableID == "" {
+		return BaseView{}, errors.New("table id is required")
+	}
+	if viewName == "" {
+		return BaseView{}, errors.New("view name is required")
+	}
+
+	viewBuilder := larkbitable.NewReqViewBuilder().ViewName(viewName)
+	if viewType != "" {
+		viewBuilder.ViewType(viewType)
+	}
+	req := larkbitable.NewCreateAppTableViewReqBuilder().
+		AppToken(appToken).
+		TableId(tableID).
+		ReqView(viewBuilder.Build()).
+		Build()
+	resp, err := c.sdk.Bitable.V1.AppTableView.Create(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseView{}, err
+	}
+	if resp == nil {
+		return BaseView{}, errors.New("create base view failed: empty response")
+	}
+	if !resp.Success() {
+		return BaseView{}, formatCodeError("create base view failed", resp.CodeError, resp.ApiResp)
+	}
+	if resp.Data == nil || resp.Data.View == nil {
+		return BaseView{}, nil
+	}
+	return mapBaseViewFromSDK(resp.Data.View), nil
+}
+
 type createBaseRecordRequestBody struct {
 	Fields map[string]any `json:"fields"`
 }
@@ -681,6 +724,23 @@ func mapBaseRecordFromSDK(record *larkbitable.AppTableRecord) BaseRecord {
 	}
 	if record.LastModifiedTime != nil {
 		result.LastModifiedTime = strconv.FormatInt(*record.LastModifiedTime, 10)
+	}
+	return result
+}
+
+func mapBaseViewFromSDK(view *larkbitable.AppTableView) BaseView {
+	if view == nil {
+		return BaseView{}
+	}
+	result := BaseView{}
+	if view.ViewId != nil {
+		result.ViewID = *view.ViewId
+	}
+	if view.ViewName != nil {
+		result.Name = *view.ViewName
+	}
+	if view.ViewType != nil {
+		result.ViewType = *view.ViewType
 	}
 	return result
 }

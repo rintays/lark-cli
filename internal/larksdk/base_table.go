@@ -9,7 +9,7 @@ import (
 	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
 )
 
-func (c *Client) CreateBaseTable(ctx context.Context, token, appToken, tableName, viewName string) (BaseTable, error) {
+func (c *Client) CreateBaseTable(ctx context.Context, token, appToken, tableName string) (BaseTable, error) {
 	if !c.available() {
 		return BaseTable{}, ErrUnavailable
 	}
@@ -25,9 +25,6 @@ func (c *Client) CreateBaseTable(ctx context.Context, token, appToken, tableName
 	}
 
 	tableBuilder := larkbitable.NewReqTableBuilder().Name(tableName)
-	if viewName != "" {
-		tableBuilder.DefaultViewName(viewName)
-	}
 	body := larkbitable.NewCreateAppTableReqBodyBuilder().Table(tableBuilder.Build()).Build()
 	req := larkbitable.NewCreateAppTableReqBuilder().AppToken(appToken).Body(body).Build()
 	resp, err := c.sdk.Bitable.V1.AppTable.Create(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
