@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -110,6 +111,12 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err := requireUserRefreshToken(tokens.RefreshToken); err != nil {
 				return err
 			}
+			grantedScope := canonicalScopeString(tokens.Scope)
+			warning := ""
+			if grantedScope != "" {
+				warning = scopesChangedWarning(state.Config.UserAccessTokenScope, grantedScope)
+				state.Config.UserAccessTokenScope = grantedScope
+			}
 			state.Config.UserAccessToken = tokens.AccessToken
 			state.Config.RefreshToken = tokens.RefreshToken
 			state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()
@@ -121,7 +128,18 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				"config_path":                  state.ConfigPath,
 				"user_access_token_expires_at": state.Config.UserAccessTokenExpiresAt,
 			}
-			return state.Printer.Print(payload, fmt.Sprintf("saved user OAuth tokens to %s", state.ConfigPath))
+			if grantedScope != "" {
+				payload["user_access_token_scope"] = grantedScope
+			}
+			if warning != "" {
+				payload["warning"] = warning
+			}
+
+			message := fmt.Sprintf("saved user OAuth tokens to %s", state.ConfigPath)
+			if warning != "" {
+				message = fmt.Sprintf("%s\n\nWARNING: %s", message, warning)
+			}
+			return state.Printer.Print(payload, message)
 		},
 	}
 
@@ -145,6 +163,35 @@ func userOAuthScope(scope string, scopeSet bool) string {
 		return defaultUserOAuthScope
 	}
 	return scope
+}
+
+func canonicalScopeString(scope string) string {
+	fields := strings.Fields(scope)
+	if len(fields) == 0 {
+		return ""
+	}
+	sort.Strings(fields)
+	out := fields[:0]
+	for _, s := range fields {
+		if len(out) == 0 || s != out[len(out)-1] {
+			out = append(out, s)
+		}
+	}
+	return strings.Join(out, " ")
+}
+
+func scopesChangedWarning(previousScope, newScope string) string {
+	prev := canonicalScopeString(previousScope)
+	next := canonicalScopeString(newScope)
+	if prev == "" || next == "" || prev == next {
+		return ""
+	}
+	return fmt.Sprintf(
+		"OAuth scopes changed since last login.\nPrevious scopes: %s\nNew scopes: %s\n\nIf you intended to change scopes, you may need to force the consent screen so Lark re-grants scopes and issues an updated refresh token.\nRe-run: `%s`",
+		prev,
+		next,
+		userOAuthReloginCommand,
+	)
 }
 
 func requireUserRefreshToken(refreshToken string) error {

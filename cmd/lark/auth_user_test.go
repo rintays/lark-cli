@@ -122,6 +122,9 @@ func TestExchangeUserAccessToken(t *testing.T) {
 	if token.ExpiresIn != 3600 {
 		t.Fatalf("unexpected expires_in: %d", token.ExpiresIn)
 	}
+	if token.Scope != "offline_access" {
+		t.Fatalf("unexpected scope: %s", token.Scope)
+	}
 }
 
 func TestRequireUserRefreshToken(t *testing.T) {
