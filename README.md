@@ -534,7 +534,11 @@ lark --account <ACCOUNT> auth user status
 
 Environment override: `LARK_ACCOUNT`.
 
-Token storage backend: `keyring_backend=file|keychain` (config).
+Token storage backend: `keyring_backend=file|keychain|auto` (config).
+
+- `file`: store user OAuth tokens in `config.json`.
+- `keychain`: store user OAuth tokens in the OS keychain (via go-keyring).
+- `auto`: prefer `keychain` on macOS/Windows; otherwise fall back to `file`.
 
 Explain auth requirements (services → token types/scopes) for a command:
 
