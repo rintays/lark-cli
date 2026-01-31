@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -34,8 +35,21 @@ func newChatsUpdateCmd(state *appState) *cobra.Command {
 	var nameJa string
 
 	cmd := &cobra.Command{
-		Use:   "update",
+		Use:   "update <chat-id>",
 		Short: "Update chat information",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				return errors.New("chat-id is required")
+			}
+			chatID = strings.TrimSpace(args[0])
+			if chatID == "" {
+				return errors.New("chat-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -81,7 +95,6 @@ func newChatsUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&chatID, "chat-id", "", "chat ID")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user ID type (open_id, union_id, user_id)")
 	cmd.Flags().StringVar(&name, "name", "", "chat name")
 	cmd.Flags().StringVar(&description, "description", "", "chat description")
@@ -103,7 +116,6 @@ func newChatsUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&nameZh, "name-zh", "", "Chinese name (i18n)")
 	cmd.Flags().StringVar(&nameEn, "name-en", "", "English name (i18n)")
 	cmd.Flags().StringVar(&nameJa, "name-ja", "", "Japanese name (i18n)")
-	_ = cmd.MarkFlagRequired("chat-id")
 	return cmd
 }
 
