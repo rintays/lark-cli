@@ -85,4 +85,5 @@
 - 2026-01-31: Message search now resolves message IDs to full message details for output (content/sender/time), and JSON includes both message IDs and message objects.
 - 2026-01-31: Adjusted Sheets dimension payloads for better API compatibility, switched columns to COLUMNS, clarified sheet range help/examples, normalized sheets create folder-id root handling, and clarified user token help/error text for Sheets search.
 - 2026-01-31: Message search scope hints now include `im:message:get_as_user` alongside `search:message` for user OAuth guidance.
+- 2026-01-31: Mail list output now includes sender and internal_date columns for quick triage.
 - 2026-01-31: Sheets create now includes default sheet id/range, sheets read/update/append/clear accept `--sheet-id` with range shorthand, sheets update/append accept JSON/CSV values files (`--values-file` or `--values @file`), and sheets read defaults missing major_dimension to ROWS.
