@@ -43,6 +43,7 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	var platform string
 	var defaultMailboxID string
 	var defaultTokenType string
+	var defaultUserAccount string
 	var appID string
 	var appSecret string
 
@@ -58,12 +59,14 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 			usePlatform := cmd.Flags().Changed("platform")
 			useDefaultMailboxID := cmd.Flags().Changed("default-mailbox-id")
 			useDefaultTokenType := cmd.Flags().Changed("default-token-type")
+			useDefaultUserAccount := cmd.Flags().Changed("default-user-account")
 			useAppID := cmd.Flags().Changed("app-id")
 			useAppSecret := cmd.Flags().Changed("app-secret")
 
 			usedBaseURLGroup := useBaseURL || usePlatform
 			usedMailboxGroup := useDefaultMailboxID
 			usedTokenTypeGroup := useDefaultTokenType
+			usedUserAccountGroup := useDefaultUserAccount
 			usedAppCredsGroup := useAppID || useAppSecret
 
 			groupsUsed := 0
@@ -76,14 +79,17 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 			if usedTokenTypeGroup {
 				groupsUsed++
 			}
+			if usedUserAccountGroup {
+				groupsUsed++
+			}
 			if usedAppCredsGroup {
 				groupsUsed++
 			}
 			if groupsUsed == 0 {
-				return errors.New("one of --base-url, --platform, --default-mailbox-id, --default-token-type, --app-id, or --app-secret is required")
+				return errors.New("one of --base-url, --platform, --default-mailbox-id, --default-token-type, --default-user-account, --app-id, or --app-secret is required")
 			}
 			if groupsUsed > 1 {
-				return errors.New("flags are mutually exclusive; choose one of: (--base-url|--platform), --default-mailbox-id, --default-token-type, or (--app-id/--app-secret)")
+				return errors.New("flags are mutually exclusive; choose one of: (--base-url|--platform), --default-mailbox-id, --default-token-type, --default-user-account, or (--app-id/--app-secret)")
 			}
 
 			if usedAppCredsGroup {
@@ -147,6 +153,21 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 				}
 				return state.Printer.Print(payload, fmt.Sprintf("saved default_token_type to %s", state.ConfigPath))
 			}
+			if useDefaultUserAccount {
+				defaultUserAccount = strings.TrimSpace(defaultUserAccount)
+				if defaultUserAccount == "" {
+					return errors.New("default-user-account must not be empty")
+				}
+				state.Config.DefaultUserAccount = defaultUserAccount
+				if err := state.saveConfig(); err != nil {
+					return err
+				}
+				payload := map[string]any{
+					"config_path":          state.ConfigPath,
+					"default_user_account": defaultUserAccount,
+				}
+				return state.Printer.Print(payload, fmt.Sprintf("saved default_user_account to %s", state.ConfigPath))
+			}
 
 			var normalized string
 			if usePlatform {
@@ -189,10 +210,11 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&platform, "platform", "", "platform to persist (feishu or lark)")
 	cmd.Flags().StringVar(&defaultMailboxID, "default-mailbox-id", "", "default mailbox id to persist (or 'me')")
 	cmd.Flags().StringVar(&defaultTokenType, "default-token-type", "", "default token type to persist (tenant or user)")
+	cmd.Flags().StringVar(&defaultUserAccount, "default-user-account", "", "default user account label to persist")
 	cmd.Flags().StringVar(&appID, "app-id", "", "app ID to persist")
 	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret to persist (stored in plain text)")
-	cmd.MarkFlagsMutuallyExclusive("base-url", "platform", "default-mailbox-id", "default-token-type")
-	cmd.MarkFlagsOneRequired("base-url", "platform", "default-mailbox-id", "default-token-type", "app-id", "app-secret")
+	cmd.MarkFlagsMutuallyExclusive("base-url", "platform", "default-mailbox-id", "default-token-type", "default-user-account")
+	cmd.MarkFlagsOneRequired("base-url", "platform", "default-mailbox-id", "default-token-type", "default-user-account", "app-id", "app-secret")
 
 	return cmd
 }
@@ -201,6 +223,7 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 	var unsetBaseURL bool
 	var unsetDefaultMailboxID bool
 	var unsetDefaultTokenType bool
+	var unsetDefaultUserAccount bool
 	var unsetUserTokens bool
 
 	cmd := &cobra.Command{
@@ -214,9 +237,10 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 			useBaseURL := cmd.Flags().Changed("base-url")
 			useDefaultMailboxID := cmd.Flags().Changed("default-mailbox-id")
 			useDefaultTokenType := cmd.Flags().Changed("default-token-type")
+			useDefaultUserAccount := cmd.Flags().Changed("default-user-account")
 			useUserTokens := cmd.Flags().Changed("user-tokens")
-			if !useBaseURL && !useDefaultMailboxID && !useDefaultTokenType && !useUserTokens {
-				return errors.New("one of --base-url, --default-mailbox-id, --default-token-type, or --user-tokens is required")
+			if !useBaseURL && !useDefaultMailboxID && !useDefaultTokenType && !useDefaultUserAccount && !useUserTokens {
+				return errors.New("one of --base-url, --default-mailbox-id, --default-token-type, --default-user-account, or --user-tokens is required")
 			}
 
 			if useBaseURL {
@@ -264,14 +288,35 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 				}
 				return state.Printer.Print(payload, fmt.Sprintf("cleared default_token_type in %s", state.ConfigPath))
 			}
+			if useDefaultUserAccount {
+				if !unsetDefaultUserAccount {
+					return errors.New("--default-user-account must be true")
+				}
+				state.Config.DefaultUserAccount = ""
+				if err := state.saveConfig(); err != nil {
+					return err
+				}
+				payload := map[string]any{
+					"config_path":          state.ConfigPath,
+					"default_user_account": "",
+				}
+				return state.Printer.Print(payload, fmt.Sprintf("cleared default_user_account in %s", state.ConfigPath))
+			}
 
 			if !unsetUserTokens {
 				return errors.New("--user-tokens must be true")
 			}
-			state.Config.UserAccessToken = ""
-			state.Config.RefreshToken = ""
-			state.Config.UserAccessTokenExpiresAt = 0
-			state.Config.UserRefreshTokenPayload = nil
+			accounts := listUserAccountNames(state.Config)
+			if userTokenBackend(state.Config) == "keychain" {
+				for _, account := range accounts {
+					if err := deleteKeyringToken(state, account); err != nil {
+						return err
+					}
+				}
+			}
+			for _, account := range accounts {
+				clearUserAccountTokens(state.Config, account)
+			}
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
@@ -285,9 +330,10 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 	cmd.Flags().BoolVar(&unsetBaseURL, "base-url", false, "clear the persisted base URL")
 	cmd.Flags().BoolVar(&unsetDefaultMailboxID, "default-mailbox-id", false, "clear the persisted default mailbox id")
 	cmd.Flags().BoolVar(&unsetDefaultTokenType, "default-token-type", false, "clear the persisted default token type")
+	cmd.Flags().BoolVar(&unsetDefaultUserAccount, "default-user-account", false, "clear the persisted default user account")
 	cmd.Flags().BoolVar(&unsetUserTokens, "user-tokens", false, "clear persisted user access tokens")
-	cmd.MarkFlagsMutuallyExclusive("base-url", "default-mailbox-id", "default-token-type", "user-tokens")
-	cmd.MarkFlagsOneRequired("base-url", "default-mailbox-id", "default-token-type", "user-tokens")
+	cmd.MarkFlagsMutuallyExclusive("base-url", "default-mailbox-id", "default-token-type", "default-user-account", "user-tokens")
+	cmd.MarkFlagsOneRequired("base-url", "default-mailbox-id", "default-token-type", "default-user-account", "user-tokens")
 
 	return cmd
 }
@@ -312,12 +358,16 @@ func configKeys() []configKeyInfo {
 			Description: "Default mailbox ID to persist (config set) or clear (config unset)",
 		},
 		{
+			Key:         "default-user-account",
+			Description: "Default user OAuth account label to persist (config set) or clear (config unset)",
+		},
+		{
 			Key:         "user-tokens",
 			Description: "Clear persisted user access/refresh tokens (config unset)",
 		},
 		{
 			Key:         "keyring-backend",
-			Description: "OAuth token storage backend (file|keychain|auto) (currently only file is implemented)",
+			Description: "OAuth token storage backend (file|keychain|auto)",
 		},
 		{
 			Key:         "app-id",
@@ -361,10 +411,11 @@ func formatConfigHuman(cfg *config.Config) string {
 		fmt.Sprintf("base_url: %s", cfg.BaseURL),
 		fmt.Sprintf("default_mailbox_id: %s", cfg.DefaultMailboxID),
 		fmt.Sprintf("default_token_type: %s", cfg.DefaultTokenType),
+		fmt.Sprintf("default_user_account: %s", cfg.DefaultUserAccount),
 		fmt.Sprintf("keyring_backend: %s", cfg.KeyringBackend),
+		fmt.Sprintf("user_accounts: %s", strings.Join(listUserAccountNames(cfg), " ")),
 		fmt.Sprintf("user_scopes: %s", strings.Join(cfg.UserScopes, " ")),
 		fmt.Sprintf("tenant_access_token_expires_at: %d", cfg.TenantAccessTokenExpiresAt),
-		fmt.Sprintf("user_access_token_expires_at: %d", cfg.UserAccessTokenExpiresAt),
 	}
 	return strings.Join(lines, "\n")
 }

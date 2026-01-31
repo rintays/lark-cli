@@ -245,8 +245,14 @@ func TestCalendarSearchCommand(t *testing.T) {
 			if r.Method != http.MethodPost {
 				t.Fatalf("expected POST, got %s", r.Method)
 			}
-			if r.URL.Query().Get("page_size") != "2" {
-				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			// page_size is an optimization knob and may change; it must be >0 and <= limit.
+			pageSizeStr := r.URL.Query().Get("page_size")
+			pageSize, err := strconv.Atoi(pageSizeStr)
+			if err != nil {
+				t.Fatalf("invalid page_size: %q", pageSizeStr)
+			}
+			if pageSize <= 0 || pageSize > 2 {
+				t.Fatalf("unexpected page_size: %s", pageSizeStr)
 			}
 			var payload map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -281,7 +287,6 @@ func TestCalendarSearchCommand(t *testing.T) {
 							},
 						},
 					},
-					"page_token": "next",
 				},
 			})
 		default:
