@@ -360,6 +360,7 @@ Additional consistency work:
   - [x] `drive info` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `sheets rows/cols insert/delete` now use required flag validation for `--spreadsheet-id`, `--sheet-id`, `--start-index`, `--count` + unit tests assert stable required-flag errors
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
@@ -526,3 +527,4 @@ Deliverables:
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
 - 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
+- 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.
