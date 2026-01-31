@@ -28,7 +28,14 @@ func TestRequiredUserScopesFromServicesOrderIndependence(t *testing.T) {
 	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("union not deterministic: a=%v b=%v", a, b)
 	}
-	want := []string{"drive:drive", "mail:user_mailbox.message:readonly", "wiki:wiki"}
+	want := []string{
+		"drive:drive",
+		"mail:user_mailbox.message.address:read",
+		"mail:user_mailbox.message.body:read",
+		"mail:user_mailbox.message.subject:read",
+		"mail:user_mailbox.message:readonly",
+		"wiki:wiki",
+	}
 	if !reflect.DeepEqual(a, want) {
 		t.Fatalf("RequiredUserScopesFromServices()=%v, want %v", a, want)
 	}

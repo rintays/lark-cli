@@ -4,6 +4,7 @@ Goal: capture the exact user OAuth scope strings for Mail so we do not guess.
 
 Status: Verified scopes for user mailbox messages:
 - list/get: `mail:user_mailbox.message:readonly`
+- field-level reads: `mail:user_mailbox.message.subject:read`, `mail:user_mailbox.message.address:read`, `mail:user_mailbox.message.body:read`
 - send: `mail:user_mailbox.message:send`
 
 Registry/tests updated to match these values.

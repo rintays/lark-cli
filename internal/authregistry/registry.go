@@ -64,12 +64,28 @@ var Registry = map[string]ServiceDef{
 
 	"calendar": {Name: "calendar", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"calendar:calendar"}, UserScopes: ServiceScopeSet{Full: []string{"calendar:calendar"}, Readonly: []string{"calendar:calendar:readonly"}}},
 	"mail": {
-		Name:               "mail",
-		TokenTypes:         []TokenType{TokenTenant, TokenUser},
-		RequiredUserScopes: []string{"mail:user_mailbox.message:readonly"},
+		Name:       "mail",
+		TokenTypes: []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{
+			"mail:user_mailbox.message:readonly",
+			"mail:user_mailbox.message.subject:read",
+			"mail:user_mailbox.message.address:read",
+			"mail:user_mailbox.message.body:read",
+		},
 		UserScopes: ServiceScopeSet{
-			Readonly: []string{"mail:user_mailbox.message:readonly"},
-			Full:     []string{"mail:user_mailbox.message:readonly", "mail:user_mailbox.message:send"},
+			Readonly: []string{
+				"mail:user_mailbox.message:readonly",
+				"mail:user_mailbox.message.subject:read",
+				"mail:user_mailbox.message.address:read",
+				"mail:user_mailbox.message.body:read",
+			},
+			Full: []string{
+				"mail:user_mailbox.message:readonly",
+				"mail:user_mailbox.message.subject:read",
+				"mail:user_mailbox.message.address:read",
+				"mail:user_mailbox.message.body:read",
+				"mail:user_mailbox.message:send",
+			},
 		},
 		RequiresOffline: true,
 	},

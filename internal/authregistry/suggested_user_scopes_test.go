@@ -10,7 +10,14 @@ func TestSuggestedUserOAuthScopesFromServicesFullUsesVariantsAndFallback(t *test
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices() err=%v", err)
 	}
-	want := []string{"drive:drive", "mail:user_mailbox.message:readonly", "mail:user_mailbox.message:send"}
+	want := []string{
+		"drive:drive",
+		"mail:user_mailbox.message.address:read",
+		"mail:user_mailbox.message.body:read",
+		"mail:user_mailbox.message.subject:read",
+		"mail:user_mailbox.message:readonly",
+		"mail:user_mailbox.message:send",
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices()=%v, want %v", got, want)
 	}
@@ -21,7 +28,13 @@ func TestSuggestedUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(readonly) err=%v", err)
 	}
-	want := []string{"drive:drive:readonly", "mail:user_mailbox.message:readonly"}
+	want := []string{
+		"drive:drive:readonly",
+		"mail:user_mailbox.message.address:read",
+		"mail:user_mailbox.message.body:read",
+		"mail:user_mailbox.message.subject:read",
+		"mail:user_mailbox.message:readonly",
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(readonly)=%v, want %v", got, want)
 	}

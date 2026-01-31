@@ -55,7 +55,13 @@ func TestUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *testing.T
 	if err != nil {
 		t.Fatalf("scopes(drive,mail readonly): %v", err)
 	}
-	want := []string{"drive:drive:readonly", "mail:user_mailbox.message:readonly"}
+	want := []string{
+		"drive:drive:readonly",
+		"mail:user_mailbox.message.address:read",
+		"mail:user_mailbox.message.body:read",
+		"mail:user_mailbox.message.subject:read",
+		"mail:user_mailbox.message:readonly",
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("scopes=%v, want %v", got, want)
 	}
