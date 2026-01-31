@@ -210,6 +210,81 @@ func TestDocsInfoCommandMissingDocIDDoesNotCallHTTP(t *testing.T) {
 	}
 }
 
+func TestDocsInfoCommandFallbackURL(t *testing.T) {
+	docxCalled := false
+	driveCalled := false
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		switch r.URL.Path {
+		case "/open-apis/docx/v1/documents/doc1":
+			docxCalled = true
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"document": map[string]any{
+						"document_id": "doc1",
+						"title":       "Specs",
+					},
+				},
+			})
+		case "/open-apis/drive/v1/files/doc1":
+			driveCalled = true
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"file": map[string]any{
+						"token": "doc1",
+						"name":  "Specs",
+						"type":  "docx",
+						"url":   "https://example.com/doc",
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs info error: %v", err)
+	}
+	if !docxCalled {
+		t.Fatal("docx endpoint not called")
+	}
+	if !driveCalled {
+		t.Fatal("drive metadata endpoint not called")
+	}
+	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
 func TestDocsExportCommand(t *testing.T) {
 	exported := []byte("pdf bytes")
 	pollCount := 0

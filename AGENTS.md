@@ -60,3 +60,4 @@
 - 2026-01-31: Added `lark sheets create` command plus README/design coverage updates.
 - 2026-01-31: Added table headers and separator lines for terminal tabular outputs, with shared table formatting helpers.
 - 2026-01-31: Unified read-style commands to `info` (docs/sheets/drive/mail/users/wiki/base/config/auth/meetings/minutes) with no legacy aliases; updated tests/docs.
+- 2026-01-31: Docs info now falls back to drive file metadata for URL when the docx info API omits it.
