@@ -1,5 +1,9 @@
 package larksdk
 
+import (
+	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
+)
+
 type Message struct {
 	MessageID      string           `json:"message_id"`
 	RootID         string           `json:"root_id,omitempty"`
@@ -144,6 +148,27 @@ type ChatInfo struct {
 	ChatStatus             string                 `json:"chat_status,omitempty"`
 }
 
+type ChatMember struct {
+	MemberIDType string `json:"member_id_type,omitempty"`
+	MemberID     string `json:"member_id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	TenantKey    string `json:"tenant_key,omitempty"`
+}
+
+type ListChatMembersRequest struct {
+	ChatID       string
+	MemberIDType string
+	PageSize     int
+	PageToken    string
+}
+
+type ListChatMembersResult struct {
+	Items       []ChatMember
+	PageToken   string
+	HasMore     bool
+	MemberTotal int
+}
+
 type CreateChatRequest struct {
 	UserIDType             string
 	SetBotManager          *bool
@@ -200,12 +225,15 @@ type UpdateChatRequest struct {
 }
 
 type ChatAnnouncement struct {
-	Content        string `json:"content,omitempty"`
-	Revision       string `json:"revision,omitempty"`
-	CreateTime     string `json:"create_time,omitempty"`
-	UpdateTime     string `json:"update_time,omitempty"`
-	OwnerIDType    string `json:"owner_id_type,omitempty"`
-	OwnerID        string `json:"owner_id,omitempty"`
-	ModifierIDType string `json:"modifier_id_type,omitempty"`
-	ModifierID     string `json:"modifier_id,omitempty"`
+	Content          string            `json:"content,omitempty"`
+	Revision         string            `json:"revision,omitempty"`
+	CreateTime       string            `json:"create_time,omitempty"`
+	UpdateTime       string            `json:"update_time,omitempty"`
+	OwnerIDType      string            `json:"owner_id_type,omitempty"`
+	OwnerID          string            `json:"owner_id,omitempty"`
+	ModifierIDType   string            `json:"modifier_id_type,omitempty"`
+	ModifierID       string            `json:"modifier_id,omitempty"`
+	AnnouncementType string            `json:"announcement_type,omitempty"`
+	RevisionID       RevisionID        `json:"revision_id,omitempty"`
+	Blocks           []*larkdocx.Block `json:"blocks,omitempty"`
 }

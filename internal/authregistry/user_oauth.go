@@ -17,14 +17,25 @@ var UserOAuthServiceAliases = map[string][]string{
 	"user": {"drive", "docs", "docx", "sheets"},
 }
 
-// ListUserOAuthServices returns services that currently declare user OAuth scopes.
+// ListUserOAuthServices returns services that can be used in services-based
+// user OAuth flows.
 //
 // Services may exist in Registry without scopes yet; those are intentionally
 // excluded to avoid suggesting incorrect scope strings.
 func ListUserOAuthServices() []string {
 	services := make([]string, 0, len(Registry))
 	for name, def := range Registry {
-		if len(def.UserScopes.Full) == 0 && len(def.UserScopes.Readonly) == 0 {
+		requiresUser := false
+		for _, tt := range def.TokenTypes {
+			if tt == TokenUser {
+				requiresUser = true
+				break
+			}
+		}
+		if !requiresUser {
+			continue
+		}
+		if len(def.UserScopes.Full) == 0 && len(def.UserScopes.Readonly) == 0 && len(def.RequiredUserScopes) == 0 {
 			continue
 		}
 		services = append(services, name)
@@ -85,14 +96,49 @@ func UserOAuthScopesFromServices(services []string, readonly bool, driveScope st
 		if !ok {
 			return nil, fmt.Errorf("unknown service %q (use `lark auth user services` to list supported services)", name)
 		}
-		if len(def.UserScopes.Full) == 0 && len(def.UserScopes.Readonly) == 0 {
+
+		requiresUser := false
+		for _, tt := range def.TokenTypes {
+			if tt == TokenUser {
+				requiresUser = true
+				break
+			}
+		}
+		if !requiresUser {
+			return nil, fmt.Errorf("service %q does not require user OAuth", name)
+		}
+
+		// Prefer the requested variant when the service declares it; otherwise
+		// fall back to any declared scopes.
+		if driveScope == "readonly" {
+			if len(def.UserScopes.Readonly) > 0 {
+				scopes = append(scopes, def.UserScopes.Readonly...)
+				continue
+			}
+			if len(def.UserScopes.Full) > 0 {
+				scopes = append(scopes, def.UserScopes.Full...)
+				continue
+			}
+			if len(def.RequiredUserScopes) > 0 {
+				scopes = append(scopes, def.RequiredUserScopes...)
+				continue
+			}
 			return nil, fmt.Errorf("service %q does not declare user OAuth scopes yet", name)
 		}
-		if driveScope == "readonly" {
-			scopes = append(scopes, def.UserScopes.Readonly...)
-		} else {
+
+		if len(def.UserScopes.Full) > 0 {
 			scopes = append(scopes, def.UserScopes.Full...)
+			continue
 		}
+		if len(def.UserScopes.Readonly) > 0 {
+			scopes = append(scopes, def.UserScopes.Readonly...)
+			continue
+		}
+		if len(def.RequiredUserScopes) > 0 {
+			scopes = append(scopes, def.RequiredUserScopes...)
+			continue
+		}
+		return nil, fmt.Errorf("service %q does not declare user OAuth scopes yet", name)
 	}
 	return uniqueSorted(scopes), nil
 }

@@ -24,7 +24,7 @@
 
 ## CLI Argument Principles
 - Required resource identifiers should be positional args (e.g., `lark docs info <doc-id>`), not mandatory `--id` flags.
-- Keep legacy flags as optional aliases when possible to avoid breaking users.
+- Do not keep legacy `--id` style flags for required identifiers.
 - Exceptions: `base --app-token` and `wiki --space-id` remain flags.
 
 ## Testing Guidelines
@@ -72,5 +72,11 @@
 - 2026-01-31: Drive info/urls now honor user tokens with auto fallback and added a user-token drive info test.
 - 2026-01-31: Promoted required identifiers to positional args for docs/drive/sheets/base/wiki/minutes/meetings/auth scopes/mailbox set (keeping base app-token and wiki space-id as flags), updated tests and README examples.
 - 2026-01-31: Minutes list now filters Drive file listings by type; added minutes delete/update commands backed by Drive delete and permission update endpoints, plus minutes command tests and design doc updates.
+- 2026-01-31: Added docx chat announcement fallback (docx API + block listing) and updated CLI output/tests for docx announcements.
+- 2026-01-31: Aligned message list/search/reply/reactions/pin commands with positional args for required identifiers; updated tests and README examples.
+- 2026-01-31: Expanded docs/sheets/mail info output to full SDK fields with key/value tables, enriched docx/sheets/mail SDK mappings, and updated tests.
+- 2026-01-31: Docs info now falls back to drive file metadata for URL when the docx info API omits it.
 - 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.
 - 2026-01-31: Messages list now renders system templates, formats mentions with user id links, drops chat id from meta, and shows metadata before content.
+- 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
+- 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.
