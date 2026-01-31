@@ -27,6 +27,8 @@ func newBaseTableCmd(state *appState) *cobra.Command {
 		Short: "Manage Bitable tables",
 	}
 	cmd.AddCommand(newBaseTableListCmd(state))
+	cmd.AddCommand(newBaseTableCreateCmd(state))
+	cmd.AddCommand(newBaseTableDeleteCmd(state))
 	return cmd
 }
 
