@@ -54,7 +54,17 @@ func newChatsAnnouncementGetCmd(state *appState) *cobra.Command {
 			}
 			payload := map[string]any{"announcement": announcement}
 			text := "announcement fetched"
-			if announcement.Revision != "" || announcement.Content != "" {
+			if announcement.AnnouncementType == "docx" {
+				revision := strings.TrimSpace(string(announcement.RevisionID))
+				if revision == "" {
+					revision = strings.TrimSpace(announcement.Revision)
+				}
+				if revision == "" {
+					text = strings.TrimSpace(fmt.Sprintf("docx\tblocks:%d", len(announcement.Blocks)))
+				} else {
+					text = strings.TrimSpace(fmt.Sprintf("docx\t%s\tblocks:%d", revision, len(announcement.Blocks)))
+				}
+			} else if announcement.Revision != "" || announcement.Content != "" {
 				text = strings.TrimSpace(fmt.Sprintf("%s\t%s", announcement.Revision, announcement.Content))
 			}
 			return state.Printer.Print(payload, text)

@@ -64,3 +64,4 @@
 - 2026-01-31: Unified read-style commands to `info` (docs/sheets/drive/mail/users/wiki/base/config/auth/meetings/minutes) with no legacy aliases; updated tests/docs.
 - 2026-01-31: Promoted required identifiers to positional args for docs/drive/sheets/base/wiki/minutes/meetings/auth scopes/mailbox set (keeping base app-token and wiki space-id as flags), updated tests and README examples.
 - 2026-01-31: Minutes list now filters Drive file listings by type; added minutes delete/update commands backed by Drive delete and permission update endpoints, plus minutes command tests and design doc updates.
+- 2026-01-31: Added docx chat announcement fallback (docx API + block listing) and updated CLI output/tests for docx announcements.
