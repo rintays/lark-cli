@@ -183,7 +183,7 @@ Deliverables:
     - [x] `docs export/cat` → Export task + download (supports `txt` and `md` output)
     - [ ] **Docs Markdown ⇄ Docx bidirectional sync** (requested)
       - Goal: support keeping a local `.md` file and a Docx document in sync.
-      - [ ] Export: already supported via `docs cat --format md` (ensure docs + integration test)
+      - [x] Export: already supported via `docs cat --format md` (integration test: `TestDocsCatMarkdownIntegration`)
       - [ ] Import/overwrite: add a command (TBD):
         - candidate: `lark docs import --doc-id <ID> --file <path.md> [--mode overwrite|append]`
         - or: `lark docs sync --doc-id <ID> --file <path.md> [--direction push|pull|both]`

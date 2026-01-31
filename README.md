@@ -320,6 +320,9 @@ lark docs export <DOCUMENT_ID> --format pdf --out ./document.pdf
 Cat:
 
 ```bash
+lark docs cat <DOCUMENT_ID> --format md
+
+# or plain text
 lark docs cat <DOCUMENT_ID> --format txt
 ```
 
