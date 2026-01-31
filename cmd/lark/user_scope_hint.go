@@ -20,7 +20,7 @@ func withUserScopeHint(err error) error {
 	if len(scopes) == 0 {
 		return err
 	}
-	scopes = ensureOfflineAccess(scopes)
+	scopes = ensureOfflineAccess(selectPreferredScopes(scopes))
 	scopeArg := strings.Join(scopes, " ")
 	hint := fmt.Sprintf("Missing user OAuth scopes: %s.\nRe-authorize with:\n  lark auth user login --scopes %q --force-consent", strings.Join(scopes, ", "), scopeArg)
 	return fmt.Errorf("%s\n%s", msg, hint)
@@ -50,4 +50,38 @@ func containsScopeToken(scopes []string) bool {
 		}
 	}
 	return false
+}
+
+func selectPreferredScopes(scopes []string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(scopes))
+	readonly := false
+	full := false
+	for _, scope := range scopes {
+		if scope == "drive:drive:readonly" {
+			readonly = true
+		}
+		if scope == "drive:drive" {
+			full = true
+		}
+	}
+	for _, scope := range scopes {
+		if scope == "drive:drive" && readonly {
+			continue
+		}
+		if scope == "drive:drive:readonly" && full && !readonly {
+			continue
+		}
+		if _, ok := seen[scope]; ok {
+			continue
+		}
+		seen[scope] = struct{}{}
+		out = append(out, scope)
+	}
+	if readonly {
+		if _, ok := seen["drive:drive:readonly"]; !ok {
+			out = append(out, "drive:drive:readonly")
+		}
+	}
+	return out
 }

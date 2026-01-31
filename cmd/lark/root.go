@@ -31,9 +31,10 @@ type appState struct {
 func newRootCmd() *cobra.Command {
 	state := &appState{}
 	cmd := &cobra.Command{
-		Use:          "lark",
-		Short:        "A Go CLI for Feishu/Lark inspired by gog",
-		SilenceUsage: true,
+		Use:           "lark",
+		Short:         "A Go CLI for Feishu/Lark inspired by gog",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if state.ConfigPath == "" {
 				path, err := config.DefaultPath()
