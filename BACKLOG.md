@@ -128,6 +128,7 @@ Work items (must follow the design, not ad-hoc patches):
     - [x] Metadata aggregation helper: command → (services, token types, offline requirement, required user scopes)
     - [x] Detect TokenUser services missing declared RequiredUserScopes (so we don’t pretend we know scopes yet)
 - [ ] **Scope variants as first-class knobs**
+  - [x] `lark auth explain --readonly` (use per-service UserScopes variants when available; fallback to RequiredUserScopes)
   - [ ] `--readonly` mode (where feasible)
   - [ ] per-service scope variants (if Feishu/Lark has meaningful levels; drive is the likely one)
 - [ ] **Incremental authorization** (gog `include_granted_scopes=true` analogue)
