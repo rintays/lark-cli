@@ -53,7 +53,7 @@ type ServiceDef struct {
 // Keep this list stable and append-only where possible.
 var Registry = map[string]ServiceDef{
 	"im":             {Name: "im", TokenTypes: []TokenType{TokenTenant}},
-	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"search:message"}, RequiresOffline: true},
+	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"im:message:get_as_user", "search:message"}, RequiresOffline: true},
 
 	// NOTE: "docs" is a legacy name used by existing commands; "docx" is the
 	// user-facing/API surface name for the same capability.

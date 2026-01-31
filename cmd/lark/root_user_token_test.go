@@ -104,12 +104,21 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
 	configPath := filepath.Join(t.TempDir(), "config.json")
+	initialCreatedAt := int64(1700000000)
 	cfg := &config.Config{
 		AppID:     "app",
 		AppSecret: "secret",
 		BaseURL:   baseURL,
 	}
 	withUserAccount(cfg, defaultUserAccountName, "stale", "refresh-me", time.Now().Add(10*time.Second).Unix(), "")
+	if acct, ok := cfg.UserAccounts[defaultUserAccountName]; ok {
+		acct.UserRefreshTokenPayload = &config.UserRefreshTokenPayload{
+			RefreshToken: "refresh-me",
+			Services:     []string{"drive"},
+			Scopes:       "offline_access drive:drive",
+			CreatedAt:    initialCreatedAt,
+		}
+	}
 	sdkClient, err := larksdk.New(cfg, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -152,6 +161,15 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 	if account.UserAccessTokenExpiresAt == 0 {
 		t.Fatalf("expected expiry saved")
 	}
+	if account.UserRefreshTokenPayload == nil {
+		t.Fatalf("expected refresh token payload saved")
+	}
+	if account.UserRefreshTokenPayload.RefreshToken != "new-refresh-token" {
+		t.Fatalf("expected refresh token payload updated, got %s", account.UserRefreshTokenPayload.RefreshToken)
+	}
+	if account.UserRefreshTokenPayload.CreatedAt <= initialCreatedAt {
+		t.Fatalf("expected refresh token payload created_at updated, got %d", account.UserRefreshTokenPayload.CreatedAt)
+	}
 }
 
 func TestEnsureUserTokenMissingRefreshTokenClears(t *testing.T) {
@@ -190,6 +208,9 @@ func TestEnsureUserTokenMissingRefreshTokenClears(t *testing.T) {
 		}
 		if account.RefreshToken != "" {
 			t.Fatalf("expected refresh token cleared, got %s", account.RefreshToken)
+		}
+		if account.UserRefreshTokenPayload != nil {
+			t.Fatalf("expected refresh token payload cleared")
 		}
 		if account.UserAccessTokenExpiresAt != 0 {
 			t.Fatalf("expected expiry cleared, got %d", account.UserAccessTokenExpiresAt)
@@ -263,6 +284,9 @@ func TestEnsureUserTokenRefreshFailureClears(t *testing.T) {
 		}
 		if account.RefreshToken != "" {
 			t.Fatalf("expected refresh token cleared, got %s", account.RefreshToken)
+		}
+		if account.UserRefreshTokenPayload != nil {
+			t.Fatalf("expected refresh token payload cleared")
 		}
 		if account.UserAccessTokenExpiresAt != 0 {
 			t.Fatalf("expected expiry cleared, got %d", account.UserAccessTokenExpiresAt)

@@ -13,6 +13,7 @@ func newBaseRecordUpdateCmd(state *appState) *cobra.Command {
 	var tableID string
 	var recordID string
 	var fieldsJSON string
+	var fields []string
 
 	cmd := &cobra.Command{
 		Use:   "update <table-id> <record-id>",
@@ -49,7 +50,7 @@ func newBaseRecordUpdateCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			fields, err := parseBaseRecordFields(fieldsJSON)
+			fieldsMap, err := parseBaseRecordFields(fieldsJSON, fields)
 			if err != nil {
 				return err
 			}
@@ -57,7 +58,7 @@ func newBaseRecordUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			record, err := state.SDK.UpdateBaseRecord(context.Background(), token, appToken, tableID, recordID, fields)
+			record, err := state.SDK.UpdateBaseRecord(context.Background(), token, appToken, tableID, recordID, fieldsMap)
 			if err != nil {
 				return err
 			}
@@ -73,8 +74,8 @@ func newBaseRecordUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&recordID, "record-id", "", "Bitable record id (or provide as positional argument)")
-	cmd.Flags().StringVar(&fieldsJSON, "fields-json", "", "Record fields JSON (raw)")
+	cmd.Flags().StringVar(&fieldsJSON, "fields-json", "", "Record fields JSON (object)")
+	cmd.Flags().StringArrayVar(&fields, "field", nil, "Record field assignment (repeatable, e.g. --field Title=Task or --field name=Title,value=Task or --field Temp:=12.3)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("fields-json")
 	return cmd
 }

@@ -25,7 +25,12 @@ func resolveDriveSearchToken(ctx context.Context, state *appState) (string, erro
 	if ok && cachedUserTokenValid(stored, time.Now()) {
 		return stored.AccessToken, nil
 	}
-	if !ok || stored.RefreshToken == "" {
+	acct, _ := loadUserAccount(state.Config, account)
+	refreshToken := stored.RefreshToken
+	if refreshToken == "" {
+		refreshToken = acct.RefreshTokenValue()
+	}
+	if refreshToken == "" {
 		return "", errors.New(driveSearchUserTokenHint)
 	}
 	token, err := ensureUserToken(ctx, state)

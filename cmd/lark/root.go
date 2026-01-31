@@ -271,7 +271,11 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	if ok && cachedUserTokenValid(stored, time.Now()) {
 		return stored.AccessToken, nil
 	}
+	acct, _ := loadUserAccount(state.Config, account)
 	refreshToken := stored.RefreshToken
+	if refreshToken == "" {
+		refreshToken = acct.RefreshTokenValue()
+	}
 	if refreshToken == "" {
 		return "", expireUserToken(state, account, errors.New("refresh token missing"))
 	}
@@ -298,6 +302,13 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 	}
 	if newRefreshToken != "" {
 		newToken.RefreshToken = newRefreshToken
+		if acct.UserRefreshTokenPayload != nil {
+			if userTokenBackend(state.Config) == "file" {
+				acct.UserRefreshTokenPayload.RefreshToken = newRefreshToken
+			}
+			acct.UserRefreshTokenPayload.CreatedAt = time.Now().Unix()
+			saveUserAccount(state.Config, account, acct)
+		}
 	}
 	if err := storeUserToken(state, account, newToken); err != nil {
 		return "", err

@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/config"
 )
 
 const (
@@ -176,6 +178,22 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err := storeUserToken(state, account, token); err != nil {
 				return err
 			}
+			now := time.Now()
+			refreshPayload := &config.UserRefreshTokenPayload{
+				CreatedAt: now.Unix(),
+			}
+			if userTokenBackend(state.Config) == "file" {
+				refreshPayload.RefreshToken = tokens.RefreshToken
+			}
+			if scopeOpts.ServicesSet {
+				refreshPayload.Services = scopeOpts.Services
+			}
+			if grantedScope != "" {
+				refreshPayload.Scopes = grantedScope
+			}
+			acct = ensureUserAccount(state.Config, account)
+			acct.UserRefreshTokenPayload = refreshPayload
+			saveUserAccount(state.Config, account, acct)
 			if err := state.saveConfig(); err != nil {
 				return err
 			}

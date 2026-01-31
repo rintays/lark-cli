@@ -17,7 +17,13 @@ func newCalendarCmd(state *appState) *cobra.Command {
 		Use:     "calendars",
 		Aliases: []string{"calendar"},
 		Short:   "Manage calendars (events)",
-		Long:    "Manage calendar events.\n\nCanonical command name: calendars (alias: calendar).",
+		Long: `Calendars contain events scheduled for users.
+
+- calendar_id identifies a calendar (default: primary).
+- Events have event_id plus start/end times.
+- list/search operate on time ranges; create/update manage event details.
+
+Canonical command name: calendars (alias: calendar).`,
 	}
 	cmd.AddCommand(newCalendarListCmd(state))
 	cmd.AddCommand(newCalendarCreateCmd(state))
@@ -36,22 +42,31 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List events in a time range",
+		Short: "List events",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			startTime, err := time.Parse(time.RFC3339, start)
-			if err != nil {
-				return fmt.Errorf("invalid start time: %w", err)
-			}
-			endTime, err := time.Parse(time.RFC3339, end)
-			if err != nil {
-				return fmt.Errorf("invalid end time: %w", err)
-			}
-			if !endTime.After(startTime) {
-				return errors.New("end time must be after start time")
+			var startTime time.Time
+			var endTime time.Time
+			if start != "" || end != "" {
+				if start == "" || end == "" {
+					return errors.New("start and end must be provided together")
+				}
+				parsedStart, err := time.Parse(time.RFC3339, start)
+				if err != nil {
+					return fmt.Errorf("invalid start time: %w", err)
+				}
+				parsedEnd, err := time.Parse(time.RFC3339, end)
+				if err != nil {
+					return fmt.Errorf("invalid end time: %w", err)
+				}
+				if !parsedEnd.After(parsedStart) {
+					return errors.New("end time must be after start time")
+				}
+				startTime = parsedStart
+				endTime = parsedEnd
 			}
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
@@ -64,16 +79,34 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := state.SDK.ListCalendarEvents(context.Background(), token, larksdk.ListCalendarEventsRequest{
-				CalendarID: resolvedCalendarID,
-				StartTime:  strconv.FormatInt(startTime.Unix(), 10),
-				EndTime:    strconv.FormatInt(endTime.Unix(), 10),
-				PageSize:   limit,
-			})
-			if err != nil {
-				return err
+			events := make([]larksdk.CalendarEvent, 0, limit)
+			pageToken := ""
+			remaining := limit
+			for {
+				pageSize := remaining
+				req := larksdk.ListCalendarEventsRequest{
+					CalendarID: resolvedCalendarID,
+					PageSize:   pageSize,
+					PageToken:  pageToken,
+				}
+				if start != "" {
+					req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
+					req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
+				}
+				result, err := state.SDK.ListCalendarEvents(context.Background(), token, req)
+				if err != nil {
+					return err
+				}
+				events = append(events, result.Items...)
+				if len(events) >= limit || !result.HasMore {
+					break
+				}
+				remaining = limit - len(events)
+				if remaining <= 0 || result.PageToken == "" {
+					break
+				}
+				pageToken = result.PageToken
 			}
-			events := result.Items
 			if len(events) > limit {
 				events = events[:limit]
 			}
@@ -94,8 +127,6 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&end, "end", "", "end time (RFC3339)")
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of events to return")
-	_ = cmd.MarkFlagRequired("start")
-	_ = cmd.MarkFlagRequired("end")
 
 	return cmd
 }
@@ -113,6 +144,9 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 		Short: "Create a calendar event",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if start == "" || end == "" {
+				return errors.New("start and end times are required")
+			}
 			startTime, err := time.Parse(time.RFC3339, start)
 			if err != nil {
 				return fmt.Errorf("invalid start time: %w", err)
@@ -184,8 +218,6 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "event description")
 	cmd.Flags().StringArrayVar(&attendees, "attendee", nil, "attendee email (repeatable)")
 	_ = cmd.MarkFlagRequired("summary")
-	_ = cmd.MarkFlagRequired("start")
-	_ = cmd.MarkFlagRequired("end")
 
 	return cmd
 }
@@ -240,30 +272,47 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			req := larksdk.SearchCalendarEventsRequest{
-				CalendarID: resolvedCalendarID,
-				Query:      query,
-				UserIDs:    userIDs,
-				RoomIDs:    roomIDs,
-				ChatIDs:    chatIDs,
-				PageSize:   limit,
+			events := make([]larksdk.CalendarEvent, 0, limit)
+			pageToken := ""
+			remaining := limit
+			for {
+				pageSize := remaining
+				req := larksdk.SearchCalendarEventsRequest{
+					CalendarID: resolvedCalendarID,
+					Query:      query,
+					UserIDs:    userIDs,
+					RoomIDs:    roomIDs,
+					ChatIDs:    chatIDs,
+					PageSize:   pageSize,
+					PageToken:  pageToken,
+				}
+				if start != "" {
+					req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
+					req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
+				}
+				result, err := state.SDK.SearchCalendarEvents(context.Background(), token, req)
+				if err != nil {
+					return err
+				}
+				events = append(events, result.Items...)
+				if len(events) >= limit || result.PageToken == "" || result.PageToken == pageToken {
+					pageToken = result.PageToken
+					break
+				}
+				remaining = limit - len(events)
+				if remaining <= 0 {
+					pageToken = result.PageToken
+					break
+				}
+				pageToken = result.PageToken
 			}
-			if start != "" {
-				req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
-				req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
-			}
-			result, err := state.SDK.SearchCalendarEvents(context.Background(), token, req)
-			if err != nil {
-				return err
-			}
-			events := result.Items
 			if len(events) > limit {
 				events = events[:limit]
 			}
 			payload := map[string]any{
 				"calendar_id": resolvedCalendarID,
 				"events":      events,
-				"page_token":  result.PageToken,
+				"page_token":  pageToken,
 			}
 			lines := make([]string, 0, len(events))
 			for _, event := range events {
