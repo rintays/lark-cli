@@ -54,7 +54,8 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 | Minutes update | `/open-apis/drive/v1/permissions/:file_token/public` | SDK drive permissions | tenant/user | v1 | `lark minutes update`. |
 | Mail folders | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/folders` | Core ApiReq wrapper | tenant/user | v1 | `lark mail folders`. |
 | Mail list | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages` | Core ApiReq wrapper | tenant/user | v1 | `lark mail list`. |
-| Mail info | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/:message_id` | Core ApiReq wrapper | tenant/user | v1 | `lark mail info`. |
+| Mail info (metadata) | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/:message_id` | Core ApiReq wrapper | tenant/user | v1 | `lark mail info`. |
+| Mail get (content) | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/:message_id` | Core ApiReq wrapper | tenant/user | v1 | `lark mail get`. |
 | Mail send | `/open-apis/mail/v1/user_mailboxes/:mailbox_id/messages/send` | Core ApiReq wrapper | user | v1 | `lark mail send`. |
 
 ## Config + caching

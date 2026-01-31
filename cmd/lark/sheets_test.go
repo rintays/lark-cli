@@ -242,35 +242,66 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 
 func TestSheetsCreateCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Fatalf("unexpected method: %s", r.Method)
-		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets" {
+		switch r.URL.Path {
+		case "/open-apis/sheets/v3/spreadsheets":
+			if r.Method != http.MethodPost {
+				t.Fatalf("unexpected method: %s", r.Method)
+			}
+			var payload map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+			if payload["title"] != "Budget Q1" {
+				t.Fatalf("unexpected title: %v", payload["title"])
+			}
+			if payload["folder_token"] != "fld" {
+				t.Fatalf("unexpected folder_token: %v", payload["folder_token"])
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"spreadsheet_token": "spreadsheet",
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"title":    "Budget Q1",
+						"token":    "spreadsheet",
+						"owner_id": "ou_1",
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/query":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"sheets": []map[string]any{
+						{
+							"sheet_id": "sheet_1",
+							"title":    "Sheet1",
+							"index":    0,
+							"hidden":   false,
+						},
+					},
+				},
+			})
+		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		var payload map[string]any
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Fatalf("decode payload: %v", err)
-		}
-		if payload["title"] != "Budget Q1" {
-			t.Fatalf("unexpected title: %v", payload["title"])
-		}
-		if payload["folder_token"] != "fld" {
-			t.Fatalf("unexpected folder_token: %v", payload["folder_token"])
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"spreadsheet": map[string]any{
-					"spreadsheet_token": "spreadsheet",
-				},
-			},
-		})
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -299,6 +330,9 @@ func TestSheetsCreateCommandWithSDK(t *testing.T) {
 
 	output := buf.String()
 	if !strings.Contains(output, "spreadsheet") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if !strings.Contains(output, "sheet_1") {
 		t.Fatalf("unexpected output: %q", output)
 	}
 }

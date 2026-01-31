@@ -27,20 +27,34 @@ type Config struct {
 	UserScopes                 []string `json:"user_scopes,omitempty"`
 	TenantAccessToken          string   `json:"tenant_access_token"`
 	TenantAccessTokenExpiresAt int64    `json:"tenant_access_token_expires_at"`
-	UserAccessToken            string   `json:"user_access_token"`
-	UserAccessTokenScope       string   `json:"user_access_token_scope"`
-	RefreshToken               string   `json:"refresh_token"`
-	UserAccessTokenExpiresAt   int64    `json:"user_access_token_expires_at"`
 
 	UserAccounts map[string]*UserAccount `json:"user_accounts,omitempty"`
 }
 
 type UserAccount struct {
-	UserAccessToken          string   `json:"user_access_token,omitempty"`
-	UserAccessTokenScope     string   `json:"user_access_token_scope,omitempty"`
-	RefreshToken             string   `json:"refresh_token,omitempty"`
-	UserAccessTokenExpiresAt int64    `json:"user_access_token_expires_at,omitempty"`
-	UserScopes               []string `json:"user_scopes,omitempty"`
+	UserAccessToken          string                   `json:"user_access_token,omitempty"`
+	UserAccessTokenScope     string                   `json:"user_access_token_scope,omitempty"`
+	RefreshToken             string                   `json:"refresh_token,omitempty"`
+	UserRefreshTokenPayload  *UserRefreshTokenPayload `json:"user_refresh_token_payload,omitempty"`
+	UserAccessTokenExpiresAt int64                    `json:"user_access_token_expires_at,omitempty"`
+	UserScopes               []string                 `json:"user_scopes,omitempty"`
+}
+
+type UserRefreshTokenPayload struct {
+	RefreshToken string   `json:"refresh_token,omitempty"`
+	Services     []string `json:"services,omitempty"`
+	Scopes       string   `json:"scopes,omitempty"`
+	CreatedAt    int64    `json:"created_at,omitempty"`
+}
+
+func (acct *UserAccount) RefreshTokenValue() string {
+	if acct == nil {
+		return ""
+	}
+	if acct.UserRefreshTokenPayload != nil && acct.UserRefreshTokenPayload.RefreshToken != "" {
+		return acct.UserRefreshTokenPayload.RefreshToken
+	}
+	return acct.RefreshToken
 }
 
 func Default() *Config {
@@ -118,10 +132,8 @@ func applyEnvFallback(cfg *Config) {
 			cfg.AppSecret = appSecret
 		}
 	}
-	if cfg.KeyringBackend == "" {
-		if v := os.Getenv("LARK_KEYRING_BACKEND"); v != "" {
-			cfg.KeyringBackend = v
-		}
+	if v, ok := os.LookupEnv("LARK_KEYRING_BACKEND"); ok {
+		cfg.KeyringBackend = v
 	}
 }
 

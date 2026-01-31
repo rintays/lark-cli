@@ -43,7 +43,7 @@ func TestBaseRecordUpdateCommandRequiresFieldsJSON(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"fields-json\" not set" {
+	if err.Error() != "fields-json or field is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

@@ -281,7 +281,6 @@ func TestCalendarSearchCommand(t *testing.T) {
 							},
 						},
 					},
-					"page_token": "next",
 				},
 			})
 		default:

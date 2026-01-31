@@ -106,6 +106,7 @@ func clearUserAccountTokens(cfg *config.Config, name string) bool {
 	acct.UserAccessToken = ""
 	acct.RefreshToken = ""
 	acct.UserAccessTokenExpiresAt = 0
+	acct.UserRefreshTokenPayload = nil
 	saveUserAccount(cfg, name, acct)
 	return true
 }
