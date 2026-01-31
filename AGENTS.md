@@ -79,6 +79,7 @@
 - 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.
 - 2026-01-31: Messages list now renders system templates, formats mentions with user id links, drops chat id from meta, and shows metadata before content.
 - 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
+- 2026-01-31: Chat announcement docx output now surfaces non-text blocks (image/file/link/etc.) and avoids block count fallbacks.
 - 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.
 - 2026-01-31: Mail send now supports raw EML input via `--raw`/`--raw-file` (base64url), with updated CLI validation and examples.
 - 2026-01-31: Added `lark sheets delete` command backed by Drive delete, with README/design coverage and tests.
@@ -93,6 +94,7 @@
 - 2026-01-31: Sheets create now includes default sheet id/range, sheets read/update/append/clear accept `--sheet-id` with range shorthand, sheets update/append accept JSON/CSV values files (`--values-file` or `--values @file`), and sheets read defaults missing major_dimension to ROWS.
 - 2026-01-31: Added `lark mail get` for full message content; `mail info`/`mail list` now return metadata-only message fields.
 - 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.
+- 2026-01-31: Removed base table `--view-name`, added base view create command, and added base field types hints aligned to field properties.
 - 2026-01-31: Corrected Mail user OAuth scopes to `mail:user_mailbox.message:readonly` (list/get) and `mail:user_mailbox.message:send` (send), added mail-send/public service mappings, and updated auth registry tests/docs.
 - 2026-01-31: Made meetings list and calendars list/search accept optional start/end filters, removed required flags, and added calendar pagination to respect `--limit`.
 - 2026-01-31: Added mail message-id normalization retry on invalid params for mail get, with tests.

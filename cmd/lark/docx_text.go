@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
@@ -66,11 +67,35 @@ func docxBlockText(block *larkdocx.Block) string {
 	if block.Quote != nil {
 		return docxTextValue(block.Quote)
 	}
+	if block.Equation != nil {
+		return docxTextValue(block.Equation)
+	}
 	if block.Todo != nil {
 		return docxTextValue(block.Todo)
 	}
 	if block.Page != nil {
 		return docxTextValue(block.Page)
+	}
+	if block.Image != nil {
+		return docxImageValue(block.Image)
+	}
+	if block.File != nil {
+		return docxFileValue(block.File)
+	}
+	if block.LinkPreview != nil {
+		return docxLinkPreviewValue(block.LinkPreview)
+	}
+	if block.Iframe != nil {
+		return docxIframeValue(block.Iframe)
+	}
+	if block.Bitable != nil {
+		return docxTokenValue("bitable", block.Bitable.Token)
+	}
+	if block.Sheet != nil {
+		return docxTokenValue("sheet", block.Sheet.Token)
+	}
+	if block.ChatCard != nil {
+		return docxChatCardValue(block.ChatCard)
 	}
 	return ""
 }
@@ -141,4 +166,83 @@ func docxTextValue(text *larkdocx.Text) string {
 		}
 	}
 	return b.String()
+}
+
+func docxImageValue(image *larkdocx.Image) string {
+	if image == nil {
+		return ""
+	}
+	if image.Caption != nil && image.Caption.Content != nil {
+		if value := strings.TrimSpace(*image.Caption.Content); value != "" {
+			return value
+		}
+	}
+	if image.Token != nil {
+		if value := strings.TrimSpace(*image.Token); value != "" {
+			return fmt.Sprintf("[image:%s]", value)
+		}
+	}
+	return "[image]"
+}
+
+func docxFileValue(file *larkdocx.File) string {
+	if file == nil {
+		return ""
+	}
+	if file.Name != nil {
+		if value := strings.TrimSpace(*file.Name); value != "" {
+			return value
+		}
+	}
+	if file.Token != nil {
+		if value := strings.TrimSpace(*file.Token); value != "" {
+			return fmt.Sprintf("[file:%s]", value)
+		}
+	}
+	return "[file]"
+}
+
+func docxLinkPreviewValue(link *larkdocx.LinkPreview) string {
+	if link == nil {
+		return ""
+	}
+	if link.Url != nil {
+		if value := strings.TrimSpace(*link.Url); value != "" {
+			return value
+		}
+	}
+	return "[link]"
+}
+
+func docxIframeValue(iframe *larkdocx.Iframe) string {
+	if iframe == nil || iframe.Component == nil {
+		return ""
+	}
+	if iframe.Component.Url != nil {
+		if value := strings.TrimSpace(*iframe.Component.Url); value != "" {
+			return value
+		}
+	}
+	return "[iframe]"
+}
+
+func docxTokenValue(label string, token *string) string {
+	if token != nil {
+		if value := strings.TrimSpace(*token); value != "" {
+			return fmt.Sprintf("[%s:%s]", label, value)
+		}
+	}
+	return fmt.Sprintf("[%s]", label)
+}
+
+func docxChatCardValue(card *larkdocx.ChatCard) string {
+	if card == nil {
+		return ""
+	}
+	if card.ChatId != nil {
+		if value := strings.TrimSpace(*card.ChatId); value != "" {
+			return fmt.Sprintf("[chat:%s]", value)
+		}
+	}
+	return "[chat]"
 }
