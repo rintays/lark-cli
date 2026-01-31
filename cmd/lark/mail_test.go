@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -1134,11 +1136,179 @@ func TestMailSendMissingSubjectDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"subject\" not set" {
+	if err.Error() != "subject is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if calls != 0 {
 		t.Fatalf("unexpected request count: %d", calls)
+	}
+}
+
+func TestMailSendCommandRawRejectsText(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant-token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--raw", "Zm9v",
+		"--text", "hi",
+		"--user-access-token", "user-token",
+	})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "raw is mutually exclusive with subject/to/cc/bcc/text/html" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestMailSendCommandWithRawPayload(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/send" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["raw"] != "Zm9v" {
+			t.Fatalf("unexpected raw: %#v", payload["raw"])
+		}
+		if _, ok := payload["subject"]; ok {
+			t.Fatalf("unexpected subject: %#v", payload["subject"])
+		}
+		if _, ok := payload["to"]; ok {
+			t.Fatalf("unexpected to: %#v", payload["to"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"message_id": "msg_1",
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant-token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--raw", "Zm9v",
+		"--user-access-token", "user-token",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail send error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "message_id: msg_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestMailSendCommandWithRawFile(t *testing.T) {
+	rawData := []byte("Subject: Hello\r\n\r\nBody")
+	rawPath := filepath.Join(t.TempDir(), "hello.eml")
+	if err := os.WriteFile(rawPath, rawData, 0o644); err != nil {
+		t.Fatalf("write raw file: %v", err)
+	}
+	expected := base64.URLEncoding.EncodeToString(rawData)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/send" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload["raw"] != expected {
+			t.Fatalf("unexpected raw: %#v", payload["raw"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"message_id": "msg_1",
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant-token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{
+		"send",
+		"--mailbox-id", "mbx_1",
+		"--raw-file", rawPath,
+		"--user-access-token", "user-token",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail send error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "message_id: msg_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
 
