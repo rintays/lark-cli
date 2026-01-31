@@ -213,11 +213,29 @@ func (r *RevisionID) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("revision_id must be a string or number, got %s", string(data))
 }
 
+type DocxDisplaySetting struct {
+	ShowAuthors        *bool `json:"show_authors,omitempty"`
+	ShowCreateTime     *bool `json:"show_create_time,omitempty"`
+	ShowPv             *bool `json:"show_pv,omitempty"`
+	ShowUv             *bool `json:"show_uv,omitempty"`
+	ShowLikeCount      *bool `json:"show_like_count,omitempty"`
+	ShowCommentCount   *bool `json:"show_comment_count,omitempty"`
+	ShowRelatedMatters *bool `json:"show_related_matters,omitempty"`
+}
+
+type DocxCover struct {
+	Token        string   `json:"token,omitempty"`
+	OffsetRatioX *float64 `json:"offset_ratio_x,omitempty"`
+	OffsetRatioY *float64 `json:"offset_ratio_y,omitempty"`
+}
+
 type DocxDocument struct {
-	DocumentID string     `json:"document_id"`
-	Title      string     `json:"title"`
-	URL        string     `json:"url"`
-	RevisionID RevisionID `json:"revision_id"`
+	DocumentID     string              `json:"document_id"`
+	Title          string              `json:"title,omitempty"`
+	URL            string              `json:"url,omitempty"`
+	RevisionID     RevisionID          `json:"revision_id,omitempty"`
+	DisplaySetting *DocxDisplaySetting `json:"display_setting,omitempty"`
+	Cover          *DocxCover          `json:"cover,omitempty"`
 }
 
 type CreateDocxDocumentRequest struct {
@@ -259,23 +277,33 @@ type SheetDimensionDeleteResult struct {
 	EndIndex   int `json:"end_index"`
 }
 
-type SpreadsheetProperties struct {
-	Title      string `json:"title"`
-	OwnerUser  int64  `json:"ownerUser"`
-	SheetCount int    `json:"sheetCount"`
-	Revision   int64  `json:"revision"`
+type SpreadsheetGridProperties struct {
+	FrozenRowCount    int `json:"frozenRowCount,omitempty"`
+	FrozenColumnCount int `json:"frozenColumnCount,omitempty"`
+	RowCount          int `json:"rowCount,omitempty"`
+	ColumnCount       int `json:"columnCount,omitempty"`
+}
+
+type SpreadsheetMergeRange struct {
+	StartRowIndex    int `json:"startRowIndex,omitempty"`
+	EndRowIndex      int `json:"endRowIndex,omitempty"`
+	StartColumnIndex int `json:"startColumnIndex,omitempty"`
+	EndColumnIndex   int `json:"endColumnIndex,omitempty"`
 }
 
 type SpreadsheetSheet struct {
-	SheetID string `json:"sheetId"`
-	Title   string `json:"title"`
-	Index   int    `json:"index"`
-	Hidden  bool   `json:"hidden"`
+	SheetID        string                     `json:"sheetId"`
+	Title          string                     `json:"title"`
+	Index          int                        `json:"index"`
+	Hidden         bool                       `json:"hidden"`
+	ResourceType   string                     `json:"resourceType,omitempty"`
+	GridProperties *SpreadsheetGridProperties `json:"gridProperties,omitempty"`
+	Merges         []SpreadsheetMergeRange    `json:"merges,omitempty"`
 }
 
 type SpreadsheetMetadata struct {
-	Properties SpreadsheetProperties `json:"properties"`
-	Sheets     []SpreadsheetSheet    `json:"sheets"`
+	Spreadsheet SpreadsheetInfo    `json:"spreadsheet"`
+	Sheets      []SpreadsheetSheet `json:"sheets,omitempty"`
 }
 
 type MailFolderType string

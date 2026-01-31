@@ -345,21 +345,57 @@ func TestSheetsInfoCommand(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets/spreadsheet" {
+		switch r.URL.Path {
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"title":         "Budget Q1",
+						"token":         "spreadsheet",
+						"owner_id":      "ou_1",
+						"url":           "https://example.test/spreadsheet",
+						"folder_token":  "fld_1",
+						"without_mount": false,
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/query":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"sheets": []map[string]any{
+						{
+							"sheet_id":      "sheet_1",
+							"title":         "Sheet1",
+							"index":         0,
+							"hidden":        false,
+							"resource_type": "sheet",
+							"grid_properties": map[string]any{
+								"frozen_row_count":    1,
+								"frozen_column_count": 0,
+								"row_count":           100,
+								"column_count":        10,
+							},
+							"merges": []map[string]any{
+								{
+									"start_row_index":    0,
+									"end_row_index":      1,
+									"start_column_index": 0,
+									"end_column_index":   2,
+								},
+							},
+						},
+					},
+				},
+			})
+		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"spreadsheet": map[string]any{
-					"title": "Budget Q1",
-					"token": "spreadsheet",
-					"url":   "https://example.test/spreadsheet",
-				},
-			},
-		})
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
@@ -387,7 +423,16 @@ func TestSheetsInfoCommand(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "Budget Q1") {
+	if !strings.Contains(output, "title\tBudget Q1") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if !strings.Contains(output, "token\tspreadsheet") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if !strings.Contains(output, "owner_id\tou_1") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if !strings.Contains(output, "sheets[0].title\tSheet1") {
 		t.Fatalf("unexpected output: %q", output)
 	}
 }

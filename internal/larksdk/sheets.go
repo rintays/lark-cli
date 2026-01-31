@@ -556,8 +556,24 @@ func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetT
 	if resp.Data == nil || resp.Data.Spreadsheet == nil {
 		return metadata, nil
 	}
-	if resp.Data.Spreadsheet.Title != nil {
-		metadata.Properties.Title = *resp.Data.Spreadsheet.Title
+	spreadsheet := resp.Data.Spreadsheet
+	if spreadsheet.Title != nil {
+		metadata.Spreadsheet.Title = *spreadsheet.Title
 	}
+	if spreadsheet.Url != nil {
+		metadata.Spreadsheet.URL = *spreadsheet.Url
+	}
+	if spreadsheet.Token != nil {
+		metadata.Spreadsheet.SpreadsheetToken = *spreadsheet.Token
+	}
+	if spreadsheet.OwnerId != nil {
+		metadata.Spreadsheet.OwnerID = *spreadsheet.OwnerId
+	}
+
+	sheets, err := c.ListSpreadsheetSheets(ctx, token, spreadsheetToken)
+	if err != nil {
+		return SpreadsheetMetadata{}, err
+	}
+	metadata.Sheets = sheets
 	return metadata, nil
 }

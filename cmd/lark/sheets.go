@@ -229,19 +229,49 @@ func formatSheetValues(valueRange larksdk.SheetValueRange) string {
 }
 
 func formatSpreadsheetMetadata(metadata larksdk.SpreadsheetMetadata) string {
-	lines := make([]string, 0, len(metadata.Sheets)+1)
-	if title := strings.TrimSpace(metadata.Properties.Title); title != "" {
-		lines = append(lines, title)
+	rows := [][]string{
+		{"token", infoValue(metadata.Spreadsheet.SpreadsheetToken)},
+		{"title", infoValue(metadata.Spreadsheet.Title)},
+		{"url", infoValue(metadata.Spreadsheet.URL)},
+		{"owner_id", infoValue(metadata.Spreadsheet.OwnerID)},
+		{"sheets.count", fmt.Sprintf("%d", len(metadata.Sheets))},
 	}
-	for _, sheet := range metadata.Sheets {
-		if name := strings.TrimSpace(sheet.Title); name != "" {
-			lines = append(lines, name)
+	for i, sheet := range metadata.Sheets {
+		prefix := fmt.Sprintf("sheets[%d]", i)
+		resourceType := infoValue(sheet.ResourceType)
+		frozenRowCount := "-"
+		frozenColumnCount := "-"
+		rowCount := "-"
+		columnCount := "-"
+		if sheet.GridProperties != nil {
+			frozenRowCount = fmt.Sprintf("%d", sheet.GridProperties.FrozenRowCount)
+			frozenColumnCount = fmt.Sprintf("%d", sheet.GridProperties.FrozenColumnCount)
+			rowCount = fmt.Sprintf("%d", sheet.GridProperties.RowCount)
+			columnCount = fmt.Sprintf("%d", sheet.GridProperties.ColumnCount)
+		}
+		rows = append(rows,
+			[]string{prefix + ".sheet_id", infoValue(sheet.SheetID)},
+			[]string{prefix + ".title", infoValue(sheet.Title)},
+			[]string{prefix + ".index", fmt.Sprintf("%d", sheet.Index)},
+			[]string{prefix + ".hidden", fmt.Sprintf("%t", sheet.Hidden)},
+			[]string{prefix + ".resource_type", resourceType},
+			[]string{prefix + ".grid_properties.frozen_row_count", frozenRowCount},
+			[]string{prefix + ".grid_properties.frozen_column_count", frozenColumnCount},
+			[]string{prefix + ".grid_properties.row_count", rowCount},
+			[]string{prefix + ".grid_properties.column_count", columnCount},
+			[]string{prefix + ".merges.count", fmt.Sprintf("%d", len(sheet.Merges))},
+		)
+		for j, merge := range sheet.Merges {
+			mergePrefix := fmt.Sprintf("%s.merges[%d]", prefix, j)
+			rows = append(rows,
+				[]string{mergePrefix + ".start_row_index", fmt.Sprintf("%d", merge.StartRowIndex)},
+				[]string{mergePrefix + ".end_row_index", fmt.Sprintf("%d", merge.EndRowIndex)},
+				[]string{mergePrefix + ".start_column_index", fmt.Sprintf("%d", merge.StartColumnIndex)},
+				[]string{mergePrefix + ".end_column_index", fmt.Sprintf("%d", merge.EndColumnIndex)},
+			)
 		}
 	}
-	if len(lines) == 0 {
-		return "no metadata found"
-	}
-	return strings.Join(lines, "\n")
+	return formatInfoTable(rows, "no metadata found")
 }
 
 func parseSheetValues(valuesRaw string) ([][]any, error) {

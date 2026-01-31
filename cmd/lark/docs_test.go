@@ -170,7 +170,13 @@ func TestDocsInfoCommand(t *testing.T) {
 		t.Fatalf("docs info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
+	if !strings.Contains(buf.String(), "document_id\tdoc1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "title\tSpecs") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "url\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
