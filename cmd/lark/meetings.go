@@ -118,19 +118,25 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			if start == "" || end == "" {
-				return errors.New("start and end times are required")
-			}
-			startUnix, err := parseMeetingTime(start)
-			if err != nil {
-				return fmt.Errorf("invalid start time: %w", err)
-			}
-			endUnix, err := parseMeetingTime(end)
-			if err != nil {
-				return fmt.Errorf("invalid end time: %w", err)
-			}
-			if endUnix <= startUnix {
-				return errors.New("end time must be after start time")
+			var startUnix int64
+			var endUnix int64
+			if start != "" || end != "" {
+				if start == "" || end == "" {
+					return errors.New("start and end must be provided together")
+				}
+				parsedStart, err := parseMeetingTime(start)
+				if err != nil {
+					return fmt.Errorf("invalid start time: %w", err)
+				}
+				parsedEnd, err := parseMeetingTime(end)
+				if err != nil {
+					return fmt.Errorf("invalid end time: %w", err)
+				}
+				if parsedEnd <= parsedStart {
+					return errors.New("end time must be after start time")
+				}
+				startUnix = parsedStart
+				endUnix = parsedEnd
 			}
 			filterCount := 0
 			if meetingNo != "" {
@@ -177,9 +183,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 			}
 			for {
 				pageSize := remaining
-				result, err := state.SDK.ListMeetings(context.Background(), token, larksdk.ListMeetingsRequest{
-					StartTime:               strconv.FormatInt(startUnix, 10),
-					EndTime:                 strconv.FormatInt(endUnix, 10),
+				req := larksdk.ListMeetingsRequest{
 					MeetingStatus:           meetingStatusPtr,
 					MeetingNo:               meetingNo,
 					UserID:                  userID,
@@ -190,7 +194,12 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 					IncludeExternalMeetings: includeExternalPtr,
 					IncludeWebinar:          includeWebinarPtr,
 					UserIDType:              userIDType,
-				})
+				}
+				if start != "" {
+					req.StartTime = strconv.FormatInt(startUnix, 10)
+					req.EndTime = strconv.FormatInt(endUnix, 10)
+				}
+				result, err := state.SDK.ListMeetings(context.Background(), token, req)
 				if err != nil {
 					return err
 				}
@@ -232,8 +241,6 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 	cmd.Flags().BoolVar(&includeExternal, "include-external", false, "include external meetings")
 	cmd.Flags().BoolVar(&includeWebinar, "include-webinar", false, "include webinars")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
-	_ = cmd.MarkFlagRequired("start")
-	_ = cmd.MarkFlagRequired("end")
 	return cmd
 }
 

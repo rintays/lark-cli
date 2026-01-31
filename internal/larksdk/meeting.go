@@ -104,8 +104,8 @@ func (c *Client) ListMeetings(ctx context.Context, token string, req ListMeeting
 	if !c.available() || c.coreConfig == nil {
 		return ListMeetingsResult{}, ErrUnavailable
 	}
-	if req.StartTime == "" || req.EndTime == "" {
-		return ListMeetingsResult{}, errors.New("start and end times are required")
+	if (req.StartTime == "") != (req.EndTime == "") {
+		return ListMeetingsResult{}, errors.New("start and end must be provided together")
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
@@ -119,8 +119,12 @@ func (c *Client) ListMeetings(ctx context.Context, token string, req ListMeeting
 		QueryParams:               larkcore.QueryParams{},
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
-	apiReq.QueryParams.Set("start_time", req.StartTime)
-	apiReq.QueryParams.Set("end_time", req.EndTime)
+	if req.StartTime != "" {
+		apiReq.QueryParams.Set("start_time", req.StartTime)
+	}
+	if req.EndTime != "" {
+		apiReq.QueryParams.Set("end_time", req.EndTime)
+	}
 	if req.MeetingStatus != nil {
 		apiReq.QueryParams.Set("meeting_status", fmt.Sprintf("%d", *req.MeetingStatus))
 	}
