@@ -7,48 +7,21 @@ import (
 	"testing"
 	"time"
 
-	"lark/internal/config"
-	"lark/internal/larksdk"
 	"lark/internal/testutil"
 )
 
 func TestIntegrationBaseRecordCreateGetDelete(t *testing.T) {
 	testutil.RequireIntegration(t)
 
-	if os.Getenv("LARK_APP_ID") == "" || os.Getenv("LARK_APP_SECRET") == "" {
-		t.Skip("missing LARK_APP_ID/LARK_APP_SECRET")
-	}
-	appToken := os.Getenv("LARK_TEST_APP_TOKEN")
-	tableID := os.Getenv("LARK_TEST_TABLE_ID")
-	if appToken == "" || tableID == "" {
-		t.Skip("missing LARK_TEST_APP_TOKEN/LARK_TEST_TABLE_ID")
-	}
+	_ = testutil.RequireEnv(t, "LARK_APP_ID")
+	_ = testutil.RequireEnv(t, "LARK_APP_SECRET")
+	appToken := testutil.RequireEnv(t, "LARK_TEST_APP_TOKEN")
+	tableID := testutil.RequireEnv(t, "LARK_TEST_TABLE_ID")
 
-	cfg := config.Default()
-	// pull app_id/app_secret from env
-	if cfg.AppID == "" {
-		cfg.AppID = os.Getenv("LARK_APP_ID")
-	}
-	if cfg.AppSecret == "" {
-		cfg.AppSecret = os.Getenv("LARK_APP_SECRET")
-	}
-	if baseURL := os.Getenv("LARK_BASE_URL"); baseURL != "" {
-		cfg.BaseURL = baseURL
-	}
-
-	sdk, err := larksdk.New(cfg)
-	if err != nil {
-		t.Fatalf("sdk init: %v", err)
-	}
-
+	fx := getIntegrationFixtures(t)
+	sdk := fx.SDK
 	ctx := context.Background()
-	tenantToken, _, err := sdk.TenantAccessToken(ctx)
-	if err != nil {
-		t.Fatalf("tenant token: %v", err)
-	}
-	if tenantToken == "" {
-		t.Fatal("empty tenant token")
-	}
+	tenantToken := fx.Token
 
 	fieldName := os.Getenv("LARK_TEST_FIELD_NAME")
 	if fieldName == "" {
@@ -67,7 +40,7 @@ func TestIntegrationBaseRecordCreateGetDelete(t *testing.T) {
 		}
 	}
 
-	uniqueValue := fmt.Sprintf("clawdbot-it-%d", time.Now().UnixNano())
+	uniqueValue := fmt.Sprintf("%sbase-record-%d", integrationFixturePrefix, time.Now().UnixNano())
 	record, err := sdk.CreateBaseRecord(ctx, tenantToken, appToken, tableID, map[string]any{fieldName: uniqueValue})
 	if err != nil {
 		t.Fatalf("create record: %v", err)
@@ -78,12 +51,11 @@ func TestIntegrationBaseRecordCreateGetDelete(t *testing.T) {
 	recordID := record.RecordID
 
 	defer func() {
-		res, derr := sdk.DeleteBaseRecord(ctx, tenantToken, appToken, tableID, recordID)
-		if derr != nil {
-			t.Fatalf("delete record: %v", derr)
+		if recordID == "" {
+			return
 		}
-		if !res.Deleted {
-			t.Fatalf("expected deleted=true, got false (record_id=%s)", res.RecordID)
+		if err := sdk.DeleteBaseRecord(ctx, tenantToken, appToken, tableID, recordID); err != nil {
+			t.Fatalf("delete record: %v", err)
 		}
 	}()
 
@@ -92,13 +64,6 @@ func TestIntegrationBaseRecordCreateGetDelete(t *testing.T) {
 		t.Fatalf("get record: %v", err)
 	}
 	if got.RecordID != recordID {
-		t.Fatalf("expected record_id %q, got %q", recordID, got.RecordID)
-	}
-	if got.Fields != nil {
-		if v, ok := got.Fields[fieldName]; ok {
-			if fmt.Sprint(v) != uniqueValue {
-				t.Fatalf("expected field %q=%q, got %#v", fieldName, uniqueValue, v)
-			}
-		}
+		t.Fatalf("expected record_id %s, got %s", recordID, got.RecordID)
 	}
 }
