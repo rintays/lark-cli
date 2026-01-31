@@ -120,7 +120,11 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 			}
 			var startUnix int64
 			var endUnix int64
-			if start != "" || end != "" {
+			if start == "" && end == "" {
+				now := time.Now().UTC()
+				startUnix = now.AddDate(0, -6, 0).Unix()
+				endUnix = now.Unix()
+			} else {
 				if start == "" || end == "" {
 					return errors.New("start and end must be provided together")
 				}
@@ -230,8 +234,8 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&start, "start", "", "start time (RFC3339 or unix seconds)")
-	cmd.Flags().StringVar(&end, "end", "", "end time (RFC3339 or unix seconds)")
+	cmd.Flags().StringVar(&start, "start", "", "start time (RFC3339 or unix seconds; default: now-6 months when omitted)")
+	cmd.Flags().StringVar(&end, "end", "", "end time (RFC3339 or unix seconds; default: now when omitted)")
 	cmd.Flags().IntVar(&limit, "limit", 20, "max number of meetings to return")
 	cmd.Flags().IntVar(&meetingStatus, "status", 0, "meeting status")
 	cmd.Flags().StringVar(&meetingNo, "meeting-no", "", "meeting number (9 digits)")

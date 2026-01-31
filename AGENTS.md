@@ -91,3 +91,4 @@
 - 2026-01-31: Added `lark mail get` for full message content; `mail info`/`mail list` now return metadata-only message fields.
 - 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.
 - 2026-01-31: Made meetings list and calendars list/search accept optional start/end filters, removed required flags, and added calendar pagination to respect `--limit`.
+- 2026-01-31: Meetings list now defaults to the last 6 months when start/end are omitted.
