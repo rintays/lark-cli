@@ -27,6 +27,7 @@ type integrationFixtures struct {
 	UserEmail        string
 
 	SpreadsheetToken string
+	SheetID          string
 	SheetTitle       string
 
 	MailTo string
@@ -93,6 +94,7 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 		UserEmail:        os.Getenv("LARK_TEST_USER_EMAIL"),
 
 		SpreadsheetToken: spreadsheetToken,
+		SheetID:          os.Getenv("LARK_TEST_SHEET_SHEET_ID"),
 		SheetTitle:       sheetTitle,
 
 		MailTo: os.Getenv("LARK_TEST_MAIL_TO"),
