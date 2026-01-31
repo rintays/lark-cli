@@ -133,7 +133,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] per-service scope variants (start with Drive: `drive:drive` vs `drive:drive:readonly`)
 - [x] **Incremental authorization** (gog `include_granted_scopes=true` analogue) — DONE: `auth user login` defaults to incremental + delta scopes, with `--incremental=false` to request full scopes.
   - [x] Default to incremental grant when adding services/scopes (avoid re-consenting everything)
-- [ ] **Explicit re-auth triggers** (gog `--force-consent` analogue)
+- [x] **Explicit re-auth triggers** (gog `--force-consent` analogue)
   - [x] Add `lark auth user login --force-consent` (or equivalent) to force prompt/consent
   - [x] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
     - [x] refresh_token missing: ensureUserToken/expireUserToken suggests `lark auth user login --scope offline_access --force-consent`
@@ -532,5 +532,6 @@ Deliverables:
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
 - 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
 - 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.
+- 2026-01-31: Marked explicit re-auth triggers complete.
 - 2026-02-01: Verified Wiki `SpaceMember.Create` role-update behavior (not an upsert; repeated adds return already-exists); updated integration test to assert/log behavior and restore initial state without privilege downgrades.
 - 2026-02-01: Auth registry: made `SuggestedUserOAuthScopesFromServices` variant selection fall back consistently (readonly/full/required) + added unit tests.
