@@ -40,6 +40,7 @@ func newConfigGetCmd(state *appState) *cobra.Command {
 func newConfigSetCmd(state *appState) *cobra.Command {
 	var baseURL string
 	var platform string
+	var defaultMailboxID string
 
 	cmd := &cobra.Command{
 		Use:   "set",
@@ -51,8 +52,25 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 
 			useBaseURL := cmd.Flags().Changed("base-url")
 			usePlatform := cmd.Flags().Changed("platform")
-			if !useBaseURL && !usePlatform {
-				return errors.New("either --base-url or --platform is required")
+			useDefaultMailboxID := cmd.Flags().Changed("default-mailbox-id")
+			if !useBaseURL && !usePlatform && !useDefaultMailboxID {
+				return errors.New("either --base-url, --platform, or --default-mailbox-id is required")
+			}
+
+			if useDefaultMailboxID {
+				defaultMailboxID = strings.TrimSpace(defaultMailboxID)
+				if defaultMailboxID == "" {
+					return errors.New("default-mailbox-id must not be empty")
+				}
+				state.Config.DefaultMailboxID = defaultMailboxID
+				if err := state.saveConfig(); err != nil {
+					return err
+				}
+				payload := map[string]any{
+					"config_path":        state.ConfigPath,
+					"default_mailbox_id": defaultMailboxID,
+				}
+				return state.Printer.Print(payload, fmt.Sprintf("saved default_mailbox_id to %s", state.ConfigPath))
 			}
 
 			var normalized string
@@ -94,8 +112,9 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&baseURL, "base-url", "", "base URL to persist")
 	cmd.Flags().StringVar(&platform, "platform", "", "platform to persist (feishu or lark)")
-	cmd.MarkFlagsMutuallyExclusive("base-url", "platform")
-	cmd.MarkFlagsOneRequired("base-url", "platform")
+	cmd.Flags().StringVar(&defaultMailboxID, "default-mailbox-id", "", "default mailbox id to persist (or 'me')")
+	cmd.MarkFlagsMutuallyExclusive("base-url", "platform", "default-mailbox-id")
+	cmd.MarkFlagsOneRequired("base-url", "platform", "default-mailbox-id")
 
 	return cmd
 }

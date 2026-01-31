@@ -183,6 +183,34 @@ func TestConfigSetPlatformLarkPersistsConfig(t *testing.T) {
 	}
 }
 
+func TestConfigSetDefaultMailboxIDPersistsConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--default-mailbox-id", "me"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config set error: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	var saved config.Config
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if saved.DefaultMailboxID != "me" {
+		t.Fatalf("expected default_mailbox_id saved, got %s", saved.DefaultMailboxID)
+	}
+}
+
 func TestConfigSetPlatformAndBaseURLErrors(t *testing.T) {
 	state := &appState{
 		ConfigPath: filepath.Join(t.TempDir(), "config.json"),
@@ -195,6 +223,21 @@ func TestConfigSetPlatformAndBaseURLErrors(t *testing.T) {
 
 	if err := cmd.Execute(); err == nil {
 		t.Fatalf("expected config set error for platform and base-url")
+	}
+}
+
+func TestConfigSetDefaultMailboxIDAndBaseURLErrors(t *testing.T) {
+	state := &appState{
+		ConfigPath: filepath.Join(t.TempDir(), "config.json"),
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--default-mailbox-id", "me", "--base-url", "https://open.feishu.cn"})
+
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected config set error for default-mailbox-id and base-url")
 	}
 }
 
