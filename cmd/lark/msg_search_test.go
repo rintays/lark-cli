@@ -84,14 +84,13 @@ func TestMsgSearchCommandWithSDK(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
-			AppID:                    "app",
-			AppSecret:                "secret",
-			BaseURL:                  baseURL,
-			UserAccessToken:          "u-token",
-			UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "u-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)

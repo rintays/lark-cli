@@ -23,12 +23,11 @@ func TestConfigInfoJSONOutputValid(t *testing.T) {
 			DefaultMailboxID:           "mbx_1",
 			TenantAccessToken:          "tenant-token",
 			TenantAccessTokenExpiresAt: 1700000000,
-			UserAccessToken:            "user-token",
-			RefreshToken:               "refresh-token",
-			UserAccessTokenExpiresAt:   1700000100,
+			DefaultUserAccount:         defaultUserAccountName,
 		},
 		Printer: output.Printer{Writer: &buf, JSON: true},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "refresh-token", 1700000100, "")
 
 	cmd := newConfigCmd(state)
 	cmd.SetArgs([]string{"info"})
@@ -53,11 +52,15 @@ func TestConfigInfoJSONOutputValid(t *testing.T) {
 	if got.TenantAccessToken != state.Config.TenantAccessToken {
 		t.Fatalf("expected tenant_access_token %s, got %s", state.Config.TenantAccessToken, got.TenantAccessToken)
 	}
-	if got.UserAccessToken != state.Config.UserAccessToken {
-		t.Fatalf("expected user_access_token %s, got %s", state.Config.UserAccessToken, got.UserAccessToken)
+	account := got.UserAccounts[defaultUserAccountName]
+	if account == nil {
+		t.Fatalf("expected user account in config output")
 	}
-	if got.RefreshToken != state.Config.RefreshToken {
-		t.Fatalf("expected refresh_token %s, got %s", state.Config.RefreshToken, got.RefreshToken)
+	if account.UserAccessToken != "user-token" {
+		t.Fatalf("expected user_access_token %s, got %s", "user-token", account.UserAccessToken)
+	}
+	if account.RefreshToken != "refresh-token" {
+		t.Fatalf("expected refresh_token %s, got %s", "refresh-token", account.RefreshToken)
 	}
 }
 
@@ -71,12 +74,11 @@ func TestConfigInfoHumanOutputRedactsTokens(t *testing.T) {
 			DefaultMailboxID:           "mbx_1",
 			TenantAccessToken:          "tenant-token",
 			TenantAccessTokenExpiresAt: 1700000000,
-			UserAccessToken:            "user-token",
-			RefreshToken:               "refresh-token",
-			UserAccessTokenExpiresAt:   1700000100,
+			DefaultUserAccount:         defaultUserAccountName,
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "refresh-token", 1700000100, "")
 
 	cmd := newConfigCmd(state)
 	cmd.SetArgs([]string{"info"})
@@ -87,8 +89,8 @@ func TestConfigInfoHumanOutputRedactsTokens(t *testing.T) {
 	output := buf.String()
 	for _, token := range []string{
 		state.Config.TenantAccessToken,
-		state.Config.UserAccessToken,
-		state.Config.RefreshToken,
+		"user-token",
+		"refresh-token",
 	} {
 		if token == "" {
 			continue
@@ -130,6 +132,7 @@ func TestConfigListKeysJSONOutput(t *testing.T) {
 		"base-url",
 		"platform",
 		"default-mailbox-id",
+		"default-user-account",
 		"user-tokens",
 		"app-id",
 		"app-secret",

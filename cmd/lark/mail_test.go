@@ -55,8 +55,12 @@ func TestMailFoldersCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -114,8 +118,12 @@ func TestMailFoldersCommandUsesDefaultMailboxID(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -172,8 +180,12 @@ func TestMailFoldersCommandDefaultsToMeMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -231,8 +243,12 @@ func TestMailPublicMailboxesListCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -290,8 +306,12 @@ func TestMailMailboxesListAliasCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -347,8 +367,12 @@ func TestMailMailboxInfoCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -494,8 +518,12 @@ func TestMailListCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -605,8 +633,12 @@ func TestMailListCommandUsesDefaultMailboxID(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -709,8 +741,12 @@ func TestMailListCommandDefaultsToMeMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -806,8 +842,12 @@ func TestMailInfoCommandWithSDK(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -865,8 +905,12 @@ func TestMailInfoCommandUsesDefaultMailboxID(t *testing.T) {
 			DefaultMailboxID:           "mbx_default",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -923,8 +967,12 @@ func TestMailInfoCommandDefaultsToMeMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -1359,8 +1407,7 @@ func setupMailSendState(t *testing.T, expectedToken string) (*appState, *bytes.B
 func TestMailSendCommandUsesFlagToken(t *testing.T) {
 	state, _ := setupMailSendState(t, "flag-token")
 	state.Config.DefaultMailboxID = "mbx_default"
-	state.Config.UserAccessToken = "cached-token"
-	state.Config.UserAccessTokenExpiresAt = time.Now().Add(2 * time.Hour).Unix()
+	withUserAccount(state.Config, defaultUserAccountName, "cached-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "env-token")
 
 	cmd := newMailCmd(state)
@@ -1379,8 +1426,7 @@ func TestMailSendCommandUsesFlagToken(t *testing.T) {
 
 func TestMailSendCommandUsesEnvToken(t *testing.T) {
 	state, _ := setupMailSendState(t, "env-token")
-	state.Config.UserAccessToken = "cached-token"
-	state.Config.UserAccessTokenExpiresAt = time.Now().Add(2 * time.Hour).Unix()
+	withUserAccount(state.Config, defaultUserAccountName, "cached-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "env-token")
 
 	cmd := newMailCmd(state)
@@ -1398,8 +1444,7 @@ func TestMailSendCommandUsesEnvToken(t *testing.T) {
 
 func TestMailSendCommandUsesCachedUserToken(t *testing.T) {
 	state, _ := setupMailSendState(t, "cached-token")
-	state.Config.UserAccessToken = "cached-token"
-	state.Config.UserAccessTokenExpiresAt = time.Now().Add(2 * time.Hour).Unix()
+	withUserAccount(state.Config, defaultUserAccountName, "cached-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 
 	cmd := newMailCmd(state)

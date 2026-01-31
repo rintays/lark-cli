@@ -10,11 +10,12 @@ import (
 )
 
 type Config struct {
-	AppID            string `json:"app_id"`
-	AppSecret        string `json:"app_secret"`
-	BaseURL          string `json:"base_url"`
-	DefaultMailboxID string `json:"default_mailbox_id"`
-	DefaultTokenType string `json:"default_token_type"`
+	AppID              string `json:"app_id"`
+	AppSecret          string `json:"app_secret"`
+	BaseURL            string `json:"base_url"`
+	DefaultMailboxID   string `json:"default_mailbox_id"`
+	DefaultTokenType   string `json:"default_token_type"`
+	DefaultUserAccount string `json:"default_user_account,omitempty"`
 
 	// KeyringBackend controls where OAuth tokens are stored.
 	// Supported values: auto|file|keychain.
@@ -30,12 +31,23 @@ type Config struct {
 	UserAccessTokenScope       string   `json:"user_access_token_scope"`
 	RefreshToken               string   `json:"refresh_token"`
 	UserAccessTokenExpiresAt   int64    `json:"user_access_token_expires_at"`
+
+	UserAccounts map[string]*UserAccount `json:"user_accounts,omitempty"`
+}
+
+type UserAccount struct {
+	UserAccessToken          string   `json:"user_access_token,omitempty"`
+	UserAccessTokenScope     string   `json:"user_access_token_scope,omitempty"`
+	RefreshToken             string   `json:"refresh_token,omitempty"`
+	UserAccessTokenExpiresAt int64    `json:"user_access_token_expires_at,omitempty"`
+	UserScopes               []string `json:"user_scopes,omitempty"`
 }
 
 func Default() *Config {
 	return &Config{
-		BaseURL:          "https://open.feishu.cn",
-		DefaultTokenType: "tenant",
+		BaseURL:            "https://open.feishu.cn",
+		DefaultTokenType:   "tenant",
+		DefaultUserAccount: "default",
 	}
 }
 
@@ -116,6 +128,10 @@ func applyEnvFallback(cfg *Config) {
 func normalizeDefaults(cfg *Config) {
 	if cfg == nil {
 		return
+	}
+	cfg.DefaultUserAccount = strings.TrimSpace(cfg.DefaultUserAccount)
+	if cfg.DefaultUserAccount == "" {
+		cfg.DefaultUserAccount = "default"
 	}
 	switch strings.ToLower(strings.TrimSpace(cfg.DefaultTokenType)) {
 	case "tenant", "user":

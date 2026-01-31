@@ -24,13 +24,11 @@ func TestEnsureUserTokenUsesCache(t *testing.T) {
 	httpClient, baseURL := testutil.NewTestClient(handler)
 
 	cfg := &config.Config{
-		AppID:                    "app",
-		AppSecret:                "secret",
-		BaseURL:                  baseURL,
-		UserAccessToken:          "cached-user",
-		UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-		RefreshToken:             "refresh-token",
+		AppID:     "app",
+		AppSecret: "secret",
+		BaseURL:   baseURL,
 	}
+	withUserAccount(cfg, defaultUserAccountName, "cached-user", "refresh-token", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(cfg, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -107,13 +105,11 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 
 	configPath := filepath.Join(t.TempDir(), "config.json")
 	cfg := &config.Config{
-		AppID:                    "app",
-		AppSecret:                "secret",
-		BaseURL:                  baseURL,
-		UserAccessToken:          "stale",
-		UserAccessTokenExpiresAt: time.Now().Add(10 * time.Second).Unix(),
-		RefreshToken:             "refresh-me",
+		AppID:     "app",
+		AppSecret: "secret",
+		BaseURL:   baseURL,
 	}
+	withUserAccount(cfg, defaultUserAccountName, "stale", "refresh-me", time.Now().Add(10*time.Second).Unix(), "")
 	sdkClient, err := larksdk.New(cfg, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -143,13 +139,17 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 	if err := json.Unmarshal(data, &saved); err != nil {
 		t.Fatalf("unmarshal config: %v", err)
 	}
-	if saved.UserAccessToken != "new-user-token" {
-		t.Fatalf("expected token saved, got %s", saved.UserAccessToken)
+	account, ok := loadUserAccount(&saved, defaultUserAccountName)
+	if !ok {
+		t.Fatalf("expected account saved")
 	}
-	if saved.RefreshToken != "new-refresh-token" {
-		t.Fatalf("expected refresh token saved, got %s", saved.RefreshToken)
+	if account.UserAccessToken != "new-user-token" {
+		t.Fatalf("expected token saved, got %s", account.UserAccessToken)
 	}
-	if saved.UserAccessTokenExpiresAt == 0 {
+	if account.RefreshToken != "new-refresh-token" {
+		t.Fatalf("expected refresh token saved, got %s", account.RefreshToken)
+	}
+	if account.UserAccessTokenExpiresAt == 0 {
 		t.Fatalf("expected expiry saved")
 	}
 }
@@ -157,13 +157,11 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 func TestEnsureUserTokenMissingRefreshTokenClears(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.json")
 	cfg := &config.Config{
-		AppID:                    "app",
-		AppSecret:                "secret",
-		BaseURL:                  "https://open.feishu.cn",
-		UserAccessToken:          "stale",
-		UserAccessTokenExpiresAt: time.Now().Add(-1 * time.Minute).Unix(),
-		RefreshToken:             "",
+		AppID:     "app",
+		AppSecret: "secret",
+		BaseURL:   "https://open.feishu.cn",
 	}
+	withUserAccount(cfg, defaultUserAccountName, "stale", "", time.Now().Add(-1*time.Minute).Unix(), "")
 	state := &appState{
 		ConfigPath: configPath,
 		Config:     cfg,
@@ -185,14 +183,17 @@ func TestEnsureUserTokenMissingRefreshTokenClears(t *testing.T) {
 	if err := json.Unmarshal(data, &saved); err != nil {
 		t.Fatalf("unmarshal config: %v", err)
 	}
-	if saved.UserAccessToken != "" {
-		t.Fatalf("expected user access token cleared, got %s", saved.UserAccessToken)
-	}
-	if saved.RefreshToken != "" {
-		t.Fatalf("expected refresh token cleared, got %s", saved.RefreshToken)
-	}
-	if saved.UserAccessTokenExpiresAt != 0 {
-		t.Fatalf("expected expiry cleared, got %d", saved.UserAccessTokenExpiresAt)
+	account, ok := loadUserAccount(&saved, defaultUserAccountName)
+	if ok {
+		if account.UserAccessToken != "" {
+			t.Fatalf("expected user access token cleared, got %s", account.UserAccessToken)
+		}
+		if account.RefreshToken != "" {
+			t.Fatalf("expected refresh token cleared, got %s", account.RefreshToken)
+		}
+		if account.UserAccessTokenExpiresAt != 0 {
+			t.Fatalf("expected expiry cleared, got %d", account.UserAccessTokenExpiresAt)
+		}
 	}
 }
 
@@ -221,13 +222,11 @@ func TestEnsureUserTokenRefreshFailureClears(t *testing.T) {
 
 	configPath := filepath.Join(t.TempDir(), "config.json")
 	cfg := &config.Config{
-		AppID:                    "app",
-		AppSecret:                "secret",
-		BaseURL:                  baseURL,
-		UserAccessToken:          "stale",
-		UserAccessTokenExpiresAt: time.Now().Add(-1 * time.Minute).Unix(),
-		RefreshToken:             "refresh-me",
+		AppID:     "app",
+		AppSecret: "secret",
+		BaseURL:   baseURL,
 	}
+	withUserAccount(cfg, defaultUserAccountName, "stale", "refresh-me", time.Now().Add(-1*time.Minute).Unix(), "")
 	sdkClient, err := larksdk.New(cfg, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -257,13 +256,16 @@ func TestEnsureUserTokenRefreshFailureClears(t *testing.T) {
 	if err := json.Unmarshal(data, &saved); err != nil {
 		t.Fatalf("unmarshal config: %v", err)
 	}
-	if saved.UserAccessToken != "" {
-		t.Fatalf("expected user access token cleared, got %s", saved.UserAccessToken)
-	}
-	if saved.RefreshToken != "" {
-		t.Fatalf("expected refresh token cleared, got %s", saved.RefreshToken)
-	}
-	if saved.UserAccessTokenExpiresAt != 0 {
-		t.Fatalf("expected expiry cleared, got %d", saved.UserAccessTokenExpiresAt)
+	account, ok := loadUserAccount(&saved, defaultUserAccountName)
+	if ok {
+		if account.UserAccessToken != "" {
+			t.Fatalf("expected user access token cleared, got %s", account.UserAccessToken)
+		}
+		if account.RefreshToken != "" {
+			t.Fatalf("expected refresh token cleared, got %s", account.RefreshToken)
+		}
+		if account.UserAccessTokenExpiresAt != 0 {
+			t.Fatalf("expected expiry cleared, got %d", account.UserAccessTokenExpiresAt)
+		}
 	}
 }

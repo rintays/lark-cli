@@ -189,8 +189,12 @@ func TestDriveSearchCommand(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -280,8 +284,12 @@ func TestDriveSearchCommandRespectsPagesCap(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -355,8 +363,12 @@ func TestDriveSearchCommandStopsAtLimit(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -433,8 +445,12 @@ func TestDriveSearchCommandSingleFileType(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -485,8 +501,12 @@ func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "tenant-token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "config-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "config-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
@@ -577,12 +597,16 @@ func TestDriveInfoCommandUsesUserToken(t *testing.T) {
 	state := &appState{
 		TokenType: "user",
 		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "tenant-token",
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+			AppID:             "app",
+			AppSecret:         "secret",
+			BaseURL:           baseURL,
+			TenantAccessToken: "tenant-token",
+			UserAccounts: map[string]*config.UserAccount{
+				defaultUserAccountName: {
+					UserAccessToken:          "user-token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+				},
+			},
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
 		Printer: output.Printer{Writer: &buf},

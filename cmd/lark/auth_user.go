@@ -54,6 +54,7 @@ func newAuthUserCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newAuthUserStatusCmd(state))
 	cmd.AddCommand(newAuthUserScopesCmd(state))
 	cmd.AddCommand(newAuthUserServicesCmd(state))
+	cmd.AddCommand(newAuthUserAccountsCmd(state))
 	return cmd
 }
 
@@ -74,6 +75,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err := requireCredentials(state.Config); err != nil {
 				return err
 			}
+			account := resolveUserAccountName(state)
 			scopeSet := cmd.Flags().Changed("scopes")
 			legacyScopeSet := cmd.Flags().Changed("scope")
 			if scopeSet && legacyScopeSet {
@@ -102,7 +104,11 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			requestedScopes := requestedUserOAuthScopes(scopeList, state.Config.UserAccessTokenScope, incremental)
+			prevScope := ""
+			if acct, ok := loadUserAccount(state.Config, account); ok {
+				prevScope = acct.UserAccessTokenScope
+			}
+			requestedScopes := requestedUserOAuthScopes(scopeList, prevScope, incremental)
 			scopeValue := strings.Join(requestedScopes, " ")
 
 			authState, err := newOAuthState()
@@ -153,23 +159,31 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			grantedScope := canonicalScopeString(tokens.Scope)
 			warning := ""
 			if grantedScope != "" {
-				warning = scopesChangedWarning(state.Config.UserAccessTokenScope, grantedScope)
-				state.Config.UserAccessTokenScope = grantedScope
+				warning = scopesChangedWarning(prevScope, grantedScope)
 			}
-			if strings.EqualFold(state.Config.KeyringBackend, "keychain") {
-				return errors.New("keychain backend is not implemented yet; please use keyring_backend=file (or set LARK_KEYRING_BACKEND=file)")
+			acct := ensureUserAccount(state.Config, account)
+			acct.UserScopes = scopeList
+			if grantedScope != "" {
+				acct.UserAccessTokenScope = grantedScope
 			}
-			state.Config.UserAccessToken = tokens.AccessToken
-			state.Config.RefreshToken = tokens.RefreshToken
-			state.Config.UserAccessTokenExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix()
-			state.Config.UserScopes = scopeList
+			saveUserAccount(state.Config, account, acct)
+			token := userToken{
+				AccessToken:  tokens.AccessToken,
+				RefreshToken: tokens.RefreshToken,
+				ExpiresAt:    time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second).Unix(),
+				Scope:        grantedScope,
+			}
+			if err := storeUserToken(state, account, token); err != nil {
+				return err
+			}
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
 
 			payload := map[string]any{
 				"config_path":                  state.ConfigPath,
-				"user_access_token_expires_at": state.Config.UserAccessTokenExpiresAt,
+				"account":                      account,
+				"user_access_token_expires_at": token.ExpiresAt,
 			}
 			if grantedScope != "" {
 				payload["user_access_token_scope"] = grantedScope
@@ -178,7 +192,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				payload["warning"] = warning
 			}
 
-			message := fmt.Sprintf("saved user OAuth tokens to %s", state.ConfigPath)
+			message := fmt.Sprintf("saved user OAuth tokens to %s (account: %s)", state.ConfigPath, account)
 			if warning != "" {
 				message = fmt.Sprintf("%s\n\nWARNING: %s", message, warning)
 			}

@@ -31,12 +31,11 @@ func TestMailMailboxInfoDefaultsMailboxID(t *testing.T) {
 			BaseURL:                    baseURL,
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-			UserAccessToken:            "user-token",
-			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
 			DefaultMailboxID:           "mbx_1",
 		},
 		Printer: output.Printer{Writer: &buf, JSON: true},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)

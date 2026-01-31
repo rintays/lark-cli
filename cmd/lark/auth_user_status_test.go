@@ -14,14 +14,10 @@ func TestAuthUserStatusJSONIncludesTokenPresenceAndExpiry(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		ConfigPath: "/tmp/config.json",
-		Config: &config.Config{
-			UserAccessToken:          "access",
-			RefreshToken:             "refresh",
-			UserAccessTokenExpiresAt: 1700000000,
-			UserAccessTokenScope:     "offline_access contact:contact.base:readonly",
-		},
-		Printer: output.Printer{Writer: &buf, JSON: true},
+		Config:     &config.Config{},
+		Printer:    output.Printer{Writer: &buf, JSON: true},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "access", "refresh", 1700000000, "offline_access contact:contact.base:readonly")
 
 	cmd := newAuthUserCmd(state)
 	cmd.SetArgs([]string{"status"})
@@ -52,13 +48,10 @@ func TestAuthUserStatusJSONIncludesRemediationWhenRefreshTokenMissing(t *testing
 	var buf bytes.Buffer
 	state := &appState{
 		ConfigPath: "/tmp/config.json",
-		Config: &config.Config{
-			UserAccessToken:          "access",
-			RefreshToken:             "",
-			UserAccessTokenExpiresAt: 0,
-		},
-		Printer: output.Printer{Writer: &buf, JSON: true},
+		Config:     &config.Config{},
+		Printer:    output.Printer{Writer: &buf, JSON: true},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "access", "", 0, "")
 
 	cmd := newAuthUserCmd(state)
 	cmd.SetArgs([]string{"status"})
