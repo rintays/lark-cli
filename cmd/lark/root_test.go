@@ -293,7 +293,8 @@ func TestRootMsgAliasWorks(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "Messages are chat messages") {
+	// Help text may evolve; assert we are in the messages command help.
+	if !strings.Contains(buf.String(), "Usage:\n  lark messages") {
 		t.Fatalf("unexpected help output: %q", buf.String())
 	}
 }
@@ -365,7 +366,8 @@ func TestRootBaseAliasWorks(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "Bitable (Base)") {
+	// Help text may evolve; assert we are in the bases command help.
+	if !strings.Contains(buf.String(), "Usage:\n  lark bases") {
 		t.Fatalf("unexpected help output: %q", buf.String())
 	}
 }
