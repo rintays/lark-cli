@@ -323,6 +323,7 @@ Example:
 ./lark base record search --help
 ./lark base record update --help
 ./lark base record delete --help
+./lark wiki node search --help
 ./lark mail mailbox get --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ```
@@ -349,7 +350,7 @@ Items not finished yet (high-level):
 - **Mail UX:** use configured default mailbox for mail commands + additional mailbox management commands
 - **Sheets:** row/col insert/delete commands
 - **Base (Bitable):** `base` top-level command tree (records CRUD, tables/fields/views)
-- **Wiki:** `wiki` command tree (v2 SDK endpoints + v1 search via `core.ApiReq`)
+- **Wiki:** v2 SDK endpoints (v1 node search is available via `wiki node search`)
 - **Integration tests:** `*_integration_test.go` suite gated by `LARK_INTEGRATION=1`
 
 For the full detailed task breakdown, see:

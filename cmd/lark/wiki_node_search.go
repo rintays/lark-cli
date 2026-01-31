@@ -17,6 +17,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 	var spaceID string
 	var limit int
 	var userAccessToken string
+	const userTokenHint = "wiki node search requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`"
 
 	cmd := &cobra.Command{
 		Use:   "search",
@@ -36,8 +37,8 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 			if token == "" {
 				var err error
 				token, err = ensureUserToken(context.Background(), state)
-				if err != nil {
-					return err
+				if err != nil || token == "" {
+					return errors.New(userTokenHint)
 				}
 			}
 
@@ -86,7 +87,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&query, "query", "", "search text")
-	cmd.Flags().StringVar(&spaceID, "space-id", "", "space ID")
+	cmd.Flags().StringVar(&spaceID, "space-id", "", "Wiki space ID")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of nodes to return")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 	_ = cmd.MarkFlagRequired("query")
