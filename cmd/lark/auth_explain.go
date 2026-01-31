@@ -10,6 +10,8 @@ import (
 )
 
 func newAuthExplainCmd(state *appState) *cobra.Command {
+	var readonly bool
+
 	cmd := &cobra.Command{
 		Use:   "explain <command...>",
 		Short: "Explain auth requirements for a command",
@@ -41,7 +43,10 @@ func newAuthExplainCmd(state *appState) *cobra.Command {
 			var suggestedScopes []string
 			suggestedCmd := ""
 			if requiresUser {
-				suggestedScopes = requiredUserScopes
+				suggestedScopes, err = authregistry.SuggestedUserOAuthScopesFromServices(services, readonly)
+				if err != nil {
+					return err
+				}
 				if requiresOffline {
 					suggestedScopes = ensureOfflineAccess(suggestedScopes)
 				}
@@ -95,5 +100,6 @@ func newAuthExplainCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, strings.Join(lines, "\n"))
 		},
 	}
+	cmd.Flags().BoolVar(&readonly, "readonly", false, "Prefer readonly user OAuth scopes when available")
 	return cmd
 }

@@ -65,6 +65,45 @@ func TestAuthExplainDriveSearchJSON(t *testing.T) {
 	}
 }
 
+func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
+	var buf bytes.Buffer
+	state := &appState{Printer: output.Printer{Writer: &buf, JSON: true}}
+
+	cmd := newAuthCmd(state)
+	cmd.SetArgs([]string{"explain", "--readonly", "drive", "search"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("auth explain error: %v", err)
+	}
+
+	var payload authExplainPayload
+	if err := json.Unmarshal(buf.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\noutput=%s", err, buf.String())
+	}
+
+	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive" {
+		t.Fatalf("required_user_scopes: expected [drive:drive], got %v", payload.RequiredUserScopes)
+	}
+	if len(payload.SuggestedUserLoginScopes) == 0 || payload.SuggestedUserLoginScopes[0] != defaultUserOAuthScope {
+		t.Fatalf("expected suggested scopes to include %q first, got %v", defaultUserOAuthScope, payload.SuggestedUserLoginScopes)
+	}
+	foundReadonly := false
+	for _, scope := range payload.SuggestedUserLoginScopes {
+		if scope == "drive:drive:readonly" {
+			foundReadonly = true
+		}
+		if scope == "drive:drive" {
+			t.Fatalf("expected suggested scopes to not include drive:drive in readonly mode, got %v", payload.SuggestedUserLoginScopes)
+		}
+	}
+	if !foundReadonly {
+		t.Fatalf("expected suggested scopes to include drive:drive:readonly, got %v", payload.SuggestedUserLoginScopes)
+	}
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "drive:drive:readonly") {
+		t.Fatalf("expected suggested_user_login_command to include drive:drive:readonly, got %q", payload.SuggestedUserLoginCommand)
+	}
+}
+
 func TestAuthExplainChatsListNoUserToken(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{Printer: output.Printer{Writer: &buf, JSON: true}}
