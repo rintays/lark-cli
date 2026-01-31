@@ -122,6 +122,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
   - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
   - [ ] Map commands → services (so runtime can explain “why you need this token/scope”)
+    - [x] Initial command→service mapping scaffold in `internal/authregistry` (unit-tested; not yet wired into runtime)
 - [ ] **Scope variants as first-class knobs**
   - [ ] `--readonly` mode (where feasible)
   - [ ] per-service scope variants (if Feishu/Lark has meaningful levels; drive is the likely one)
