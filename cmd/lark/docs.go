@@ -35,6 +35,8 @@ func newDocsCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newDocsExportCmd(state))
 	cmd.AddCommand(newDocsCatCmd(state))
 	cmd.AddCommand(newDocsSearchCmd(state))
+	cmd.AddCommand(newDocsBlocksCmd(state))
+	cmd.AddCommand(newDocsMarkdownCmd(state))
 	return cmd
 }
 

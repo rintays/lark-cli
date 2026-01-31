@@ -4,7 +4,7 @@
 **Where:** `/Users/fredliang/clawd/lark/BACKLOG.md` (single source of truth)  
 **Repo:** `/Users/fredliang/clawd/lark`  
 **Branch policy:** default development branch is **`main`** and changes must land on **`origin/main`** (unless Master explicitly requests a branch/PR flow).  
-**Last updated:** 2026-01-31 (Asia/Shanghai)
+**Last updated:** 2026-02-01 (Asia/Shanghai)
 
 ---
 
@@ -144,6 +144,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Backend selection knob (config `keyring_backend` + env `LARK_KEYRING_BACKEND`) parsed + defaulted to `file`
   - [x] Env fallback when config missing (currently: config takes precedence when set; env fills when missing)
   - [x] Implement keychain backend (actual secure storage via go-keyring)
+  - [x] `keyring_backend=auto` resolves to `keychain` on macOS/Windows; otherwise falls back to `file` (unit-tested)
   - [x] Env > config precedence for keyring backend (`LARK_KEYRING_BACKEND` > config `keyring_backend`)
   - [ ] Define whether we need `LARK_KEYRING_PASSWORD` (and/or config knob) for headless secure storage (design TBD)
   - [x] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
@@ -535,3 +536,4 @@ Deliverables:
 - 2026-01-31: Marked explicit re-auth triggers complete.
 - 2026-02-01: Verified Wiki `SpaceMember.Create` role-update behavior (not an upsert; repeated adds return already-exists); updated integration test to assert/log behavior and restore initial state without privilege downgrades.
 - 2026-02-01: Auth registry: made `SuggestedUserOAuthScopesFromServices` variant selection fall back consistently (readonly/full/required) + added unit tests.
+- 2026-02-01: Documented `keyring_backend=auto` resolution (keychain on macOS/Windows) + aligned README token storage docs.

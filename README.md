@@ -336,6 +336,21 @@ lark docs cat <DOCUMENT_ID> --format md
 lark docs cat <DOCUMENT_ID> --format txt
 ```
 
+Blocks:
+
+```bash
+lark docs blocks list <DOCUMENT_ID> --limit 50
+lark docs blocks get <DOCUMENT_ID> <BLOCK_ID>
+lark docs blocks update <DOCUMENT_ID> <BLOCK_ID> --body-json '<UPDATE_REQUEST_JSON>'
+```
+
+Markdown:
+
+```bash
+lark docs markdown convert --content "# Title"
+lark docs markdown overwrite <DOCUMENT_ID> --content-file ./doc.md
+```
+
 ### Sheets
 
 List:
@@ -519,7 +534,11 @@ lark --account <ACCOUNT> auth user status
 
 Environment override: `LARK_ACCOUNT`.
 
-Token storage backend: `keyring_backend=file|keychain` (config).
+Token storage backend: `keyring_backend=file|keychain|auto` (config).
+
+- `file`: store user OAuth tokens in `config.json`.
+- `keychain`: store user OAuth tokens in the OS keychain (via go-keyring).
+- `auto`: prefer `keychain` on macOS/Windows; otherwise fall back to `file`.
 
 Explain auth requirements (services → token types/scopes) for a command:
 

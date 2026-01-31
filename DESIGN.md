@@ -37,6 +37,12 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 | Drive export status | `/open-apis/drive/v1/export_tasks/:ticket` | Core ApiReq wrapper | tenant/user | v1 | Used by docs/drive export. |
 | Drive export download | `/open-apis/drive/v1/export_tasks/file/:file_token/download` | Custom HTTP wrapper | tenant | v1 | File download. |
 | Docs create/info | `/open-apis/docx/v1/documents` | Core ApiReq wrapper | tenant/user | v1 | `lark docs create/info`. |
+| Docs blocks get/list | `/open-apis/docx/v1/documents/:document_id/blocks` | SDK docx | tenant/user | v1 | `lark docs blocks get/list`. |
+| Docs blocks update | `/open-apis/docx/v1/documents/:document_id/blocks/:block_id` | SDK docx | tenant/user | v1 | `lark docs blocks update`. |
+| Docs blocks batch update | `/open-apis/docx/v1/documents/:document_id/blocks/batch_update` | SDK docx | tenant/user | v1 | `lark docs blocks batch-update`. |
+| Docs block children | `/open-apis/docx/v1/documents/:document_id/blocks/:block_id/children` | SDK docx | tenant/user | v1 | `lark docs blocks children list/create/delete`. |
+| Docs block descendant | `/open-apis/docx/v1/documents/:document_id/blocks/:block_id/descendant` | SDK docx | tenant/user | v1 | `lark docs blocks descendant create`. |
+| Docs markdown convert | `/open-apis/docx/v1/documents/blocks/convert` | SDK docx | tenant/user | v1 | `lark docs markdown convert/overwrite`. |
 | Sheets create | `/open-apis/sheets/v3/spreadsheets` | Core ApiReq wrapper | tenant/user | v3 | `lark sheets create`. |
 | Sheets read | `/open-apis/sheets/v2/spreadsheets/:token/values/:range` | Core ApiReq wrapper | tenant/user | v2 | `lark sheets read`. |
 | Sheets update | `/open-apis/sheets/v2/spreadsheets/:token/values` | Core ApiReq wrapper | tenant/user | v2 | `lark sheets update`. |
