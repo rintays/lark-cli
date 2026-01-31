@@ -246,8 +246,9 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			if folderToken == "" {
-				folderToken = "root"
+			if folderToken == "" || folderToken == "root" {
+				// Lark/Feishu Drive root folder token is "0".
+				folderToken = "0"
 			}
 			result, err := state.SDK.UploadDriveFile(context.Background(), token, larksdk.UploadDriveFileRequest{
 				FileName:    uploadName,
@@ -286,7 +287,7 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&filePath, "file", "", "path to local file")
-	cmd.Flags().StringVar(&folderToken, "folder-token", "", "Drive folder token (default: root)")
+	cmd.Flags().StringVar(&folderToken, "folder-token", "", "Drive folder token (default: 0 (root))")
 	cmd.Flags().StringVar(&uploadName, "name", "", "override the uploaded file name")
 	_ = cmd.MarkFlagRequired("file")
 	return cmd
