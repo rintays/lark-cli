@@ -35,7 +35,7 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				limit = 50
 			}
-			tenantToken, err := ensureTenantToken(context.Background(), state)
+			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -100,7 +100,7 @@ func newWikiSpaceGetCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			tenantToken, err := ensureTenantToken(context.Background(), state)
+			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

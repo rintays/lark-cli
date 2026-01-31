@@ -45,7 +45,7 @@ func newMinutesGetCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -82,7 +82,7 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

@@ -44,23 +44,14 @@ func newMailMailboxCmd(state *appState) *cobra.Command {
 
 func newMailMailboxGetCmd(state *appState) *cobra.Command {
 	var mailboxID string
-	var userAccessToken string
-	const userTokenHint = "mail mailbox get requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`"
 
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get mailbox details",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token := userAccessToken
-			if token == "" {
-				token = os.Getenv("LARK_USER_ACCESS_TOKEN")
-			}
-			if token == "" {
-				var err error
-				token, err = ensureUserToken(context.Background(), state)
-				if err != nil || token == "" {
-					return errors.New(userTokenHint)
-				}
+			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+			if err != nil {
+				return err
 			}
 			// Default mailbox resolution: flag > config default > "me".
 			mailboxID = resolveMailboxID(state, mailboxID)
@@ -78,7 +69,6 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
-	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 	// mailbox-id is optional; defaults to config default_mailbox_id or me.
 	// (still allow explicit mailbox-id when needed)
 
@@ -139,7 +129,7 @@ func newMailMailboxesListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -167,7 +157,7 @@ func newMailPublicMailboxesListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List public mailboxes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -201,7 +191,7 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 		Short: "List mail folders",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mailboxID = resolveMailboxID(state, mailboxID)
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -246,7 +236,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -343,7 +333,7 @@ func newMailGetCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -372,21 +362,29 @@ func newMailSendCmd(state *appState) *cobra.Command {
 	var bodyHTML string
 	var headFrom string
 	var userAccessToken string
-	const userTokenHint = "mail send requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`"
 
 	cmd := &cobra.Command{
 		Use:   "send",
 		Short: "Send an email message",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token := userAccessToken
+			token := strings.TrimSpace(userAccessToken)
 			if token == "" {
-				token = os.Getenv("LARK_USER_ACCESS_TOKEN")
+				token = strings.TrimSpace(os.Getenv("LARK_USER_ACCESS_TOKEN"))
 			}
-			if token == "" {
+			if token != "" {
 				var err error
-				token, err = ensureUserToken(context.Background(), state)
-				if err != nil || token == "" {
-					return errors.New(userTokenHint)
+				token, err = tokenForOverride(context.Background(), state, tokenTypesUser, tokenOverride{
+					Token: token,
+					Type:  tokenTypeUser,
+				})
+				if err != nil {
+					return err
+				}
+			} else {
+				var err error
+				token, err = tokenFor(context.Background(), state, tokenTypesUser)
+				if err != nil {
+					return err
 				}
 			}
 

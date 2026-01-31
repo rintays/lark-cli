@@ -30,7 +30,7 @@ func newWikiNodeListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				limit = 50
 			}
-			tenantToken, err := ensureTenantToken(context.Background(), state)
+			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

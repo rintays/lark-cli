@@ -13,7 +13,7 @@ func newWhoamiCmd(state *appState) *cobra.Command {
 		Use:   "whoami",
 		Short: "Show tenant information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
 			if err != nil {
 				return err
 			}

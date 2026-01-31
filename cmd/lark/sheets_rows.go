@@ -34,7 +34,7 @@ func newSheetsRowsInsertCmd(state *appState) *cobra.Command {
 			if count <= 0 {
 				return errors.New("count must be greater than 0")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -78,7 +78,7 @@ func newSheetsRowsDeleteCmd(state *appState) *cobra.Command {
 			if count <= 0 {
 				return errors.New("count must be greater than 0")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

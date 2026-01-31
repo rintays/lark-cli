@@ -37,7 +37,7 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 		Use:   "read",
 		Short: "Read a range from Sheets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -68,7 +68,7 @@ func newSheetsMetadataCmd(state *appState) *cobra.Command {
 		Use:   "metadata",
 		Short: "Get spreadsheet metadata",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -103,7 +103,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -143,7 +143,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -178,7 +178,7 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 		Use:   "clear",
 		Short: "Clear a range in Sheets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

@@ -37,7 +37,7 @@ func (c *Client) WhoAmI(ctx context.Context, token string) (TenantInfo, error) {
 		HttpMethod:                http.MethodGet,
 		PathParams:                larkcore.PathParams{},
 		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
 	}
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))

@@ -20,6 +20,7 @@ type appState struct {
 	Config         *config.Config
 	JSON           bool
 	Verbose        bool
+	TokenType      string
 	Printer        output.Printer
 	SDK            *larksdk.Client
 	Platform       string
@@ -63,6 +64,7 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&state.ConfigPath, "config", "", "config path (default: ~/.config/lark/config.json)")
 	cmd.PersistentFlags().BoolVar(&state.JSON, "json", false, "output JSON")
 	cmd.PersistentFlags().BoolVar(&state.Verbose, "verbose", false, "verbose output")
+	cmd.PersistentFlags().StringVar(&state.TokenType, "token-type", "auto", "access token type (auto|tenant|user)")
 	cmd.PersistentFlags().StringVar(&state.Platform, "platform", "", "platform (feishu|lark)")
 	cmd.PersistentFlags().StringVar(&state.BaseURL, "base-url", "", "base URL override")
 

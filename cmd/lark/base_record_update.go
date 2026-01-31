@@ -25,7 +25,7 @@ func newBaseRecordUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

@@ -42,7 +42,7 @@ func TestMailMailboxGetDefaultsMailboxID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailMailboxCmd(state)
-	cmd.SetArgs([]string{"get", "--user-access-token", "user-token"})
+	cmd.SetArgs([]string{"get"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("mailbox get error: %v", err)
 	}

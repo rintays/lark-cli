@@ -47,3 +47,6 @@
 ## Agent Notes
 - 2026-01-30: Unified CLI command naming (messages/contacts users), moved required flag validation to Cobra MarkFlagRequired/Args, added CLI flag validation tests, updated README examples.
 - 2026-01-30: Removed legacy HTTP client, migrated whoami/calendar to SDK, added SDK coverage matrix.
+- 2026-01-31: Added detailed API token support matrix and selection strategy doc.
+- 2026-01-31: Added docs for token type research and proposed CLI token selection plan.
+- 2026-01-31: Implemented token type selection defaults/flags and corrected mailbox token usage.

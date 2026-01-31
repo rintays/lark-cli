@@ -265,11 +265,12 @@ func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailb
 	if !c.available() || c.coreConfig == nil {
 		return Mailbox{}, ErrUnavailable
 	}
-	if token == "" {
-		return Mailbox{}, errors.New("user access token is required")
-	}
 	if mailboxID == "" {
 		return Mailbox{}, errors.New("mailbox id is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return Mailbox{}, errors.New("tenant access token is required")
 	}
 
 	req := &larkcore.ApiReq{
@@ -277,11 +278,11 @@ func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailb
 		HttpMethod:                http.MethodGet,
 		PathParams:                larkcore.PathParams{},
 		QueryParams:               larkcore.QueryParams{},
-		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant},
 	}
 	req.PathParams.Set("user_mailbox_id", mailboxID)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithUserAccessToken(token))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return Mailbox{}, err
 	}

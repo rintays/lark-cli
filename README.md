@@ -351,6 +351,22 @@ Example:
 
 ---
 
+
+## Token selection (tenant vs user)
+
+Many OpenAPI endpoints accept **tenant** or **user** access tokens. You can control which token type the CLI uses:
+
+- Per command: `--token-type tenant|user|auto`
+- Default preference: `lark config set --default-token-type tenant|user`
+
+Behavior:
+- If an API supports **only one** token type, the CLI uses it automatically and errors if you explicitly request the other.
+- If an API supports **both**, `--token-type=auto` uses `config.default_token_type` (default: `tenant`).
+- When `user` is selected and no user token is available, the CLI guides you to run `lark auth user login`.
+
+---
+
+
 ...`/...`
 
 ---

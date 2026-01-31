@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Config struct {
@@ -12,6 +13,7 @@ type Config struct {
 	AppSecret                  string `json:"app_secret"`
 	BaseURL                    string `json:"base_url"`
 	DefaultMailboxID           string `json:"default_mailbox_id"`
+	DefaultTokenType           string `json:"default_token_type"`
 	TenantAccessToken          string `json:"tenant_access_token"`
 	TenantAccessTokenExpiresAt int64  `json:"tenant_access_token_expires_at"`
 	UserAccessToken            string `json:"user_access_token"`
@@ -22,7 +24,8 @@ type Config struct {
 
 func Default() *Config {
 	return &Config{
-		BaseURL: "https://open.feishu.cn",
+		BaseURL:          "https://open.feishu.cn",
+		DefaultTokenType: "tenant",
 	}
 }
 
@@ -32,6 +35,7 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			applyEnvFallback(cfg)
+			normalizeDefaults(cfg)
 			return cfg, nil
 		}
 		return nil, err
@@ -43,6 +47,7 @@ func Load(path string) (*Config, error) {
 		cfg.BaseURL = "https://open.feishu.cn"
 	}
 	applyEnvFallback(cfg)
+	normalizeDefaults(cfg)
 	return cfg, nil
 }
 
@@ -75,5 +80,17 @@ func applyEnvFallback(cfg *Config) {
 		if appSecret := os.Getenv("LARK_APP_SECRET"); appSecret != "" {
 			cfg.AppSecret = appSecret
 		}
+	}
+}
+
+func normalizeDefaults(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	switch strings.ToLower(strings.TrimSpace(cfg.DefaultTokenType)) {
+	case "tenant", "user":
+		cfg.DefaultTokenType = strings.ToLower(strings.TrimSpace(cfg.DefaultTokenType))
+	default:
+		cfg.DefaultTokenType = "tenant"
 	}
 }

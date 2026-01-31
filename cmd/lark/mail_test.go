@@ -308,7 +308,7 @@ func TestMailMailboxGetCommandWithSDK(t *testing.T) {
 		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.Header.Get("Authorization") != "Bearer user-token" {
+		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -345,7 +345,7 @@ func TestMailMailboxGetCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"mailbox", "get", "--mailbox-id", "mbx_1", "--user-access-token", "user-token"})
+	cmd.SetArgs([]string{"mailbox", "get", "--mailbox-id", "mbx_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("mail mailbox get error: %v", err)
 	}
@@ -1008,7 +1008,7 @@ func TestMailSendCommandRequiresUserAccessToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "mail send requires a user access token; pass --user-access-token, set LARK_USER_ACCESS_TOKEN, or run `lark auth user login`" {
+	if !strings.Contains(err.Error(), "run `lark auth user login`") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

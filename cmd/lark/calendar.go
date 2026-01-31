@@ -48,7 +48,7 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 			if !endTime.After(startTime) {
 				return errors.New("end time must be after start time")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 			if !endTime.After(startTime) {
 				return errors.New("end time must be after start time")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}

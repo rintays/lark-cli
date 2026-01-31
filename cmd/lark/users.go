@@ -37,14 +37,13 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
-			if err != nil {
-				return err
-			}
-
 			var users []larksdk.User
 			switch {
 			case email != "" || mobile != "":
+				token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+				if err != nil {
+					return err
+				}
 				result, err := state.SDK.BatchGetUserIDs(context.Background(), token, larksdk.BatchGetUserIDRequest{
 					Emails:  nonEmptyList(email),
 					Mobiles: nonEmptyList(mobile),
@@ -54,6 +53,10 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 				}
 				users = result
 			case name != "":
+				token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+				if err != nil {
+					return err
+				}
 				matches, err := searchUsersByName(context.Background(), state.SDK.ListUsersByDepartment, token, departmentID, name)
 				if err != nil {
 					return err

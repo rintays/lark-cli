@@ -49,7 +49,7 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 			if queryMode < 0 || queryMode > 1 {
 				return errors.New("query-mode must be 0 or 1")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
