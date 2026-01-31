@@ -811,6 +811,7 @@ func TestMailInfoCommandWithSDK(t *testing.T) {
 				"message": map[string]any{
 					"message_id": "msg_1",
 					"subject":    "Hello",
+					"raw":        "RAW_CONTENT",
 				},
 			},
 		})
@@ -848,6 +849,9 @@ func TestMailInfoCommandWithSDK(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "subject\tHello") {
 		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if strings.Contains(buf.String(), "RAW_CONTENT") {
+		t.Fatalf("expected metadata-only output, got: %q", buf.String())
 	}
 }
 
@@ -979,6 +983,128 @@ func TestMailInfoCommandRequiresMessageID(t *testing.T) {
 	}
 }
 
+func TestMailGetCommandWithSDK(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.URL.Path != "/open-apis/mail/v1/user_mailboxes/mbx_1/messages/msg_1" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer user-token" {
+			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"message": map[string]any{
+					"message_id":      "msg_1",
+					"subject":         "Hello",
+					"raw":             "RAW_CONTENT",
+					"body_plain_text": "Hello world",
+					"body_html":       "<p>Hello</p>",
+					"smtp_message_id": "smtp_1",
+					"internal_date":   "2026-01-31T12:00:00Z",
+					"message_state":   1,
+					"folder_id":       "fld_1",
+					"snippet":         "Hello world",
+					"thread_id":       "th_1",
+					"head_from":       map[string]any{"mail_address": "alice@example.com", "name": "Alice"},
+					"to":              []map[string]any{{"mail_address": "bob@example.com", "name": "Bob"}},
+					"attachments":     []map[string]any{{"id": "att_1", "filename": "a.txt", "body": "YXQ=", "attachment_type": 1}},
+					"bcc":             []map[string]any{{"mail_address": "bcc@example.com", "name": "Bcc"}},
+					"cc":              []map[string]any{{"mail_address": "cc@example.com", "name": "Cc"}},
+				},
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			DefaultMailboxID:           "mbx_default",
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			UserAccessToken:            "user-token",
+			UserAccessTokenExpiresAt:   time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"get", "msg_1", "--mailbox-id", "mbx_1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("mail get error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "message_id\tmsg_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "raw\tRAW_CONTENT") {
+		t.Fatalf("expected raw output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "body_plain_text\tHello world") {
+		t.Fatalf("expected body output: %q", buf.String())
+	}
+}
+
+func TestMailGetCommandRequiresMessageID(t *testing.T) {
+	cmd := newMailCmd(&appState{})
+	cmd.SetArgs([]string{"get", "--mailbox-id", "mbx_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"message-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestMailGetCommandMissingMessageIDDoesNotCallHTTP(t *testing.T) {
+	var calls int
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"get", "--mailbox-id", "mbx_1"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if calls != 0 {
+		t.Fatalf("unexpected request count: %d", calls)
+	}
+}
+
 func TestMailInfoCommandMissingMessageIDDoesNotCallHTTP(t *testing.T) {
 	var calls int
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1050,6 +1176,29 @@ func TestMailInfoCommandRequiresSDK(t *testing.T) {
 
 	cmd := newMailCmd(state)
 	cmd.SetArgs([]string{"info", "msg_1", "--mailbox-id", "mbx_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "sdk client is required" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestMailGetCommandRequiresSDK(t *testing.T) {
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    "http://example.com",
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+
+	cmd := newMailCmd(state)
+	cmd.SetArgs([]string{"get", "msg_1", "--mailbox-id", "mbx_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")

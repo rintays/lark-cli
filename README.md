@@ -513,8 +513,9 @@ Current behavior:
 - Run `lark auth user login` to launch OAuth and store tokens locally (add `--force-consent` if you need to re-grant scopes / refresh token)
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
-- Mail commands `mail folders/list/info/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
+- Mail commands `mail folders/list/info/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
 - Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
+- `mail info` shows metadata; `mail get` returns full message content (raw/body/attachments)
 
 Example:
 
@@ -539,6 +540,8 @@ Example:
 ./lark wiki task info --help
 ./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
+./lark mail info <MESSAGE_ID>
+./lark mail get <MESSAGE_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
 ./lark mail send --raw-file ./message.eml
 ```

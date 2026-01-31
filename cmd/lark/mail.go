@@ -29,6 +29,7 @@ func newMailCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newMailFoldersCmd(state))
 	cmd.AddCommand(newMailListCmd(state))
 	cmd.AddCommand(newMailInfoCmd(state))
+	cmd.AddCommand(newMailGetCmd(state))
 	cmd.AddCommand(newMailSendCmd(state))
 	return cmd
 }
@@ -285,6 +286,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 					if item.MessageID == "" {
 						item.MessageID = message.MessageID
 					}
+					stripMailMessageContent(&item)
 					messages = append(messages, item)
 				}
 				if len(messages) >= limit || !result.HasMore {
@@ -322,7 +324,54 @@ func newMailInfoCmd(state *appState) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "info <message-id>",
-		Short: "Show a mail message",
+		Short: "Show mail message metadata",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if messageID != "" && messageID != args[0] {
+					return errors.New("message-id provided twice")
+				}
+				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mailboxID = resolveMailboxID(state, mailboxID)
+			if state.SDK == nil {
+				return errors.New("sdk client is required")
+			}
+			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			if err != nil {
+				return err
+			}
+			message, err := state.SDK.GetMailMessage(context.Background(), token, mailboxID, messageID)
+			if err != nil {
+				return withUserScopeHintForCommand(state, err)
+			}
+			stripMailMessageContent(&message)
+			payload := map[string]any{"message": message}
+			text := formatMailMessageInfo(message)
+			return state.Printer.Print(payload, text)
+		},
+	}
+
+	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
+	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
+	_ = cmd.MarkFlagRequired("message-id")
+	return cmd
+}
+
+func newMailGetCmd(state *appState) *cobra.Command {
+	var mailboxID string
+	var messageID string
+
+	cmd := &cobra.Command{
+		Use:   "get <message-id>",
+		Short: "Get a mail message (full content)",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -351,7 +400,7 @@ func newMailInfoCmd(state *appState) *cobra.Command {
 				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"message": message}
-			text := formatMailMessageInfo(message)
+			text := formatMailMessageGet(message)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -494,7 +543,73 @@ func formatMailMailboxInfo(mailbox larksdk.Mailbox) string {
 	return formatInfoTable(rows, "no mailbox found")
 }
 
+func stripMailMessageContent(message *larksdk.MailMessage) {
+	if message == nil {
+		return
+	}
+	message.Raw = ""
+	message.BodyHTML = ""
+	message.BodyPlainText = ""
+	if len(message.Attachments) == 0 {
+		return
+	}
+	for i := range message.Attachments {
+		message.Attachments[i].Body = ""
+	}
+}
+
 func formatMailMessageInfo(message larksdk.MailMessage) string {
+	rows := [][]string{
+		{"message_id", infoValue(message.MessageID)},
+		{"thread_id", infoValue(message.ThreadID)},
+		{"subject", infoValue(message.Subject)},
+		{"snippet", infoValue(message.Snippet)},
+		{"folder_id", infoValue(message.FolderID)},
+		{"internal_date", infoValue(message.InternalDate)},
+		{"message_state", infoValueIntZeroDash(message.MessageState)},
+		{"smtp_message_id", infoValue(message.SMTPMessageID)},
+		{"from.mail_address", infoValue(message.From.MailAddress)},
+		{"from.name", infoValue(message.From.Name)},
+		{"to.count", fmt.Sprintf("%d", len(message.To))},
+	}
+	for i, addr := range message.To {
+		prefix := fmt.Sprintf("to[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".mail_address", infoValue(addr.MailAddress)},
+			[]string{prefix + ".name", infoValue(addr.Name)},
+		)
+	}
+	rows = append(rows, []string{"cc.count", fmt.Sprintf("%d", len(message.CC))})
+	for i, addr := range message.CC {
+		prefix := fmt.Sprintf("cc[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".mail_address", infoValue(addr.MailAddress)},
+			[]string{prefix + ".name", infoValue(addr.Name)},
+		)
+	}
+	rows = append(rows, []string{"bcc.count", fmt.Sprintf("%d", len(message.BCC))})
+	for i, addr := range message.BCC {
+		prefix := fmt.Sprintf("bcc[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".mail_address", infoValue(addr.MailAddress)},
+			[]string{prefix + ".name", infoValue(addr.Name)},
+		)
+	}
+	rows = append(rows, []string{"attachments.count", fmt.Sprintf("%d", len(message.Attachments))})
+	for i, attachment := range message.Attachments {
+		prefix := fmt.Sprintf("attachments[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".id", infoValue(attachment.ID)},
+			[]string{prefix + ".filename", infoValue(attachment.Filename)},
+			[]string{prefix + ".attachment_type", infoValueIntZeroDash(attachment.AttachmentType)},
+			[]string{prefix + ".is_inline", fmt.Sprintf("%t", attachment.IsInline)},
+			[]string{prefix + ".cid", infoValue(attachment.CID)},
+		)
+	}
+	return formatInfoTable(rows, "no message found")
+}
+
+func formatMailMessageGet(message larksdk.MailMessage) string {
 	rows := [][]string{
 		{"message_id", infoValue(message.MessageID)},
 		{"thread_id", infoValue(message.ThreadID)},
