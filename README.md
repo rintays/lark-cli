@@ -205,6 +205,8 @@ Search messages (user token required):
 lark messages search "hello" --chat-id <CHAT_ID>
 ```
 
+Search results include message metadata and content in the default output.
+
 List recent messages:
 
 ```bash

@@ -131,9 +131,12 @@ func formatMessageBlock(message larksdk.Message) string {
 }
 
 func formatMessageMeta(message larksdk.Message) string {
-	parts := make([]string, 0, 4)
+	parts := make([]string, 0, 5)
 	if message.MessageID != "" {
 		parts = append(parts, "id: "+message.MessageID)
+	}
+	if sender := formatMessageSender(message.Sender); sender != "" {
+		parts = append(parts, "from: "+sender)
 	}
 	if message.MsgType != "" {
 		parts = append(parts, "type: "+message.MsgType)
@@ -142,6 +145,22 @@ func formatMessageMeta(message larksdk.Message) string {
 		parts = append(parts, "time: "+message.CreateTime)
 	}
 	return strings.Join(parts, "  ")
+}
+
+func formatMessageSender(sender larksdk.MessageSender) string {
+	id := strings.TrimSpace(sender.ID)
+	if id == "" {
+		return ""
+	}
+	idType := strings.TrimSpace(sender.IDType)
+	if idType == "" {
+		idType = "user_id"
+	}
+	senderType := strings.TrimSpace(sender.SenderType)
+	if senderType == "" {
+		return fmt.Sprintf("%s:%s", idType, id)
+	}
+	return fmt.Sprintf("%s:%s:%s", senderType, idType, id)
 }
 
 func messageContentForDisplay(message larksdk.Message) string {

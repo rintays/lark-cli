@@ -120,10 +120,26 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				items = items[:limit]
 			}
 
-			payload := map[string]any{"message_ids": items}
+			messages := make([]larksdk.Message, 0, len(items))
+			for _, messageID := range items {
+				message, err := state.SDK.GetMessage(context.Background(), token, messageID, userIDType)
+				if err != nil {
+					return withUserScopeHintForCommand(state, err)
+				}
+				messages = append(messages, message)
+			}
+
+			payload := map[string]any{
+				"message_ids": items,
+				"messages":    messages,
+			}
 			text := "no messages found"
-			if len(items) > 0 {
-				text = strings.Join(items, "\n")
+			if len(messages) > 0 {
+				lines := make([]string, 0, len(messages))
+				for _, message := range messages {
+					lines = append(lines, formatMessageBlock(message))
+				}
+				text = strings.Join(lines, "\n\n")
 			}
 			return state.Printer.Print(payload, text)
 		},
