@@ -21,5 +21,6 @@ func newWikiNodeCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newWikiNodeSearchCmd(state))
 	cmd.AddCommand(newWikiNodeGetCmd(state))
+	cmd.AddCommand(newWikiNodeListCmd(state))
 	return cmd
 }
