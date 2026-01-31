@@ -125,6 +125,7 @@ Work items (must follow the design, not ad-hoc patches):
     - [x] Initial command→service mapping scaffold in `internal/authregistry` (unit-tested; not yet wired into runtime)
     - [x] Longest-prefix matching for command paths (e.g. "drive list" maps via "drive")
     - [x] Metadata aggregation helper: command → (services, token types, offline requirement, required user scopes)
+    - [x] Detect TokenUser services missing declared RequiredUserScopes (so we don’t pretend we know scopes yet)
 - [ ] **Scope variants as first-class knobs**
   - [ ] `--readonly` mode (where feasible)
   - [ ] per-service scope variants (if Feishu/Lark has meaningful levels; drive is the likely one)
