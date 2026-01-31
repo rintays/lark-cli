@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -34,6 +38,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 func newSheetsReadCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 	var sheetRange string
+	var sheetID string
 
 	cmd := &cobra.Command{
 		Use:   "read <spreadsheet-id> <range>",
@@ -74,9 +79,16 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			valueRange, err := state.SDK.ReadSheetRange(context.Background(), token, spreadsheetID, sheetRange)
+			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
 			if err != nil {
 				return err
+			}
+			valueRange, err := state.SDK.ReadSheetRange(context.Background(), token, spreadsheetID, resolvedRange)
+			if err != nil {
+				return err
+			}
+			if valueRange.MajorDimension == "" && (valueRange.Range != "" || len(valueRange.Values) > 0) {
+				valueRange.MajorDimension = "ROWS"
 			}
 			payload := map[string]any{"valueRange": valueRange}
 			text := formatSheetValues(valueRange)
@@ -84,8 +96,9 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
 	return cmd
 }
 
@@ -130,7 +143,7 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
 	return cmd
 }
 
@@ -182,14 +195,16 @@ func newSheetsDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
 	return cmd
 }
 
 func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 	var sheetRange string
+	var sheetID string
 	var valuesRaw string
+	var valuesFile string
 
 	cmd := &cobra.Command{
 		Use:   "update <spreadsheet-id> <range>",
@@ -223,7 +238,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			values, err := parseSheetValues(valuesRaw)
+			values, err := parseSheetValues(valuesRaw, valuesFile)
 			if err != nil {
 				return err
 			}
@@ -234,27 +249,34 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			update, err := state.SDK.UpdateSheetRange(context.Background(), token, spreadsheetID, sheetRange, values)
+			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
+			if err != nil {
+				return err
+			}
+			update, err := state.SDK.UpdateSheetRange(context.Background(), token, spreadsheetID, resolvedRange, values)
 			if err != nil {
 				return err
 			}
 			payload := map[string]any{"update": update}
-			text := formatSheetUpdate(update, sheetRange)
+			text := formatSheetUpdate(update, resolvedRange)
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
-	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
-	_ = cmd.MarkFlagRequired("values")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
+	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV file")
 	return cmd
 }
 
 func newSheetsAppendCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 	var sheetRange string
+	var sheetID string
 	var valuesRaw string
+	var valuesFile string
 	var insertDataOption string
 
 	cmd := &cobra.Command{
@@ -289,7 +311,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			values, err := parseSheetValues(valuesRaw)
+			values, err := parseSheetValues(valuesRaw, valuesFile)
 			if err != nil {
 				return err
 			}
@@ -300,7 +322,11 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			appendResult, err := state.SDK.AppendSheetRange(context.Background(), token, spreadsheetID, sheetRange, values, insertDataOption)
+			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
+			if err != nil {
+				return err
+			}
+			appendResult, err := state.SDK.AppendSheetRange(context.Background(), token, spreadsheetID, resolvedRange, values, insertDataOption)
 			if err != nil {
 				return err
 			}
@@ -310,17 +336,19 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
-	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
+	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
+	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV file")
 	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
-	_ = cmd.MarkFlagRequired("values")
 	return cmd
 }
 
 func newSheetsClearCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 	var sheetRange string
+	var sheetID string
 
 	cmd := &cobra.Command{
 		Use:   "clear <spreadsheet-id> <range>",
@@ -361,7 +389,11 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			result, err := state.SDK.ClearSheetRange(context.Background(), token, spreadsheetID, sheetRange)
+			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
+			if err != nil {
+				return err
+			}
+			result, err := state.SDK.ClearSheetRange(context.Background(), token, spreadsheetID, resolvedRange)
 			if err != nil {
 				return err
 			}
@@ -369,8 +401,9 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range with sheet_id, e.g. <sheet_id>!A1:B2 (or provide as positional argument)")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
 	return cmd
 }
 
@@ -447,16 +480,86 @@ func formatSpreadsheetMetadata(metadata larksdk.SpreadsheetMetadata) string {
 	return formatInfoTable(rows, "no metadata found")
 }
 
-func parseSheetValues(valuesRaw string) ([][]any, error) {
-	if strings.TrimSpace(valuesRaw) == "" {
-		return nil, errors.New("values is required")
+func resolveSheetRange(sheetRange string, sheetID string) (string, error) {
+	trimmedRange := strings.TrimSpace(sheetRange)
+	if trimmedRange == "" {
+		return "", errors.New("range is required")
 	}
+	trimmedSheetID := strings.TrimSpace(sheetID)
+	if strings.Contains(trimmedRange, "!") {
+		if trimmedSheetID != "" {
+			return "", errors.New("range already includes sheet reference; omit --sheet-id")
+		}
+		return trimmedRange, nil
+	}
+	if trimmedSheetID == "" {
+		return "", errors.New("range must include sheet reference (e.g. <sheet_id>!A1:B2) or set --sheet-id")
+	}
+	return fmt.Sprintf("%s!%s", trimmedSheetID, trimmedRange), nil
+}
+
+func parseSheetValues(valuesRaw string, valuesFile string) ([][]any, error) {
+	raw := strings.TrimSpace(valuesRaw)
+	filePath := strings.TrimSpace(valuesFile)
+	if raw == "" && filePath == "" {
+		return nil, errors.New("values is required (use --values or --values-file)")
+	}
+	if raw != "" && filePath != "" {
+		return nil, errors.New("values and values-file cannot both be set")
+	}
+	if filePath != "" {
+		return parseSheetValuesFile(filePath)
+	}
+	if strings.HasPrefix(raw, "@") {
+		path := strings.TrimSpace(strings.TrimPrefix(raw, "@"))
+		if path == "" {
+			return nil, errors.New("values file path is required after @")
+		}
+		return parseSheetValuesFile(path)
+	}
+	return parseSheetValuesJSON([]byte(valuesRaw))
+}
+
+func parseSheetValuesFile(path string) ([][]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read values file: %w", err)
+	}
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext == ".csv" {
+		return parseSheetValuesCSV(data)
+	}
+	return parseSheetValuesJSON(data)
+}
+
+func parseSheetValuesJSON(data []byte) ([][]any, error) {
 	var values [][]any
-	if err := json.Unmarshal([]byte(valuesRaw), &values); err != nil {
+	if err := json.Unmarshal(data, &values); err != nil {
 		return nil, fmt.Errorf("values must be a JSON array of arrays: %w", err)
 	}
 	if len(values) == 0 {
 		return nil, errors.New("values must include at least one row")
+	}
+	return values, nil
+}
+
+func parseSheetValuesCSV(data []byte) ([][]any, error) {
+	reader := csv.NewReader(bytes.NewReader(data))
+	reader.TrimLeadingSpace = true
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("values CSV must be valid: %w", err)
+	}
+	if len(records) == 0 {
+		return nil, errors.New("values must include at least one row")
+	}
+	values := make([][]any, 0, len(records))
+	for _, record := range records {
+		row := make([]any, len(record))
+		for i, cell := range record {
+			row[i] = cell
+		}
+		values = append(values, row)
 	}
 	return values, nil
 }

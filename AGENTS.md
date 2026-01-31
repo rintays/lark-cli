@@ -87,3 +87,4 @@
 - 2026-01-31: Messages send now requires `--receive-id`, chats update uses positional chat-id, and message/wiki search added `--pages` pagination with auto page-size; README updated.
 - 2026-01-31: Message search scope hints now include `im:message:get_as_user` alongside `search:message` for user OAuth guidance.
 - 2026-01-31: Mail list output now includes sender and internal_date columns for quick triage.
+- 2026-01-31: Sheets create now includes default sheet id/range, sheets read/update/append/clear accept `--sheet-id` with range shorthand, sheets update/append accept JSON/CSV values files (`--values-file` or `--values @file`), and sheets read defaults missing major_dimension to ROWS.
