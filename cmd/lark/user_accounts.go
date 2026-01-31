@@ -24,6 +24,16 @@ func resolveUserAccountName(state *appState) string {
 	if name == "" {
 		name = defaultUserAccountName
 	}
+	// Client-bucket isolation: when app_id is set and the user did not explicitly
+	// choose an account, route the default account through the bucket mapping.
+	if state.Config != nil && strings.TrimSpace(state.Config.AppID) != "" {
+		bucketKey := config.UserAccountBucketKey(state.Config.AppID, state.Config.BaseURL, state.Profile)
+		if name == defaultUserAccountName && bucketKey != "" && state.Config.UserAccountBuckets != nil {
+			if mapped := strings.TrimSpace(state.Config.UserAccountBuckets[bucketKey]); mapped != "" {
+				return mapped
+			}
+		}
+	}
 	return name
 }
 

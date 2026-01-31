@@ -29,6 +29,10 @@ type Config struct {
 	TenantAccessTokenExpiresAt int64    `json:"tenant_access_token_expires_at"`
 
 	UserAccounts map[string]*UserAccount `json:"user_accounts,omitempty"`
+
+	// UserAccountBuckets maps a "client bucket" (app_id + base_url + profile)
+	// to the user account label used for storing OAuth refresh tokens.
+	UserAccountBuckets map[string]string `json:"user_account_buckets,omitempty"`
 }
 
 type UserAccount struct {

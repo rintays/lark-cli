@@ -78,6 +78,22 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				return err
 			}
 			account := resolveUserAccountName(state)
+			// If app_id is set and the default account is used, store tokens under a
+			// deterministic per-(app_id, base_url, profile) bucket account.
+			if state.Config != nil && strings.TrimSpace(state.Config.AppID) != "" && account == defaultUserAccountName {
+				bucketKey := config.UserAccountBucketKey(state.Config.AppID, state.Config.BaseURL, state.Profile)
+				if bucketKey != "" {
+					if state.Config.UserAccountBuckets == nil {
+						state.Config.UserAccountBuckets = map[string]string{}
+					}
+					mapped := strings.TrimSpace(state.Config.UserAccountBuckets[bucketKey])
+					if mapped == "" {
+						mapped = bucketKey
+						state.Config.UserAccountBuckets[bucketKey] = mapped
+					}
+					account = mapped
+				}
+			}
 			scopeSet := cmd.Flags().Changed("scopes")
 			legacyScopeSet := cmd.Flags().Changed("scope")
 			if scopeSet && legacyScopeSet {

@@ -306,16 +306,28 @@ func newConfigUnsetCmd(state *appState) *cobra.Command {
 			if !unsetUserTokens {
 				return errors.New("--user-tokens must be true")
 			}
-			accounts := listUserAccountNames(state.Config)
-			if userTokenBackend(state.Config) == "keychain" {
-				for _, account := range accounts {
+			// If app_id is set, clear only the resolved bucket account; otherwise keep
+			// legacy behavior (clear all accounts).
+			if state.Config != nil && strings.TrimSpace(state.Config.AppID) != "" {
+				account := resolveUserAccountName(state)
+				if userTokenBackend(state.Config) == "keychain" {
 					if err := deleteKeyringToken(state, account); err != nil {
 						return err
 					}
 				}
-			}
-			for _, account := range accounts {
 				clearUserAccountTokens(state.Config, account)
+			} else {
+				accounts := listUserAccountNames(state.Config)
+				if userTokenBackend(state.Config) == "keychain" {
+					for _, account := range accounts {
+						if err := deleteKeyringToken(state, account); err != nil {
+							return err
+						}
+					}
+				}
+				for _, account := range accounts {
+					clearUserAccountTokens(state.Config, account)
+				}
 			}
 			if err := state.saveConfig(); err != nil {
 				return err
