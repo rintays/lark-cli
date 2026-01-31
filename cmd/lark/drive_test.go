@@ -142,7 +142,7 @@ func TestDriveListCommandLimitMustBePositiveDoesNotCallHTTP(t *testing.T) {
 func TestDriveSearchCommand(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/drive/v1/files/search" {
+		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer user-token" {
@@ -156,32 +156,26 @@ func TestDriveSearchCommand(t *testing.T) {
 		if payload["search_key"] != "budget" {
 			t.Fatalf("unexpected search_key: %+v", payload)
 		}
-		if payload["folder_token"] != "root" {
-			t.Fatalf("unexpected folder_token: %+v", payload)
+		if payload["count"].(float64) != 2 {
+			t.Fatalf("unexpected count: %+v", payload["count"])
 		}
-		if payload["page_size"].(float64) != 2 {
-			t.Fatalf("unexpected page_size: %+v", payload)
+		if payload["offset"].(float64) != 0 {
+			t.Fatalf("unexpected offset: %+v", payload["offset"])
 		}
-		types, ok := payload["file_types"].([]any)
-		if !ok || len(types) != 2 {
-			t.Fatalf("expected file_types, got: %+v", payload["file_types"])
+		docTypes, ok := payload["docs_types"].([]any)
+		if !ok || len(docTypes) != 2 {
+			t.Fatalf("expected docs_types, got: %+v", payload["docs_types"])
 		}
-		if types[0].(string) != "docx" || types[1].(string) != "sheet" {
-			t.Fatalf("unexpected file_types: %+v", types)
-		}
-		fileTypes, ok := payload["file_types"].([]any)
-		if !ok {
-			t.Fatalf("missing file_types: %+v", payload)
-		}
-		if len(fileTypes) != 2 || fileTypes[0] != "docx" || fileTypes[1] != "sheet" {
-			t.Fatalf("unexpected file_types: %+v", fileTypes)
+		if docTypes[0].(string) != "doc" || docTypes[1].(string) != "sheet" {
+			t.Fatalf("unexpected docs_types: %+v", docTypes)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"files":    []map[string]any{{"token": "f2", "name": "Budget", "type": "sheet", "url": "https://example.com/sheet"}},
-				"has_more": false,
+				"docs_entities": []map[string]any{{"docs_token": "f2", "docs_type": "sheet", "title": "Budget", "open_url": "https://example.com/sheet"}},
+				"has_more":      false,
+				"total":         1,
 			},
 		})
 	})
@@ -207,7 +201,7 @@ func TestDriveSearchCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "budget", "--folder-id", "root", "--limit", "2", "--type", "docx", "--type", "sheet"})
+	cmd.SetArgs([]string{"search", "--query", "budget", "--limit", "2", "--type", "docx", "--type", "sheet"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}

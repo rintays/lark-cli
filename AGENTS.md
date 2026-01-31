@@ -50,3 +50,4 @@
 - 2026-01-31: Added user OAuth scope management (scopes/services/readonly/drive-scope/force-consent), user-scope hints for missing permissions, and updated drive/docs/sheets search to require user tokens with `search_key`.
 - 2026-01-31: Added verbose tracing for drive/docs/sheets search and capped search pagination with a new `--pages` flag; user-scope hints now skip non-permission errors.
 - 2026-01-31: Added docs-api search support for drive/docs/sheets search (offset-based pagination, doc type normalization), keeping folder-scoped drive search on the legacy drive endpoint.
+- 2026-01-31: Removed drive search folder flags/legacy drive search path; drive search now consistently uses docs-api with offset window guard, README updated.

@@ -188,10 +188,10 @@ lark drive list --folder-id <FOLDER_TOKEN> --limit 20
 Search files:
 
 ```bash
-lark drive search --query "budget" --limit 10 --type sheet --type docx --folder-id <FOLDER_TOKEN>
+lark drive search --query "budget" --limit 10 --type sheet --type docx
 ```
 
-Drive search uses a **user access token**. Make sure your app has `drive:drive` or `drive:drive:readonly` user scopes, then run `lark auth user login` to refresh user authorization.
+Drive search uses a **user access token**. Make sure your app has `drive:drive`, `drive:drive:readonly`, or `search:docs:read` user scopes, then run `lark auth user login` to refresh user authorization.
 
 Download:
 

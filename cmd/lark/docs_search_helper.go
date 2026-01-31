@@ -9,6 +9,7 @@ import (
 )
 
 const maxDocsSearchCount = 50
+const maxDocsSearchWindow = 199
 
 func docsSearchDriveFiles(ctx context.Context, state *appState, token, label, query string, docTypes []string, limit, pages int) ([]larksdk.DriveFile, error) {
 	if state == nil {
@@ -36,6 +37,16 @@ func docsSearchDriveFiles(ctx context.Context, state *appState, token, label, qu
 		count := remaining
 		if count > maxDocsSearchCount {
 			count = maxDocsSearchCount
+		}
+		maxAllowed := maxDocsSearchWindow - offset
+		if maxAllowed <= 0 {
+			break
+		}
+		if count > maxAllowed {
+			count = maxAllowed
+		}
+		if count <= 0 {
+			break
 		}
 		debugf(state, "%s search request: page=%d/%d count=%d offset=%d\n", label, pageCount, pages, count, offset)
 
