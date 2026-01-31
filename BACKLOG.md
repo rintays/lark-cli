@@ -340,6 +340,7 @@ Deliverables:
 Additional consistency work:
 - [ ] **Required flags validation**: use Cobra’s `MarkFlagRequired` / `Args` validators consistently across commands.
   - [x] `drive list` now rejects positional args (Args=cobra.NoArgs) + test
+  - [x] `calendar list/create` now reject positional args (Args=cobra.NoArgs) + test
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
