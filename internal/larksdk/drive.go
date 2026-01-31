@@ -308,8 +308,9 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDr
 	}
 
 	parentNode := req.FolderToken
-	if parentNode == "" {
-		parentNode = "root"
+	if parentNode == "" || parentNode == "root" {
+		// Lark/Feishu Drive upload expects root folder token to be "0".
+		parentNode = "0"
 	}
 
 	body := larkdrive.NewUploadAllFileReqBodyBuilder().
