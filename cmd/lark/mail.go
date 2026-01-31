@@ -74,7 +74,7 @@ func newMailMailboxGetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
+	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
