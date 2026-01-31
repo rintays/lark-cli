@@ -15,12 +15,12 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestBaseRecordCreateCommandWithSDK(t *testing.T) {
+func TestBaseFieldCreateCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/open-apis/bitable/v1/apps/app_1/tables/tbl_1/records" {
+		if r.URL.Path != "/open-apis/bitable/v1/apps/app_1/tables/tbl_1/fields" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer tenant-token" {
@@ -34,22 +34,21 @@ func TestBaseRecordCreateCommandWithSDK(t *testing.T) {
 		if err := json.Unmarshal(body, &payload); err != nil {
 			t.Fatalf("decode body: %v", err)
 		}
-		fields, ok := payload["fields"].(map[string]any)
-		if !ok {
-			t.Fatalf("missing fields payload: %#v", payload["fields"])
+		if payload["field_name"] != "City" {
+			t.Fatalf("unexpected field name: %#v", payload["field_name"])
 		}
-		if fields["Title"] != "Task" {
-			t.Fatalf("unexpected fields: %#v", fields)
+		if payload["type"] != float64(1) {
+			t.Fatalf("unexpected field type: %#v", payload["type"])
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"record": map[string]any{
-					"record_id":          "rec_1",
-					"created_time":       1700000000,
-					"last_modified_time": 1700000001,
+				"field": map[string]any{
+					"field_id":   "fld_1",
+					"field_name": "City",
+					"type":       1,
 				},
 			},
 		})
@@ -74,11 +73,11 @@ func TestBaseRecordCreateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--fields-json", `{"Title":"Task"}`})
+	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--name", "City", "--type", "1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("base record create error: %v", err)
+		t.Fatalf("base field create error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "rec_1") {
+	if !strings.Contains(buf.String(), "fld_1") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
