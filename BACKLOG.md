@@ -496,3 +496,4 @@ Deliverables:
 - 2026-01-31: Added `lark auth user login` (OAuth auth-code flow) + config storage + unit tests.
 - 2026-01-31: Added backlog item: Docs Markdown ⇄ Docx bidirectional sync (export md exists; import/sync TBD).
 - 2026-01-31: Marked runtime base-url/platform override tests/docs complete; updated Lark base URL to `open.larksuite.com`.
+- 2026-01-31: Marked `lark config list-keys` complete.
