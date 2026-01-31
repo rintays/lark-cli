@@ -230,6 +230,43 @@ func (c *Client) getDriveFileMetadata(ctx context.Context, req GetDriveFileReque
 	return mapDriveFile(resp.Data.File), nil
 }
 
+type DeleteDriveFileResult struct {
+	TaskID string `json:"task_id,omitempty"`
+}
+
+func (c *Client) DeleteDriveFile(ctx context.Context, token, fileToken, fileType string) (DeleteDriveFileResult, error) {
+	if !c.available() {
+		return DeleteDriveFileResult{}, ErrUnavailable
+	}
+	if fileToken == "" {
+		return DeleteDriveFileResult{}, errors.New("file token is required")
+	}
+	if fileType == "" {
+		return DeleteDriveFileResult{}, errors.New("file type is required")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return DeleteDriveFileResult{}, errors.New("tenant access token is required")
+	}
+
+	builder := larkdrive.NewDeleteFileReqBuilder().FileToken(fileToken).Type(fileType)
+	resp, err := c.sdk.Drive.V1.File.Delete(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return DeleteDriveFileResult{}, err
+	}
+	if resp == nil {
+		return DeleteDriveFileResult{}, errors.New("delete drive file failed: empty response")
+	}
+	if !resp.Success() {
+		return DeleteDriveFileResult{}, fmt.Errorf("delete drive file failed: %s", resp.Msg)
+	}
+	result := DeleteDriveFileResult{}
+	if resp.Data != nil && resp.Data.TaskId != nil {
+		result.TaskID = *resp.Data.TaskId
+	}
+	return result, nil
+}
+
 type DrivePermissionPublic struct {
 	ExternalAccess  bool   `json:"external_access"`
 	SecurityEntity  string `json:"security_entity"`

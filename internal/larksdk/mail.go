@@ -60,21 +60,31 @@ type MailAddressInput struct {
 }
 
 type MailAttachment struct {
-	Body     string `json:"body"`
-	Filename string `json:"filename"`
+	Body           string `json:"body,omitempty"`
+	Filename       string `json:"filename,omitempty"`
+	ID             string `json:"id,omitempty"`
+	AttachmentType int    `json:"attachment_type,omitempty"`
+	IsInline       bool   `json:"is_inline,omitempty"`
+	CID            string `json:"cid,omitempty"`
 }
 
 type MailMessage struct {
-	MessageID    string        `json:"message_id"`
-	ThreadID     string        `json:"thread_id"`
-	Subject      string        `json:"subject"`
-	Snippet      string        `json:"snippet"`
-	FolderID     string        `json:"folder_id"`
-	InternalDate string        `json:"internal_date"`
-	From         MailAddress   `json:"from"`
-	To           []MailAddress `json:"to"`
-	CC           []MailAddress `json:"cc"`
-	BCC          []MailAddress `json:"bcc"`
+	MessageID     string           `json:"message_id"`
+	ThreadID      string           `json:"thread_id,omitempty"`
+	Subject       string           `json:"subject,omitempty"`
+	Snippet       string           `json:"snippet,omitempty"`
+	FolderID      string           `json:"folder_id,omitempty"`
+	InternalDate  string           `json:"internal_date,omitempty"`
+	MessageState  int              `json:"message_state,omitempty"`
+	SMTPMessageID string           `json:"smtp_message_id,omitempty"`
+	Raw           string           `json:"raw,omitempty"`
+	BodyHTML      string           `json:"body_html,omitempty"`
+	BodyPlainText string           `json:"body_plain_text,omitempty"`
+	From          MailAddress      `json:"from,omitempty"`
+	To            []MailAddress    `json:"to,omitempty"`
+	CC            []MailAddress    `json:"cc,omitempty"`
+	BCC           []MailAddress    `json:"bcc,omitempty"`
+	Attachments   []MailAttachment `json:"attachments,omitempty"`
 }
 
 type ListMailMessagesRequest struct {
@@ -408,14 +418,37 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 
 	msg := resp.Data.Message
 	out := MailMessage{}
+	out.MessageID = messageID
+	if msg.MessageId != nil && *msg.MessageId != "" {
+		out.MessageID = *msg.MessageId
+	}
 	if msg.ThreadId != nil {
 		out.ThreadID = *msg.ThreadId
 	}
 	if msg.Subject != nil {
 		out.Subject = *msg.Subject
 	}
-	// MessageId is not part of `Message`; keep caller-provided messageID for stable output.
-	out.MessageID = messageID
+	if msg.InternalDate != nil {
+		out.InternalDate = *msg.InternalDate
+	}
+	if msg.MessageState != nil {
+		out.MessageState = *msg.MessageState
+	}
+	if msg.SmtpMessageId != nil {
+		out.SMTPMessageID = *msg.SmtpMessageId
+	}
+	if msg.Raw != nil {
+		out.Raw = *msg.Raw
+	}
+	if msg.BodyHtml != nil {
+		out.BodyHTML = *msg.BodyHtml
+	}
+	if msg.BodyPlainText != nil {
+		out.BodyPlainText = *msg.BodyPlainText
+	}
+	if msg.HeadFrom != nil {
+		out.From = MailAddress{MailAddress: derefString(msg.HeadFrom.MailAddress), Name: derefString(msg.HeadFrom.Name)}
+	}
 
 	for _, to := range msg.To {
 		if to == nil {
@@ -434,6 +467,31 @@ func (c *Client) GetMailMessage(ctx context.Context, token, mailboxID, messageID
 			continue
 		}
 		out.BCC = append(out.BCC, MailAddress{MailAddress: derefString(bcc.MailAddress), Name: derefString(bcc.Name)})
+	}
+	for _, attachment := range msg.Attachments {
+		if attachment == nil {
+			continue
+		}
+		row := MailAttachment{}
+		if attachment.Body != nil {
+			row.Body = *attachment.Body
+		}
+		if attachment.Filename != nil {
+			row.Filename = *attachment.Filename
+		}
+		if attachment.Id != nil {
+			row.ID = *attachment.Id
+		}
+		if attachment.AttachmentType != nil {
+			row.AttachmentType = *attachment.AttachmentType
+		}
+		if attachment.IsInline != nil {
+			row.IsInline = *attachment.IsInline
+		}
+		if attachment.Cid != nil {
+			row.CID = *attachment.Cid
+		}
+		out.Attachments = append(out.Attachments, row)
 	}
 
 	return out, nil

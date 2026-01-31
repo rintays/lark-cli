@@ -73,7 +73,7 @@ func TestDocsCreateCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"create", "--title", "Specs", "--folder-id", "fld"})
+	cmd.SetArgs([]string{"create", "Specs", "--folder-id", "fld"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs create error: %v", err)
 	}
@@ -165,12 +165,18 @@ func TestDocsInfoCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
+	if !strings.Contains(buf.String(), "document_id\tdoc1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "title\tSpecs") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "url\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -207,6 +213,81 @@ func TestDocsInfoCommandMissingDocIDDoesNotCallHTTP(t *testing.T) {
 	}
 	if called {
 		t.Fatal("unexpected http call")
+	}
+}
+
+func TestDocsInfoCommandFallbackURL(t *testing.T) {
+	docxCalled := false
+	driveCalled := false
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		switch r.URL.Path {
+		case "/open-apis/docx/v1/documents/doc1":
+			docxCalled = true
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"document": map[string]any{
+						"document_id": "doc1",
+						"title":       "Specs",
+					},
+				},
+			})
+		case "/open-apis/drive/v1/files/doc1":
+			driveCalled = true
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"file": map[string]any{
+						"token": "doc1",
+						"name":  "Specs",
+						"type":  "docx",
+						"url":   "https://example.com/doc",
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs info error: %v", err)
+	}
+	if !docxCalled {
+		t.Fatal("docx endpoint not called")
+	}
+	if !driveCalled {
+		t.Fatal("drive metadata endpoint not called")
+	}
+	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
+		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
 
@@ -301,7 +382,7 @@ func TestDocsExportCommand(t *testing.T) {
 		exportTaskPollInterval = prevInterval
 	}()
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs export error: %v", err)
 	}
@@ -328,7 +409,7 @@ func TestDocsInfoCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -379,7 +460,7 @@ func TestDocsCatCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"cat", "--doc-id", "doc1", "--format", "txt"})
+	cmd.SetArgs([]string{"cat", "doc1", "--format", "txt"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs cat error: %v", err)
 	}
@@ -405,7 +486,7 @@ func TestDocsExportCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"export", "--doc-id", "doc1", "--format", "pdf", "--out", outPath})
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")

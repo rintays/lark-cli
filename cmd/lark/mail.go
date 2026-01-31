@@ -64,7 +64,7 @@ func newMailMailboxInfoCmd(state *appState) *cobra.Command {
 				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"mailbox": mailbox}
-			text := tableText([]string{"mailbox_id", "name", "address"}, []string{formatMailMailboxLine(mailbox)}, "no mailbox found")
+			text := formatMailMailboxInfo(mailbox)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -80,8 +80,23 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 	var mailboxID string
 
 	cmd := &cobra.Command{
-		Use:   "set",
+		Use:   "set <mailbox-id>",
 		Short: "Set the default mailbox",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				if strings.TrimSpace(mailboxID) == "" {
+					return errors.New("mailbox-id is required")
+				}
+				return nil
+			}
+			if mailboxID != "" && mailboxID != args[0] {
+				return errors.New("mailbox-id provided twice")
+			}
+			return cmd.Flags().Set("mailbox-id", args[0])
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.Config == nil {
 				return errors.New("config is required")
@@ -98,8 +113,7 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
-	_ = cmd.MarkFlagRequired("mailbox-id")
+	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me'; or provide as positional argument)")
 	return cmd
 }
 
@@ -336,7 +350,7 @@ func newMailInfoCmd(state *appState) *cobra.Command {
 				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"message": message}
-			text := tableText([]string{"message_id", "subject"}, []string{formatMailMessageLine(message.MessageID, message.Subject)}, "no message found")
+			text := formatMailMessageInfo(message)
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -430,6 +444,75 @@ func formatMailFolderLine(folder larksdk.MailFolder) string {
 	folderType := folder.FolderType.String()
 	parts := []string{id, folder.Name, folderType}
 	return strings.Join(parts, "\t")
+}
+
+func formatMailMailboxInfo(mailbox larksdk.Mailbox) string {
+	rows := [][]string{
+		{"mailbox_id", infoValue(mailbox.MailboxID)},
+		{"name", infoValue(mailbox.Name)},
+		{"display_name", infoValue(mailbox.DisplayName)},
+		{"mail_address", infoValue(mailbox.MailAddress)},
+		{"primary_email", infoValue(mailbox.PrimaryEmail)},
+		{"email", infoValue(mailbox.Email)},
+		{"user_id", infoValue(mailbox.UserID)},
+		{"mailbox_status", infoValue(mailbox.MailboxStatus)},
+	}
+	return formatInfoTable(rows, "no mailbox found")
+}
+
+func formatMailMessageInfo(message larksdk.MailMessage) string {
+	rows := [][]string{
+		{"message_id", infoValue(message.MessageID)},
+		{"thread_id", infoValue(message.ThreadID)},
+		{"subject", infoValue(message.Subject)},
+		{"snippet", infoValue(message.Snippet)},
+		{"folder_id", infoValue(message.FolderID)},
+		{"internal_date", infoValue(message.InternalDate)},
+		{"message_state", infoValueIntZeroDash(message.MessageState)},
+		{"smtp_message_id", infoValue(message.SMTPMessageID)},
+		{"raw", infoValue(message.Raw)},
+		{"body_html", infoValue(message.BodyHTML)},
+		{"body_plain_text", infoValue(message.BodyPlainText)},
+		{"from.mail_address", infoValue(message.From.MailAddress)},
+		{"from.name", infoValue(message.From.Name)},
+		{"to.count", fmt.Sprintf("%d", len(message.To))},
+	}
+	for i, addr := range message.To {
+		prefix := fmt.Sprintf("to[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".mail_address", infoValue(addr.MailAddress)},
+			[]string{prefix + ".name", infoValue(addr.Name)},
+		)
+	}
+	rows = append(rows, []string{"cc.count", fmt.Sprintf("%d", len(message.CC))})
+	for i, addr := range message.CC {
+		prefix := fmt.Sprintf("cc[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".mail_address", infoValue(addr.MailAddress)},
+			[]string{prefix + ".name", infoValue(addr.Name)},
+		)
+	}
+	rows = append(rows, []string{"bcc.count", fmt.Sprintf("%d", len(message.BCC))})
+	for i, addr := range message.BCC {
+		prefix := fmt.Sprintf("bcc[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".mail_address", infoValue(addr.MailAddress)},
+			[]string{prefix + ".name", infoValue(addr.Name)},
+		)
+	}
+	rows = append(rows, []string{"attachments.count", fmt.Sprintf("%d", len(message.Attachments))})
+	for i, attachment := range message.Attachments {
+		prefix := fmt.Sprintf("attachments[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".id", infoValue(attachment.ID)},
+			[]string{prefix + ".filename", infoValue(attachment.Filename)},
+			[]string{prefix + ".attachment_type", infoValueIntZeroDash(attachment.AttachmentType)},
+			[]string{prefix + ".is_inline", fmt.Sprintf("%t", attachment.IsInline)},
+			[]string{prefix + ".cid", infoValue(attachment.CID)},
+			[]string{prefix + ".body", infoValue(attachment.Body)},
+		)
+	}
+	return formatInfoTable(rows, "no message found")
 }
 
 func formatMailMessageLine(messageID, subject string) string {

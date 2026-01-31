@@ -15,8 +15,36 @@ func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 	var objType string
 
 	cmd := &cobra.Command{
-		Use:   "info",
+		Use:   "info <node-token> <obj-type>",
 		Short: "Show a Wiki node (v2)",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if nodeToken != "" && nodeToken != args[0] {
+					return errors.New("node-token provided twice")
+				}
+				if err := cmd.Flags().Set("node-token", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if objType != "" && objType != args[1] {
+					return errors.New("obj-type provided twice")
+				}
+				if err := cmd.Flags().Set("obj-type", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(nodeToken) == "" {
+				return errors.New("node-token is required")
+			}
+			if strings.TrimSpace(objType) == "" {
+				return errors.New("obj-type is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -41,9 +69,7 @@ func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&nodeToken, "node-token", "", "wiki node token")
-	cmd.Flags().StringVar(&objType, "obj-type", "", "object type (docx|doc|sheet|bitable|file|slides|mindnote)")
-	_ = cmd.MarkFlagRequired("node-token")
-	_ = cmd.MarkFlagRequired("obj-type")
+	cmd.Flags().StringVar(&nodeToken, "node-token", "", "wiki node token (or provide as positional argument)")
+	cmd.Flags().StringVar(&objType, "obj-type", "", "object type (docx|doc|sheet|bitable|file|slides|mindnote) (or provide as positional argument)")
 	return cmd
 }

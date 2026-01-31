@@ -24,7 +24,7 @@ func TestWikiNodeSearchIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "wiki", "node", "search", "--query", "a", "--limit", "1"})
+	cmd.SetArgs([]string{"--json", "wiki", "node", "search", "a", "--limit", "1"})
 
 	err := cmd.Execute()
 	if err != nil {

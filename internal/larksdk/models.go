@@ -45,6 +45,48 @@ type ListCalendarEventsResult struct {
 	SyncToken string
 }
 
+type SearchCalendarEventsRequest struct {
+	CalendarID string
+	Query      string
+	StartTime  string
+	EndTime    string
+	UserIDs    []string
+	RoomIDs    []string
+	ChatIDs    []string
+	PageSize   int
+	PageToken  string
+}
+
+type SearchCalendarEventsResult struct {
+	Items     []CalendarEvent
+	PageToken string
+}
+
+type GetCalendarEventRequest struct {
+	CalendarID string
+	EventID    string
+}
+
+type UpdateCalendarEventRequest struct {
+	CalendarID  string
+	EventID     string
+	Summary     string
+	Description string
+	StartTime   *int64
+	EndTime     *int64
+}
+
+type DeleteCalendarEventRequest struct {
+	CalendarID       string
+	EventID          string
+	NeedNotification bool
+}
+
+type DeleteCalendarEventResult struct {
+	EventID string
+	Deleted bool
+}
+
 type CreateCalendarEventRequest struct {
 	CalendarID  string
 	Summary     string
@@ -127,14 +169,48 @@ type MeetingListItem struct {
 }
 
 type ListMeetingsRequest struct {
-	PageSize  int
-	PageToken string
+	StartTime               string
+	EndTime                 string
+	MeetingStatus           *int
+	MeetingNo               string
+	UserID                  string
+	RoomID                  string
+	MeetingType             *int
+	PageSize                int
+	PageToken               string
+	IncludeExternalMeetings *bool
+	IncludeWebinar          *bool
+	UserIDType              string
 }
 
 type ListMeetingsResult struct {
 	Items     []MeetingListItem
 	PageToken string
 	HasMore   bool
+}
+
+type ReserveMeetingSetting struct {
+	Topic              *string `json:"topic,omitempty"`
+	MeetingInitialType *int    `json:"meeting_initial_type,omitempty"`
+	AutoRecord         *bool   `json:"auto_record,omitempty"`
+	Password           *string `json:"password,omitempty"`
+}
+
+type Reserve struct {
+	ID              string                 `json:"id"`
+	MeetingNo       string                 `json:"meeting_no"`
+	Password        string                 `json:"password"`
+	URL             string                 `json:"url"`
+	AppLink         string                 `json:"app_link"`
+	LiveLink        string                 `json:"live_link"`
+	EndTime         string                 `json:"end_time"`
+	ExpireStatus    *int                   `json:"expire_status,omitempty"`
+	ReserveUserID   string                 `json:"reserve_user_id"`
+	MeetingSettings *ReserveMeetingSetting `json:"meeting_settings,omitempty"`
+}
+
+type ReserveCorrectionCheckInfo struct {
+	InvalidHostIDList []string `json:"invalid_host_id_list,omitempty"`
 }
 
 type User struct {
@@ -178,18 +254,6 @@ type Minute struct {
 	URL        string `json:"url,omitempty"`
 }
 
-type ListMinutesRequest struct {
-	PageSize   int
-	PageToken  string
-	UserIDType string
-}
-
-type ListMinutesResult struct {
-	Items     []Minute
-	PageToken string
-	HasMore   bool
-}
-
 type RevisionID string
 
 func (r *RevisionID) UnmarshalJSON(data []byte) error {
@@ -213,11 +277,29 @@ func (r *RevisionID) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("revision_id must be a string or number, got %s", string(data))
 }
 
+type DocxDisplaySetting struct {
+	ShowAuthors        *bool `json:"show_authors,omitempty"`
+	ShowCreateTime     *bool `json:"show_create_time,omitempty"`
+	ShowPv             *bool `json:"show_pv,omitempty"`
+	ShowUv             *bool `json:"show_uv,omitempty"`
+	ShowLikeCount      *bool `json:"show_like_count,omitempty"`
+	ShowCommentCount   *bool `json:"show_comment_count,omitempty"`
+	ShowRelatedMatters *bool `json:"show_related_matters,omitempty"`
+}
+
+type DocxCover struct {
+	Token        string   `json:"token,omitempty"`
+	OffsetRatioX *float64 `json:"offset_ratio_x,omitempty"`
+	OffsetRatioY *float64 `json:"offset_ratio_y,omitempty"`
+}
+
 type DocxDocument struct {
-	DocumentID string     `json:"document_id"`
-	Title      string     `json:"title"`
-	URL        string     `json:"url"`
-	RevisionID RevisionID `json:"revision_id"`
+	DocumentID     string              `json:"document_id"`
+	Title          string              `json:"title,omitempty"`
+	URL            string              `json:"url,omitempty"`
+	RevisionID     RevisionID          `json:"revision_id,omitempty"`
+	DisplaySetting *DocxDisplaySetting `json:"display_setting,omitempty"`
+	Cover          *DocxCover          `json:"cover,omitempty"`
 }
 
 type CreateDocxDocumentRequest struct {
@@ -259,23 +341,33 @@ type SheetDimensionDeleteResult struct {
 	EndIndex   int `json:"end_index"`
 }
 
-type SpreadsheetProperties struct {
-	Title      string `json:"title"`
-	OwnerUser  int64  `json:"ownerUser"`
-	SheetCount int    `json:"sheetCount"`
-	Revision   int64  `json:"revision"`
+type SpreadsheetGridProperties struct {
+	FrozenRowCount    int `json:"frozenRowCount,omitempty"`
+	FrozenColumnCount int `json:"frozenColumnCount,omitempty"`
+	RowCount          int `json:"rowCount,omitempty"`
+	ColumnCount       int `json:"columnCount,omitempty"`
+}
+
+type SpreadsheetMergeRange struct {
+	StartRowIndex    int `json:"startRowIndex,omitempty"`
+	EndRowIndex      int `json:"endRowIndex,omitempty"`
+	StartColumnIndex int `json:"startColumnIndex,omitempty"`
+	EndColumnIndex   int `json:"endColumnIndex,omitempty"`
 }
 
 type SpreadsheetSheet struct {
-	SheetID string `json:"sheetId"`
-	Title   string `json:"title"`
-	Index   int    `json:"index"`
-	Hidden  bool   `json:"hidden"`
+	SheetID        string                     `json:"sheetId"`
+	Title          string                     `json:"title"`
+	Index          int                        `json:"index"`
+	Hidden         bool                       `json:"hidden"`
+	ResourceType   string                     `json:"resourceType,omitempty"`
+	GridProperties *SpreadsheetGridProperties `json:"gridProperties,omitempty"`
+	Merges         []SpreadsheetMergeRange    `json:"merges,omitempty"`
 }
 
 type SpreadsheetMetadata struct {
-	Properties SpreadsheetProperties `json:"properties"`
-	Sheets     []SpreadsheetSheet    `json:"sheets"`
+	Spreadsheet SpreadsheetInfo    `json:"spreadsheet"`
+	Sheets      []SpreadsheetSheet `json:"sheets,omitempty"`
 }
 
 type MailFolderType string

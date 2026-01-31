@@ -18,6 +18,10 @@ func newChatsCmd(state *appState) *cobra.Command {
 		Short: "List chats the bot can access",
 	}
 	cmd.AddCommand(newChatsListCmd(state))
+	cmd.AddCommand(newChatsCreateCmd(state))
+	cmd.AddCommand(newChatsGetCmd(state))
+	cmd.AddCommand(newChatsUpdateCmd(state))
+	cmd.AddCommand(newChatsAnnouncementCmd(state))
 	return cmd
 }
 

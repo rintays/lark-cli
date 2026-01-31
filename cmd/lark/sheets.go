@@ -35,8 +35,36 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 	var sheetRange string
 
 	cmd := &cobra.Command{
-		Use:   "read",
+		Use:   "read <spreadsheet-id> <range>",
 		Short: "Read a range from Sheets",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if spreadsheetID != "" && spreadsheetID != args[0] {
+					return errors.New("spreadsheet-id provided twice")
+				}
+				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if sheetRange != "" && sheetRange != args[1] {
+					return errors.New("range provided twice")
+				}
+				if err := cmd.Flags().Set("range", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spreadsheetID) == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if strings.TrimSpace(sheetRange) == "" {
+				return errors.New("range is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
@@ -55,10 +83,8 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
-	_ = cmd.MarkFlagRequired("range")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
 	return cmd
 }
 
@@ -66,8 +92,25 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 
 	cmd := &cobra.Command{
-		Use:   "info",
+		Use:   "info <spreadsheet-id>",
 		Short: "Show spreadsheet info",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if spreadsheetID != "" && spreadsheetID != args[0] {
+					return errors.New("spreadsheet-id provided twice")
+				}
+				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spreadsheetID) == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
@@ -86,8 +129,7 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
 	return cmd
 }
 
@@ -97,8 +139,36 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	var valuesRaw string
 
 	cmd := &cobra.Command{
-		Use:   "update",
+		Use:   "update <spreadsheet-id> <range>",
 		Short: "Update a range in Sheets",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if spreadsheetID != "" && spreadsheetID != args[0] {
+					return errors.New("spreadsheet-id provided twice")
+				}
+				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if sheetRange != "" && sheetRange != args[1] {
+					return errors.New("range provided twice")
+				}
+				if err := cmd.Flags().Set("range", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spreadsheetID) == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if strings.TrimSpace(sheetRange) == "" {
+				return errors.New("range is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			values, err := parseSheetValues(valuesRaw)
 			if err != nil {
@@ -121,11 +191,9 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
-	_ = cmd.MarkFlagRequired("range")
 	_ = cmd.MarkFlagRequired("values")
 	return cmd
 }
@@ -137,8 +205,36 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 	var insertDataOption string
 
 	cmd := &cobra.Command{
-		Use:   "append",
+		Use:   "append <spreadsheet-id> <range>",
 		Short: "Append rows to Sheets",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if spreadsheetID != "" && spreadsheetID != args[0] {
+					return errors.New("spreadsheet-id provided twice")
+				}
+				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if sheetRange != "" && sheetRange != args[1] {
+					return errors.New("range provided twice")
+				}
+				if err := cmd.Flags().Set("range", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spreadsheetID) == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if strings.TrimSpace(sheetRange) == "" {
+				return errors.New("range is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			values, err := parseSheetValues(valuesRaw)
 			if err != nil {
@@ -161,12 +257,10 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON array of rows, e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
 	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
-	_ = cmd.MarkFlagRequired("range")
 	_ = cmd.MarkFlagRequired("values")
 	return cmd
 }
@@ -176,8 +270,36 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 	var sheetRange string
 
 	cmd := &cobra.Command{
-		Use:   "clear",
+		Use:   "clear <spreadsheet-id> <range>",
 		Short: "Clear a range in Sheets",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) > 0 {
+				if spreadsheetID != "" && spreadsheetID != args[0] {
+					return errors.New("spreadsheet-id provided twice")
+				}
+				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
+					return err
+				}
+			}
+			if len(args) > 1 {
+				if sheetRange != "" && sheetRange != args[1] {
+					return errors.New("range provided twice")
+				}
+				if err := cmd.Flags().Set("range", args[1]); err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(spreadsheetID) == "" {
+				return errors.New("spreadsheet-id is required")
+			}
+			if strings.TrimSpace(sheetRange) == "" {
+				return errors.New("range is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
@@ -194,10 +316,8 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
-	_ = cmd.MarkFlagRequired("range")
+	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
+	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. Sheet1!A1:B2 (or provide as positional argument)")
 	return cmd
 }
 
@@ -229,19 +349,49 @@ func formatSheetValues(valueRange larksdk.SheetValueRange) string {
 }
 
 func formatSpreadsheetMetadata(metadata larksdk.SpreadsheetMetadata) string {
-	lines := make([]string, 0, len(metadata.Sheets)+1)
-	if title := strings.TrimSpace(metadata.Properties.Title); title != "" {
-		lines = append(lines, title)
+	rows := [][]string{
+		{"token", infoValue(metadata.Spreadsheet.SpreadsheetToken)},
+		{"title", infoValue(metadata.Spreadsheet.Title)},
+		{"url", infoValue(metadata.Spreadsheet.URL)},
+		{"owner_id", infoValue(metadata.Spreadsheet.OwnerID)},
+		{"sheets.count", fmt.Sprintf("%d", len(metadata.Sheets))},
 	}
-	for _, sheet := range metadata.Sheets {
-		if name := strings.TrimSpace(sheet.Title); name != "" {
-			lines = append(lines, name)
+	for i, sheet := range metadata.Sheets {
+		prefix := fmt.Sprintf("sheets[%d]", i)
+		resourceType := infoValue(sheet.ResourceType)
+		frozenRowCount := "-"
+		frozenColumnCount := "-"
+		rowCount := "-"
+		columnCount := "-"
+		if sheet.GridProperties != nil {
+			frozenRowCount = fmt.Sprintf("%d", sheet.GridProperties.FrozenRowCount)
+			frozenColumnCount = fmt.Sprintf("%d", sheet.GridProperties.FrozenColumnCount)
+			rowCount = fmt.Sprintf("%d", sheet.GridProperties.RowCount)
+			columnCount = fmt.Sprintf("%d", sheet.GridProperties.ColumnCount)
+		}
+		rows = append(rows,
+			[]string{prefix + ".sheet_id", infoValue(sheet.SheetID)},
+			[]string{prefix + ".title", infoValue(sheet.Title)},
+			[]string{prefix + ".index", fmt.Sprintf("%d", sheet.Index)},
+			[]string{prefix + ".hidden", fmt.Sprintf("%t", sheet.Hidden)},
+			[]string{prefix + ".resource_type", resourceType},
+			[]string{prefix + ".grid_properties.frozen_row_count", frozenRowCount},
+			[]string{prefix + ".grid_properties.frozen_column_count", frozenColumnCount},
+			[]string{prefix + ".grid_properties.row_count", rowCount},
+			[]string{prefix + ".grid_properties.column_count", columnCount},
+			[]string{prefix + ".merges.count", fmt.Sprintf("%d", len(sheet.Merges))},
+		)
+		for j, merge := range sheet.Merges {
+			mergePrefix := fmt.Sprintf("%s.merges[%d]", prefix, j)
+			rows = append(rows,
+				[]string{mergePrefix + ".start_row_index", fmt.Sprintf("%d", merge.StartRowIndex)},
+				[]string{mergePrefix + ".end_row_index", fmt.Sprintf("%d", merge.EndRowIndex)},
+				[]string{mergePrefix + ".start_column_index", fmt.Sprintf("%d", merge.StartColumnIndex)},
+				[]string{mergePrefix + ".end_column_index", fmt.Sprintf("%d", merge.EndColumnIndex)},
+			)
 		}
 	}
-	if len(lines) == 0 {
-		return "no metadata found"
-	}
-	return strings.Join(lines, "\n")
+	return formatInfoTable(rows, "no metadata found")
 }
 
 func parseSheetValues(valuesRaw string) ([][]any, error) {

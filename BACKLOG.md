@@ -241,16 +241,16 @@ Acceptance criteria:
 **Why:** common spreadsheet operations.
 
 Deliverables:
-- [ ] Add row/col operations (Sheets v3 sheet-rowcol):
+- [x] Add row/col operations (Sheets v3 sheet-rowcol):
   - [x] insert rows (v3 insert_dimension, `sheets rows insert`) (endpoint: `/open-apis/sheets/v3/spreadsheets/:spreadsheet_token/sheets/:sheet_id/insert_dimension`)
   - [x] insert cols (v3 insert_dimension, `sheets cols insert`)
   - [x] delete rows (`sheets rows delete`)
   - [x] delete cols (`sheets cols delete`)
-  - [ ] follow gog-style command tree
-  - [ ] SDK-first; otherwise `core.ApiReq` wrappers
+  - [x] follow gog-style command tree
+  - [x] SDK-first; otherwise `core.ApiReq` wrappers
 
 Acceptance criteria:
-- Integration tests cover at least one insert and one delete.
+- [x] Integration tests cover at least one insert and one delete.
 
 ---
 
@@ -342,6 +342,7 @@ Deliverables:
   - `meeting` → `meetings` already done
   - [x] Policy: top-level resource collections use plural canonical names; abbreviations are aliases; keep backward-compatible aliases when renaming. Rationale: consistent help discovery and stable scripts.
   - [x] `calendar` → `calendars` (keep `calendar` as alias)
+  - [x] `base` → `bases` (keep `base` as alias)
   - [x] `msg` → `messages` (keep `msg` as alias)
   - [x] `msg` short help clarified to "Send chat messages"
 - [ ] Align help text and examples.
@@ -349,6 +350,7 @@ Deliverables:
   - [x] `mail mailbox info` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
   - [x] README now points to the correct backlog path (`/Users/fredliang/clawd/lark/BACKLOG.md`)
+  - [x] `calendars` help text uses plural canonical naming and documents the `calendar` alias (+ test)
 - [x] Fix: `docs` command no longer registers `list` twice.
 
 Additional consistency work:
@@ -358,6 +360,7 @@ Additional consistency work:
   - [x] `drive info` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `sheets rows/cols insert/delete` now use required flag validation for `--spreadsheet-id`, `--sheet-id`, `--start-index`, `--count` + unit tests assert stable required-flag errors
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
@@ -523,3 +526,5 @@ Deliverables:
 - 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.
 - 2026-01-31: Added unit tests for drive search pagination capping (`--pages` + `--limit`).
 - 2026-01-31: Added `make it` helper target for running all integration tests (gated by `LARK_INTEGRATION=1`).
+- 2026-01-31: Added CLI-based integration test coverage for Sheets rows/cols insert/delete (dimension ops).
+- 2026-01-31: Sheets rows/cols insert/delete now use Cobra required-flag validation + unit tests assert stable required-flag errors.

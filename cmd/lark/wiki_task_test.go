@@ -87,7 +87,7 @@ func TestWikiTaskInfoCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"task", "info", "--task-id", "t1"})
+	cmd.SetArgs([]string{"task", "info", "t1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("wiki task info error: %v", err)
 	}

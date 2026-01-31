@@ -201,7 +201,7 @@ func TestDriveSearchCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "budget", "--limit", "2", "--type", "docx", "--type", "sheet"})
+	cmd.SetArgs([]string{"search", "budget", "--limit", "2", "--type", "docx", "--type", "sheet"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}
@@ -292,7 +292,7 @@ func TestDriveSearchCommandRespectsPagesCap(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "budget", "--folder-id", "root", "--limit", "10", "--pages", "2"})
+	cmd.SetArgs([]string{"search", "budget", "--folder-id", "root", "--limit", "10", "--pages", "2"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}
@@ -367,7 +367,7 @@ func TestDriveSearchCommandStopsAtLimit(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "budget", "--folder-id", "root", "--limit", "2", "--pages", "5"})
+	cmd.SetArgs([]string{"search", "budget", "--folder-id", "root", "--limit", "2", "--pages", "5"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}
@@ -445,7 +445,7 @@ func TestDriveSearchCommandSingleFileType(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "spec", "--limit", "1", "--type", "docx"})
+	cmd.SetArgs([]string{"search", "spec", "--limit", "1", "--type", "docx"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}
@@ -497,7 +497,7 @@ func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "note", "--limit", "1"})
+	cmd.SetArgs([]string{"search", "note", "--limit", "1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive search error: %v", err)
 	}
@@ -629,7 +629,7 @@ func TestDriveInfoMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"file-token\" not set" {
+	if err.Error() != "file-token is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -784,7 +784,7 @@ func TestDriveShareMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"file-token\" not set" {
+	if err.Error() != "file-token is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -934,20 +934,11 @@ func TestDriveUploadRequiresFileBeforeHTTP(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDriveUploadCmd(state)
-	fileFlag := cmd.Flags().Lookup("file")
-	if fileFlag == nil {
-		t.Fatal("missing file flag")
-	}
-	if err := fileFlag.Value.Set(tmpFile.Name()); err != nil {
-		t.Fatalf("set file flag: %v", err)
-	}
-	fileFlag.Changed = false
-
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"file\" not set" {
+	if err.Error() != "file is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1000,7 +991,7 @@ func TestDriveDownloadCommand(t *testing.T) {
 			state.SDK = sdkClient
 
 			cmd := newDriveCmd(state)
-			cmd.SetArgs([]string{"download", "--file-token", "f1", "--out", outPath})
+			cmd.SetArgs([]string{"download", "f1", "--out", outPath})
 			if err := cmd.Execute(); err != nil {
 				t.Fatalf("drive download error: %v", err)
 			}
@@ -1190,7 +1181,7 @@ func TestDriveExportMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"file-token\" not set" {
+	if err.Error() != "file-token is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

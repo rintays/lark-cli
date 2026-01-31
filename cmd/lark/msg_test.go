@@ -129,7 +129,7 @@ func TestMsgSendMissingTextDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "text") {
+	if !strings.Contains(err.Error(), "content") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -142,7 +142,7 @@ func TestMsgSendRequiresFlags(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if !strings.Contains(err.Error(), "text") {
+		if !strings.Contains(err.Error(), "content") {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
