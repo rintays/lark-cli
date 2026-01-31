@@ -63,6 +63,7 @@ func TestCalendarListCommand(t *testing.T) {
 						{
 							"event_id": "evt_1",
 							"summary":  "Standup",
+							"status":   "confirmed",
 							"start_time": map[string]any{
 								"timestamp": strconv.FormatInt(startUnix, 10),
 							},
@@ -103,7 +104,7 @@ func TestCalendarListCommand(t *testing.T) {
 		t.Fatalf("calendar list error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tStandup") {
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tStandup\tconfirmed") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -155,6 +156,7 @@ func TestCalendarCreateCommand(t *testing.T) {
 					"event": map[string]any{
 						"event_id": "evt_1",
 						"summary":  "Demo",
+						"status":   "confirmed",
 					},
 				},
 			})
@@ -213,7 +215,7 @@ func TestCalendarCreateCommand(t *testing.T) {
 		t.Fatalf("calendar create error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tDemo") {
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tDemo\tconfirmed") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -279,6 +281,7 @@ func TestCalendarSearchCommand(t *testing.T) {
 						{
 							"event_id": "evt_1",
 							"summary":  "Standup",
+							"status":   "confirmed",
 							"start_time": map[string]any{
 								"timestamp": strconv.FormatInt(startUnix, 10),
 							},
@@ -318,7 +321,7 @@ func TestCalendarSearchCommand(t *testing.T) {
 		t.Fatalf("calendar search error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tStandup") {
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tStandup\tconfirmed") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -358,6 +361,7 @@ func TestCalendarGetCommand(t *testing.T) {
 					"event": map[string]any{
 						"event_id": "evt_1",
 						"summary":  "Review",
+						"status":   "confirmed",
 						"start_time": map[string]any{
 							"timestamp": strconv.FormatInt(startUnix, 10),
 						},
@@ -396,7 +400,7 @@ func TestCalendarGetCommand(t *testing.T) {
 		t.Fatalf("calendar get error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tReview") {
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tReview\tconfirmed") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -451,6 +455,7 @@ func TestCalendarUpdateCommand(t *testing.T) {
 					"event": map[string]any{
 						"event_id": "evt_1",
 						"summary":  "Updated",
+						"status":   "confirmed",
 						"start_time": map[string]any{
 							"timestamp": strconv.FormatInt(startUnix, 10),
 						},
@@ -489,7 +494,7 @@ func TestCalendarUpdateCommand(t *testing.T) {
 		t.Fatalf("calendar update error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tUpdated") {
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tUpdated\tconfirmed") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

@@ -100,3 +100,4 @@
 - 2026-01-31: Added mail message-id normalization retry on invalid params for mail get, with tests.
 - 2026-01-31: Meetings list now defaults to the last 6 months when start/end are omitted.
 - 2026-01-31: Sheets rows/cols delete now use the v2 dimension_range delete API with 1-based index conversion in payloads, fixing delete failures.
+- 2026-01-31: Calendar event outputs now include status in list/search/get/create/update tables and SDK model mapping.
