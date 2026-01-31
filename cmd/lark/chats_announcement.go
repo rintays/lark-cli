@@ -59,7 +59,14 @@ func newChatsAnnouncementGetCmd(state *appState) *cobra.Command {
 				if revision == "" {
 					revision = strings.TrimSpace(announcement.Revision)
 				}
-				if revision == "" {
+				content := strings.TrimSpace(docxBlocksText(announcement.Blocks))
+				if content != "" {
+					if revision == "" {
+						text = content
+					} else {
+						text = strings.TrimSpace(fmt.Sprintf("%s\t%s", revision, content))
+					}
+				} else if revision == "" {
 					text = strings.TrimSpace(fmt.Sprintf("docx\tblocks:%d", len(announcement.Blocks)))
 				} else {
 					text = strings.TrimSpace(fmt.Sprintf("docx\t%s\tblocks:%d", revision, len(announcement.Blocks)))

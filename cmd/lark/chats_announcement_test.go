@@ -120,7 +120,15 @@ func TestChatsAnnouncementGetCommandDocxFallbackWithSDK(t *testing.T) {
 				"msg":  "ok",
 				"data": map[string]any{
 					"items": []map[string]any{
-						{"block_id": "b1", "block_type": 2},
+						{
+							"block_id":   "b1",
+							"block_type": 2,
+							"text": map[string]any{
+								"elements": []map[string]any{
+									{"text_run": map[string]any{"content": "hello docx"}},
+								},
+							},
+						},
 					},
 					"has_more": false,
 				},
@@ -153,7 +161,7 @@ func TestChatsAnnouncementGetCommandDocxFallbackWithSDK(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("announcement get error: %v", err)
 	}
-	if !strings.Contains(buf.String(), "docx") {
+	if !strings.Contains(buf.String(), "hello docx") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

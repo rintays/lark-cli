@@ -77,3 +77,4 @@
 - 2026-01-31: Expanded docs/sheets/mail info output to full SDK fields with key/value tables, enriched docx/sheets/mail SDK mappings, and updated tests.
 - 2026-01-31: Docs info now falls back to drive file metadata for URL when the docx info API omits it.
 - 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.
+- 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
