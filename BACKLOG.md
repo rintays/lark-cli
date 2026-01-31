@@ -130,7 +130,7 @@ Work items (must follow the design, not ad-hoc patches):
 - [ ] **Explicit re-auth triggers** (gog `--force-consent` analogue)
   - [x] Add `lark auth user login --force-consent` (or equivalent) to force prompt/consent
   - [ ] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
-  - [ ] Make remediation messages print the exact command to run next
+  - [x] Make remediation messages print the exact command to run next
 - [ ] **Token storage backend policy + implementation**
   - [ ] Backend selection: `auto|keychain|file` (keyring)
   - [ ] Env > config precedence (e.g., `LARK_KEYRING_BACKEND`, `LARK_KEYRING_PASSWORD` for headless)
@@ -141,7 +141,7 @@ Work items (must follow the design, not ad-hoc patches):
 - [ ] **Auth status & remediation UX**
   - [ ] `lark auth user status` shows: who (if possible), services enabled, scopes union, offline/refresh availability, expiry
   - [ ] Standardized remediation messages:
-    - [ ] missing refresh_token → tell user to rerun with `--force-consent` / correct scopes
+    - [x] missing refresh_token → tell user to rerun with `--force-consent` / correct scopes
     - [ ] revoked refresh_token → clear + rerun login
     - [ ] insufficient scope → suggest adding service/scope and re-login
 
