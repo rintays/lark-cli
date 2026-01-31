@@ -81,6 +81,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newContactsCmd(state))
 	cmd.AddCommand(newMailCmd(state))
 	cmd.AddCommand(newBaseCmd(state))
+	cmd.AddCommand(newConfigCmd(state))
 
 	return cmd
 }

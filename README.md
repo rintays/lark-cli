@@ -76,6 +76,12 @@ export LARK_APP_ID=<APP_ID>
 export LARK_APP_SECRET=<APP_SECRET>
 ```
 
+View the currently loaded config:
+
+```bash
+lark config get
+```
+
 ### 2) Get tenant token
 
 ```bash
