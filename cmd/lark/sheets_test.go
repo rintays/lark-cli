@@ -783,34 +783,34 @@ func TestSheetsColsInsertRequiresSheetID(t *testing.T) {
 
 func TestSheetsColsDeleteCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Fatalf("expected POST, got %s", r.Method)
+		if r.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", r.Method)
 		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/sheet/delete_dimension" {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/dimension_range" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		var payload map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode payload: %v", err)
 		}
-		dimensionRange, ok := payload["dimension_range"].(map[string]any)
+		dimension, ok := payload["dimension"].(map[string]any)
 		if !ok {
-			t.Fatalf("missing dimension_range")
+			t.Fatalf("missing dimension")
 		}
-		if dimensionRange["major_dimension"] != "COLUMNS" {
-			t.Fatalf("unexpected major_dimension: %#v", dimensionRange["major_dimension"])
+		if dimension["sheetId"] != "sheet" {
+			t.Fatalf("unexpected sheetId: %#v", dimension["sheetId"])
 		}
-		if startIndex, ok := dimensionRange["start_index"].(float64); !ok || int(startIndex) != 3 {
-			t.Fatalf("unexpected start_index: %#v", dimensionRange["start_index"])
+		if dimension["majorDimension"] != "COLUMNS" {
+			t.Fatalf("unexpected majorDimension: %#v", dimension["majorDimension"])
 		}
-		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 5 {
-			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
+		if startIndex, ok := dimension["startIndex"].(float64); !ok || int(startIndex) != 4 {
+			t.Fatalf("unexpected startIndex: %#v", dimension["startIndex"])
 		}
-		if _, ok := payload["dimensionRange"]; !ok {
-			t.Fatalf("missing dimensionRange")
+		if endIndex, ok := dimension["endIndex"].(float64); !ok || int(endIndex) != 5 {
+			t.Fatalf("unexpected endIndex: %#v", dimension["endIndex"])
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -977,34 +977,34 @@ func TestSheetsRowsInsertCommandWithSDK(t *testing.T) {
 
 func TestSheetsRowsDeleteCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Fatalf("expected POST, got %s", r.Method)
+		if r.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", r.Method)
 		}
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/sheet/delete_dimension" {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/dimension_range" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		var payload map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode payload: %v", err)
 		}
-		dimensionRange, ok := payload["dimension_range"].(map[string]any)
+		dimension, ok := payload["dimension"].(map[string]any)
 		if !ok {
-			t.Fatalf("missing dimension_range")
+			t.Fatalf("missing dimension")
 		}
-		if dimensionRange["major_dimension"] != "ROWS" {
-			t.Fatalf("unexpected major_dimension: %#v", dimensionRange["major_dimension"])
+		if dimension["sheetId"] != "sheet" {
+			t.Fatalf("unexpected sheetId: %#v", dimension["sheetId"])
 		}
-		if startIndex, ok := dimensionRange["start_index"].(float64); !ok || int(startIndex) != 2 {
-			t.Fatalf("unexpected start_index: %#v", dimensionRange["start_index"])
+		if dimension["majorDimension"] != "ROWS" {
+			t.Fatalf("unexpected majorDimension: %#v", dimension["majorDimension"])
 		}
-		if endIndex, ok := dimensionRange["end_index"].(float64); !ok || int(endIndex) != 6 {
-			t.Fatalf("unexpected end_index: %#v", dimensionRange["end_index"])
+		if startIndex, ok := dimension["startIndex"].(float64); !ok || int(startIndex) != 3 {
+			t.Fatalf("unexpected startIndex: %#v", dimension["startIndex"])
 		}
-		if _, ok := payload["dimensionRange"]; !ok {
-			t.Fatalf("missing dimensionRange")
+		if endIndex, ok := dimension["endIndex"].(float64); !ok || int(endIndex) != 6 {
+			t.Fatalf("unexpected endIndex: %#v", dimension["endIndex"])
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
