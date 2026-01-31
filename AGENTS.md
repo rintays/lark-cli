@@ -102,3 +102,5 @@
 - 2026-01-31: Sheets rows/cols delete now use the v2 dimension_range delete API with 1-based index conversion in payloads, fixing delete failures.
 - 2026-01-31: Calendar event outputs now include status in list/search/get/create/update tables and SDK model mapping.
 - 2026-01-31: Expanded base record create/update help text with detailed value format examples for record fields.
+- 2026-01-31: Clarified wiki help text (space/node/task definitions) and corrected meetings help to reflect the default list time range.
+- 2026-01-31: Clarified docs help text to describe document blocks.
