@@ -106,10 +106,8 @@ func applyEnvFallback(cfg *Config) {
 			cfg.AppSecret = appSecret
 		}
 	}
-	if cfg.KeyringBackend == "" {
-		if v := os.Getenv("LARK_KEYRING_BACKEND"); v != "" {
-			cfg.KeyringBackend = v
-		}
+	if v, ok := os.LookupEnv("LARK_KEYRING_BACKEND"); ok {
+		cfg.KeyringBackend = v
 	}
 }
 
