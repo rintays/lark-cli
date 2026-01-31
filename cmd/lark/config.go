@@ -17,6 +17,7 @@ func newConfigCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newConfigGetCmd(state))
 	cmd.AddCommand(newConfigSetCmd(state))
+	cmd.AddCommand(newConfigUnsetCmd(state))
 	return cmd
 }
 
@@ -95,6 +96,38 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&platform, "platform", "", "platform to persist (feishu or lark)")
 	cmd.MarkFlagsMutuallyExclusive("base-url", "platform")
 	cmd.MarkFlagsOneRequired("base-url", "platform")
+
+	return cmd
+}
+
+func newConfigUnsetCmd(state *appState) *cobra.Command {
+	var unsetBaseURL bool
+
+	cmd := &cobra.Command{
+		Use:   "unset",
+		Short: "Clear persisted configuration values",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if state.Config == nil {
+				return errors.New("config is required")
+			}
+			if !unsetBaseURL {
+				return errors.New("--base-url is required")
+			}
+
+			state.Config.BaseURL = ""
+			state.baseURLPersist = ""
+			if err := state.saveConfig(); err != nil {
+				return err
+			}
+
+			payload := map[string]any{
+				"config_path": state.ConfigPath,
+				"base_url":    "",
+			}
+			return state.Printer.Print(payload, fmt.Sprintf("cleared base_url in %s", state.ConfigPath))
+		},
+	}
+	cmd.Flags().BoolVar(&unsetBaseURL, "base-url", false, "clear the persisted base URL")
 
 	return cmd
 }
