@@ -27,6 +27,7 @@ type CalendarEvent struct {
 	Description string            `json:"description"`
 	StartTime   CalendarEventTime `json:"start_time"`
 	EndTime     CalendarEventTime `json:"end_time"`
+	Status      string            `json:"status"`
 }
 
 type ListCalendarEventsRequest struct {

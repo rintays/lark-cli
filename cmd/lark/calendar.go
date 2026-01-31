@@ -116,9 +116,9 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 			}
 			lines := make([]string, 0, len(events))
 			for _, event := range events {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary))
+				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s\t%s", event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary, event.Status))
 			}
-			text := tableText([]string{"event_id", "start_time", "end_time", "summary"}, lines, "no events found")
+			text := tableText([]string{"event_id", "start_time", "end_time", "summary", "status"}, lines, "no events found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -204,8 +204,8 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 				"attendees":   attendees,
 			}
 			text := tableTextRow(
-				[]string{"event_id", "start_time", "end_time", "summary"},
-				[]string{event.EventID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), event.Summary},
+				[]string{"event_id", "start_time", "end_time", "summary", "status"},
+				[]string{event.EventID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), event.Summary, event.Status},
 			)
 			return state.Printer.Print(payload, text)
 		},
@@ -316,9 +316,9 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 			}
 			lines := make([]string, 0, len(events))
 			for _, event := range events {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary))
+				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s\t%s", event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary, event.Status))
 			}
-			text := tableText([]string{"event_id", "start_time", "end_time", "summary"}, lines, "no events found")
+			text := tableText([]string{"event_id", "start_time", "end_time", "summary", "status"}, lines, "no events found")
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -368,8 +368,8 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 				"event":       event,
 			}
 			text := tableTextRow(
-				[]string{"event_id", "start_time", "end_time", "summary"},
-				[]string{event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary},
+				[]string{"event_id", "start_time", "end_time", "summary", "status"},
+				[]string{event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary, event.Status},
 			)
 			return state.Printer.Print(payload, text)
 		},
@@ -451,8 +451,8 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				"event":       event,
 			}
 			text := tableTextRow(
-				[]string{"event_id", "start_time", "end_time", "summary"},
-				[]string{event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary},
+				[]string{"event_id", "start_time", "end_time", "summary", "status"},
+				[]string{event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary, event.Status},
 			)
 			return state.Printer.Print(payload, text)
 		},

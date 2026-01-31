@@ -63,6 +63,7 @@ func newBaseFieldCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newBaseFieldCreateCmd(state))
 	cmd.AddCommand(newBaseFieldListCmd(state))
+	cmd.AddCommand(newBaseFieldTypesCmd(state))
 	return cmd
 }
 
@@ -71,6 +72,7 @@ func newBaseViewCmd(state *appState) *cobra.Command {
 		Use:   "view",
 		Short: "Manage Bitable views",
 	}
+	cmd.AddCommand(newBaseViewCreateCmd(state))
 	cmd.AddCommand(newBaseViewListCmd(state))
 	return cmd
 }

@@ -79,6 +79,7 @@
 - 2026-01-31: Refined messages list output to show content-first blocks with message metadata (id/type/chat/time) and text extraction from message bodies.
 - 2026-01-31: Messages list now renders system templates, formats mentions with user id links, drops chat id from meta, and shows metadata before content.
 - 2026-01-31: Chat announcement docx output now renders text content from announcement blocks in CLI output.
+- 2026-01-31: Chat announcement docx output now surfaces non-text blocks (image/file/link/etc.) and avoids block count fallbacks.
 - 2026-01-31: Expanded `lark chats get` output with chat metadata plus member previews (new `--members-limit`/`--members-page-size` flags) and updated README/tests.
 - 2026-01-31: Mail send now supports raw EML input via `--raw`/`--raw-file` (base64url), with updated CLI validation and examples.
 - 2026-01-31: Added `lark sheets delete` command backed by Drive delete, with README/design coverage and tests.
@@ -94,6 +95,9 @@
 - 2026-01-31: Added `lark mail get` for full message content; `mail info`/`mail list` now return metadata-only message fields.
 - 2026-01-31: Fixed Bitable record create payloads, added repeatable `--field` inputs and error detail formatting, added base field create command, and added view-name fallback for base table create.
 - 2026-01-31: Corrected Mail user OAuth scopes to include field-level read permissions (`mail:user_mailbox.message.subject:read`, `mail:user_mailbox.message.address:read`, `mail:user_mailbox.message.body:read`) plus `mail:user_mailbox.message:readonly`, added mail-send/public service mappings, and updated auth registry tests/docs.
+- 2026-01-31: Removed base table `--view-name`, added base view create command, and added base field types hints aligned to field properties.
 - 2026-01-31: Made meetings list and calendars list/search accept optional start/end filters, removed required flags, and added calendar pagination to respect `--limit`.
+- 2026-01-31: Added mail message-id normalization retry on invalid params for mail get, with tests.
 - 2026-01-31: Meetings list now defaults to the last 6 months when start/end are omitted.
 - 2026-01-31: Sheets rows/cols delete now use the v2 dimension_range delete API with 1-based index conversion in payloads, fixing delete failures.
+- 2026-01-31: Calendar event outputs now include status in list/search/get/create/update tables and SDK model mapping.
