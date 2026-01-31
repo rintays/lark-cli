@@ -260,11 +260,18 @@ P0 deliverables:
 - [x] `base record delete`
 
 P1:
+- [x] `base table create`
+- [x] `base table delete`
 - [ ] record batch operations
 - [ ] schema/view management
+  - [ ] `base field create/update/delete`
+  - [ ] `base view create/update/delete`
+  - [ ] `base record batch-create/batch-update/batch-delete`
 
 P2:
-- [ ] `base list` (discover app_token via Drive/Wiki)
+- [ ] `base app create/get/update/copy` (SDK supports; enables CLI-only lifecycle)
+- [ ] `base list` / `base app list` (discover app_token via Drive/Wiki)
+  - [ ] implement via `drive search --type bitable --query ...` and parse `file.url` to extract app_token
 - [ ] attachments workflows across Drive
 
 Acceptance criteria:
@@ -389,19 +396,22 @@ Each integration test must validate:
 - [ ] where applicable: write operations really happened (assert via follow-up GET/list/search)
 
 #### H3) Test targets / fixtures (make it repeatable)
-Add env vars to point tests at known resources (so tests are deterministic):
-- [x] `LARK_TEST_CHAT_ID` (for `msg send`)
-- [x] `LARK_TEST_FOLDER_TOKEN` (for `drive upload`, `docs create`)
-- [x] `LARK_TEST_USER_EMAIL` (for `users search`)
-- [ ] `LARK_TEST_DOC_ID` (optional, for docx export/cat tests)
-- [x] `LARK_TEST_SHEET_ID` and `LARK_TEST_SHEET_RANGE` (for sheets write)
-  - [x] `sheets update` integration test added (env required)
-  - [x] `sheets append` integration test added (env required)
-  - [x] `sheets clear` integration test added (env required)
-- [ ] `LARK_TEST_MAILBOX_ID` (until mailbox auto-default is implemented)
-- [ ] `LARK_TEST_MAIL_TO` (recipient for `mail send` integration test)
+Integration tests should be runnable with minimal env.
 
-(We can start without all of these, but we should converge on a stable fixture set.)
+Fixture strategy:
+- Tests dynamically create required resources (Drive folder, spreadsheet, chat) under a predictable name prefix.
+- A sweeper pass runs at the beginning and end of the suite to delete leftovers by prefix (best-effort).
+  - Prefixes: `lark-cli-it-` (current) and `lark-it-`/`clawdbot-it` (legacy).
+- Tests use `--config <temp>` so cached tokens are isolated from the developer’s real config.
+
+Still-required env vars (fail-fast by default; can opt into skip with `LARK_INTEGRATION_ALLOW_SKIP=1`):
+- `LARK_TEST_USER_EMAIL` (needed to resolve a real user and create a chat / send messages)
+- `LARK_TEST_MAIL_TO` (recipient for `mail send`)
+- `LARK_TEST_APP_TOKEN` + `LARK_TEST_TABLE_ID` (Base/Bitable integration tests)
+
+Optional env vars:
+- `LARK_TEST_FIELD_NAME` (Base field override; auto-detected when possible)
+- `LARK_TEST_DOC_ID` (if/when adding export/cat tests for a stable existing doc)
 
 #### H4) How to invoke CLI from tests
 Prefer invoking Cobra commands directly (faster, controllable stdout/stderr), but allow subprocess mode when needed:
