@@ -23,10 +23,9 @@ func TestLoadUsesEnvFallbackWhenConfigMissing(t *testing.T) {
 	}
 }
 
-func TestLoadConfigTakesPrecedenceOverEnv(t *testing.T) {
+func TestLoadConfigTakesPrecedenceOverEnvForAppIDSecret(t *testing.T) {
 	t.Setenv("LARK_APP_ID", "env-app-id")
 	t.Setenv("LARK_APP_SECRET", "env-app-secret")
-	t.Setenv("LARK_KEYRING_BACKEND", "keychain")
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
@@ -45,9 +44,27 @@ func TestLoadConfigTakesPrecedenceOverEnv(t *testing.T) {
 	if cfg.AppSecret != "file-app-secret" {
 		t.Fatalf("expected file app secret, got %q", cfg.AppSecret)
 	}
-	// config should take precedence over env fallback.
 	if cfg.KeyringBackend != "file" {
 		t.Fatalf("expected keyring_backend to be file, got %q", cfg.KeyringBackend)
+	}
+}
+
+func TestLoadEnvOverridesKeyringBackendWhenConfigPresent(t *testing.T) {
+	t.Setenv("LARK_KEYRING_BACKEND", "keychain")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	data := []byte(`{"keyring_backend":"file"}`)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.KeyringBackend != "keychain" {
+		t.Fatalf("expected env keyring backend, got %q", cfg.KeyringBackend)
 	}
 }
 
