@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
+
+	"lark/internal/authregistry"
 )
 
 type userOAuthScopeOptions struct {
@@ -17,88 +18,51 @@ type userOAuthScopeOptions struct {
 	DriveScopeSet bool
 }
 
-type serviceScopeSet struct {
-	Full     []string
-	Readonly []string
-}
-
-var userServiceScopes = map[string]serviceScopeSet{
-	"drive":  {Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}},
-	"docs":   {Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}},
-	"sheets": {Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}},
-}
-
-var userServiceAliases = map[string][]string{
-	"all":  {"drive", "docs", "sheets"},
-	"user": {"drive", "docs", "sheets"},
-}
-
-var defaultUserServices = []string{"drive"}
-
 func resolveUserOAuthScopes(state *appState, opts userOAuthScopeOptions) ([]string, string, error) {
 	if opts.ScopesSet {
 		scopes := normalizeScopes(parseScopeList(opts.Scopes))
 		if len(scopes) == 0 {
 			return nil, "", errors.New("scopes must not be empty")
 		}
-		scopes = ensureOfflineAccess(scopes)
-		return scopes, "flag", nil
+		return canonicalizeUserOAuthScopes(scopes), "flag", nil
 	}
 
 	if opts.ServicesSet || opts.Readonly || opts.DriveScopeSet {
 		services := opts.Services
 		if len(services) == 0 {
-			services = defaultUserServices
+			services = authregistry.DefaultUserOAuthServices
 		}
-		scopes, err := scopesFromServices(services, opts.Readonly, opts.DriveScope)
+		scopes, err := authregistry.UserOAuthScopesFromServices(services, opts.Readonly, opts.DriveScope)
 		if err != nil {
 			return nil, "", err
 		}
-		return ensureOfflineAccess(scopes), "services", nil
+		return canonicalizeUserOAuthScopes(scopes), "services", nil
 	}
 
 	if state != nil && state.Config != nil && len(state.Config.UserScopes) > 0 {
 		scopes := normalizeScopes(state.Config.UserScopes)
-		return ensureOfflineAccess(scopes), "config", nil
+		return canonicalizeUserOAuthScopes(scopes), "config", nil
 	}
 
 	return []string{defaultUserOAuthScope}, "default", nil
 }
 
-func scopesFromServices(services []string, readonly bool, driveScope string) ([]string, error) {
-	driveScope = strings.ToLower(strings.TrimSpace(driveScope))
-	if driveScope != "" {
-		switch driveScope {
-		case "full", "readonly":
-		case "file":
-			return nil, errors.New("drive-scope file is not supported; use full or readonly")
-		default:
-			return nil, fmt.Errorf("invalid drive-scope %q (use full or readonly)", driveScope)
-		}
-	}
-	if readonly {
-		if driveScope != "" {
-			return nil, errors.New("drive-scope cannot be combined with --readonly")
-		}
-		driveScope = "readonly"
-	}
-	if driveScope == "" {
-		driveScope = "full"
-	}
+func canonicalizeUserOAuthScopes(scopes []string) []string {
+	scopes = normalizeScopes(scopes)
 
-	var scopes []string
-	for _, svc := range expandServiceAliases(services) {
-		set, ok := userServiceScopes[svc]
-		if !ok {
-			return nil, fmt.Errorf("unknown service %q (use `lark auth user services` to list supported services)", svc)
+	rest := make([]string, 0, len(scopes))
+	for _, scope := range scopes {
+		if scope == defaultUserOAuthScope {
+			continue
 		}
-		if driveScope == "readonly" {
-			scopes = append(scopes, set.Readonly...)
-		} else {
-			scopes = append(scopes, set.Full...)
-		}
+		rest = append(rest, scope)
 	}
-	return normalizeScopes(scopes), nil
+	sort.Strings(rest)
+
+	out := make([]string, 0, len(rest)+1)
+	out = append(out, defaultUserOAuthScope)
+	out = append(out, rest...)
+	return out
 }
 
 func parseScopeList(raw string) []string {
@@ -130,16 +94,11 @@ func normalizeScopes(scopes []string) []string {
 }
 
 func ensureOfflineAccess(scopes []string) []string {
-	for _, scope := range scopes {
-		if scope == defaultUserOAuthScope {
-			return scopes
-		}
-	}
-	return append([]string{defaultUserOAuthScope}, scopes...)
+	return canonicalizeUserOAuthScopes(scopes)
 }
 
 func joinScopes(scopes []string) string {
-	return strings.Join(normalizeScopes(scopes), " ")
+	return strings.Join(canonicalizeUserOAuthScopes(scopes), " ")
 }
 
 func parseServicesList(raw []string) []string {
@@ -177,25 +136,4 @@ func normalizeServices(services []string) []string {
 		out = append(out, svc)
 	}
 	return out
-}
-
-func expandServiceAliases(services []string) []string {
-	expanded := make([]string, 0, len(services))
-	for _, svc := range services {
-		if alias, ok := userServiceAliases[svc]; ok {
-			expanded = append(expanded, alias...)
-			continue
-		}
-		expanded = append(expanded, svc)
-	}
-	return normalizeServices(expanded)
-}
-
-func listUserServices() []string {
-	services := make([]string, 0, len(userServiceScopes))
-	for svc := range userServiceScopes {
-		services = append(services, svc)
-	}
-	sort.Strings(services)
-	return services
 }

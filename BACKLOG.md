@@ -118,9 +118,9 @@ Credential/scopes management (research + design, gog-inspired):
 
 Work items (must follow the design, not ad-hoc patches):
 - [ ] **Service registry (gog-style)**
-  - [ ] Define fixed service set (im/drive/docx/sheets/calendar/mail/wiki/base/…)
+  - [x] Define fixed service set (im/drive/docx/sheets/calendar/mail/wiki/base/…)
   - [ ] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
-  - [ ] Compute **stable sorted union** of required scopes (deterministic + testable)
+  - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
   - [ ] Map commands → services (so runtime can explain “why you need this token/scope”)
 - [ ] **Scope variants as first-class knobs**
   - [ ] `--readonly` mode (where feasible)
@@ -497,3 +497,4 @@ Deliverables:
 - 2026-01-31: Added backlog item: Docs Markdown ⇄ Docx bidirectional sync (export md exists; import/sync TBD).
 - 2026-01-31: Marked runtime base-url/platform override tests/docs complete; updated Lark base URL to `open.larksuite.com`.
 - 2026-01-31: Marked `lark config list-keys` complete.
+- 2026-01-31: Started gog-style auth service registry (`internal/authregistry`) + stable-sorted scope union + unit tests.

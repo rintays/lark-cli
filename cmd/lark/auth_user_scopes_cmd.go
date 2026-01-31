@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"lark/internal/authregistry"
+
 	"github.com/spf13/cobra"
 )
 
@@ -159,17 +161,21 @@ func newAuthUserServicesCmd(state *appState) *cobra.Command {
 		Use:   "services",
 		Short: "List built-in OAuth service profiles",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			services := listUserServices()
+			services := authregistry.ListUserOAuthServices()
+			serviceScopes := make(map[string]authregistry.ServiceScopeSet, len(services))
+			for _, svc := range services {
+				serviceScopes[svc] = authregistry.Registry[svc].UserScopes
+			}
 			payload := map[string]any{
 				"services":           services,
-				"default_services":   defaultUserServices,
-				"service_aliases":    userServiceAliases,
-				"service_scopes":     userServiceScopes,
+				"default_services":   authregistry.DefaultUserOAuthServices,
+				"service_aliases":    authregistry.UserOAuthServiceAliases,
+				"service_scopes":     serviceScopes,
 				"drive_scope_values": []string{"full", "readonly"},
 			}
 			lines := make([]string, 0, len(services))
 			for _, svc := range services {
-				set := userServiceScopes[svc]
+				set := serviceScopes[svc]
 				full := strings.Join(set.Full, " ")
 				ro := strings.Join(set.Readonly, " ")
 				lines = append(lines, fmt.Sprintf("%s\tfull=%s\treadonly=%s", svc, full, ro))
