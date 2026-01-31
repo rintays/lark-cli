@@ -16,6 +16,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 	var query string
 	var spaceID string
 	var limit int
+	var pages int
 	var userAccessToken string
 
 	cmd := &cobra.Command{
@@ -39,6 +40,9 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
+			}
+			if pages <= 0 {
+				return errors.New("pages must be greater than 0")
 			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -67,8 +71,13 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 
 			nodes := make([]larksdk.WikiNodeSearchV1Item, 0, limit)
 			pageToken := ""
+			pageCount := 0
 			remaining := limit
 			for {
+				if pageCount >= pages {
+					break
+				}
+				pageCount++
 				pageSize := remaining
 				if pageSize > 200 {
 					pageSize = 200
@@ -109,6 +118,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
 	cmd.Flags().StringVar(&spaceID, "space-id", "", "Wiki space ID")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of nodes to return")
+	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 
 	return cmd

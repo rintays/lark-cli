@@ -25,6 +25,7 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 	var endTime string
 	var limit int
 	var pageSize int
+	var pages int
 	var userIDType string
 	var userAccessToken string
 
@@ -48,8 +49,11 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			if pageSize <= 0 {
-				return errors.New("page-size must be greater than 0")
+			if pageSize < 0 {
+				return errors.New("page-size must be greater than or equal to 0")
+			}
+			if pages <= 0 {
+				return errors.New("pages must be greater than 0")
 			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -80,14 +84,25 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 
 			items := make([]string, 0, limit)
 			pageToken := ""
+			pageCount := 0
 			remaining := limit
 			for {
-				size := pageSize
+				if pageCount >= pages {
+					break
+				}
+				pageCount++
+				size := remaining
+				if pageSize > 0 {
+					size = pageSize
+				}
 				if size > maxMessageSearchPageSize {
 					size = maxMessageSearchPageSize
 				}
 				if size > remaining {
 					size = remaining
+				}
+				if size <= 0 {
+					break
 				}
 				result, err := state.SDK.SearchMessages(context.Background(), token, larksdk.MessageSearchRequest{
 					Query:        query,
@@ -154,7 +169,8 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&startTime, "start-time", "", "start time (unix seconds)")
 	cmd.Flags().StringVar(&endTime, "end-time", "", "end time (unix seconds)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of message IDs to return")
-	cmd.Flags().IntVar(&pageSize, "page-size", 20, "page size per request")
+	cmd.Flags().IntVar(&pageSize, "page-size", 0, "page size per request (default: auto)")
+	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user id type (open_id, union_id, user_id)")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 	return cmd

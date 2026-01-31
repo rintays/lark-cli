@@ -51,6 +51,7 @@ func newBaseFieldCmd(state *appState) *cobra.Command {
 		Use:   "field",
 		Short: "Manage Bitable fields",
 	}
+	cmd.AddCommand(newBaseFieldCreateCmd(state))
 	cmd.AddCommand(newBaseFieldListCmd(state))
 	return cmd
 }
