@@ -120,7 +120,7 @@ func newMailMailboxesCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mailboxes",
 		Short: "List mailboxes (alias for public-mailboxes)",
-		Long: "This is a backwards-compatible alias. Feishu OpenAPI does not provide a user mailbox list endpoint; use public mailboxes discovery or pass --mailbox-id me for user mailbox operations.",
+		Long:  "This is a backwards-compatible alias. Feishu OpenAPI does not provide a user mailbox list endpoint; use public mailboxes discovery or pass --mailbox-id me for user mailbox operations.",
 	}
 	cmd.AddCommand(newMailMailboxesListCmd(state))
 	return cmd
@@ -220,7 +220,7 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID")
+	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
 	return cmd
 }
 
