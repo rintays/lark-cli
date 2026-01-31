@@ -117,6 +117,11 @@ type BaseTable struct {
 	Name    string `json:"name"`
 }
 
+type BaseTableDeleteResult struct {
+	TableID string `json:"table_id"`
+	Deleted bool   `json:"deleted"`
+}
+
 type BaseField struct {
 	FieldID   string `json:"field_id"`
 	FieldName string `json:"field_name"`

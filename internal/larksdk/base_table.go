@@ -40,16 +40,14 @@ func (c *Client) CreateBaseTable(ctx context.Context, token, appToken, tableName
 	if !resp.Success() {
 		return BaseTable{}, fmt.Errorf("create base table failed: %s", resp.Msg)
 	}
-	if resp.Data == nil || resp.Data.Table == nil {
+	if resp.Data == nil {
 		return BaseTable{}, nil
 	}
 	result := BaseTable{}
-	if resp.Data.Table.TableId != nil {
-		result.TableID = *resp.Data.Table.TableId
+	if resp.Data.TableId != nil {
+		result.TableID = *resp.Data.TableId
 	}
-	if resp.Data.Table.Name != nil {
-		result.Name = *resp.Data.Table.Name
-	}
+	result.Name = tableName
 	return result, nil
 }
 
