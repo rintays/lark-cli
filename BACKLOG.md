@@ -129,7 +129,7 @@ Work items (must follow the design, not ad-hoc patches):
   - [ ] Default to incremental grant when adding services/scopes (avoid re-consenting everything)
 - [ ] **Explicit re-auth triggers** (gog `--force-consent` analogue)
   - [x] Add `lark auth user login --force-consent` (or equivalent) to force prompt/consent
-  - [ ] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
+  - [x] Trigger guidance when: scopes changed, refresh_token missing, insufficient_scope/permission errors
     - [x] refresh_token missing: ensureUserToken/expireUserToken suggests `lark auth user login --scope offline_access --force-consent`
     - [x] scopes changed (auth user login stores canonical scope string + warns when changed)
     - [x] insufficient_scope/permission errors (best-effort: wiki node search adds re-login hint)
