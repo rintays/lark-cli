@@ -10,6 +10,7 @@ func newWikiCmd(state *appState) *cobra.Command {
 		Short: "Manage Wiki",
 	}
 	cmd.AddCommand(newWikiNodeCmd(state))
+	cmd.AddCommand(newWikiSpaceCmd(state))
 	return cmd
 }
 
