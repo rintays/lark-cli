@@ -276,10 +276,12 @@ P1:
 - [x] `base table create`
 - [x] `base table delete`
 - [ ] record batch operations
+  - [x] `base record batch-create`
+  - [ ] `base record batch-update`
+  - [x] `base record batch-delete`
 - [ ] schema/view management
   - [ ] `base field create/update/delete`
   - [ ] `base view create/update/delete`
-  - [ ] `base record batch-create/batch-update/batch-delete`
 
 P2:
 - [ ] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
