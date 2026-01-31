@@ -89,6 +89,12 @@ Set the base URL directly (optional):
 lark config set --base-url https://open.feishu.cn
 ```
 
+Set the platform base URL (optional):
+
+```bash
+lark config set --platform feishu|lark
+```
+
 ### 2) Get tenant token
 
 ```bash

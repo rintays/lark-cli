@@ -126,3 +126,74 @@ func TestConfigSetBaseURLPersistsConfig(t *testing.T) {
 		t.Fatalf("expected base_url saved, got %s", saved.BaseURL)
 	}
 }
+
+func TestConfigSetPlatformFeishuPersistsConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--platform", "feishu"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config set error: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	var saved config.Config
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if saved.BaseURL != "https://open.feishu.cn" {
+		t.Fatalf("expected base_url saved, got %s", saved.BaseURL)
+	}
+}
+
+func TestConfigSetPlatformLarkPersistsConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	state := &appState{
+		ConfigPath: configPath,
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--platform", "lark"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config set error: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	var saved config.Config
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if saved.BaseURL != "https://open.larkoffice.com" {
+		t.Fatalf("expected base_url saved, got %s", saved.BaseURL)
+	}
+}
+
+func TestConfigSetPlatformAndBaseURLErrors(t *testing.T) {
+	state := &appState{
+		ConfigPath: filepath.Join(t.TempDir(), "config.json"),
+		Config:     config.Default(),
+		Printer:    output.Printer{Writer: io.Discard},
+	}
+
+	cmd := newConfigCmd(state)
+	cmd.SetArgs([]string{"set", "--platform", "feishu", "--base-url", "https://open.feishu.cn"})
+
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected config set error for platform and base-url")
+	}
+}
