@@ -337,7 +337,7 @@ func TestSheetsClearCommandWithSDK(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values_clear" {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values/clear" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.URL.Query().Get("range") != "Sheet1!A1:B2" {

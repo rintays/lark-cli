@@ -17,7 +17,7 @@ import (
 	"lark/internal/testutil"
 )
 
-const integrationFixturePrefix = "clawdbot-it-"
+const integrationFixturePrefix = "lark-cli-it-"
 
 const (
 	integrationBaseAppName     = "lark-cli-it-base"
@@ -48,10 +48,34 @@ type integrationFixtures struct {
 
 func (fx integrationFixtures) EnsureChatID(t *testing.T) string {
 	t.Helper()
-	if fx.ChatID == "" {
-		t.Skip("missing LARK_TEST_CHAT_ID")
+	if fx.ChatID != "" {
+		return fx.ChatID
 	}
-	return fx.ChatID
+
+	ctx := t.Context()
+	userIDs := []string{}
+	if fx.UserEmail != "" {
+		users, err := fx.SDK.BatchGetUserIDs(ctx, fx.Token, larksdk.BatchGetUserIDRequest{Emails: []string{fx.UserEmail}})
+		if err != nil {
+			t.Fatalf("batch get user id for %s: %v", fx.UserEmail, err)
+		}
+		if len(users) > 0 && users[0].UserID != "" {
+			userIDs = []string{users[0].UserID}
+		}
+	}
+
+	chatName := integrationFixturePrefix + "chat-" + time.Now().Format("20060102-150405")
+	chatID, err := fx.SDK.CreateChat(ctx, fx.Token, chatName, userIDs)
+	if err != nil {
+		t.Fatalf("create chat: %v", err)
+	}
+	// Best-effort cleanup.
+	t.Cleanup(func() {
+		if err := fx.SDK.DeleteChat(context.Background(), fx.Token, chatID); err != nil {
+			t.Logf("cleanup: delete chat %s: %v", chatID, err)
+		}
+	})
+	return chatID
 }
 
 func (fx *integrationFixtures) EnsureBaseAppToken(t *testing.T) string {
@@ -68,7 +92,14 @@ func (fx *integrationFixtures) EnsureBaseAppToken(t *testing.T) string {
 		PageSize:  50,
 	})
 	if err != nil {
-		t.Fatalf("search drive for base app: %v", err)
+		// Some tenants may not allow drive search with tenant token.
+		// Fall back to creating the dedicated app.
+		app, err2 := fx.SDK.CreateBitableApp(ctx, fx.Token, integrationBaseAppName, fx.DriveFolderToken)
+		if err2 != nil {
+			t.Fatalf("search drive for base app: %v; create bitable app failed: %v", err, err2)
+		}
+		fx.BaseAppToken = app.AppToken
+		return fx.BaseAppToken
 	}
 	files := res.Files
 	for res.HasMore {
@@ -185,17 +216,7 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 		t.Fatalf("tenant token: %v", err)
 	}
 
-	spreadsheetToken := os.Getenv("LARK_TEST_SHEET_ID")
-	sheetTitle := os.Getenv("LARK_TEST_SHEET_TITLE")
-	if sheetTitle == "" {
-		if r := os.Getenv("LARK_TEST_SHEET_RANGE"); r != "" {
-			if before, _, ok := strings.Cut(r, "!"); ok {
-				sheetTitle = before
-			}
-		}
-	}
-
-	return integrationFixtures{
+	fx := integrationFixtures{
 		ConfigPath: cfgPath,
 		SDK:        sdk,
 		Token:      token,
@@ -204,14 +225,50 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 		ChatID:           os.Getenv("LARK_TEST_CHAT_ID"),
 		UserEmail:        os.Getenv("LARK_TEST_USER_EMAIL"),
 
-		SpreadsheetToken: spreadsheetToken,
+		SpreadsheetToken: os.Getenv("LARK_TEST_SHEET_ID"),
 		SheetID:          os.Getenv("LARK_TEST_SHEET_SHEET_ID"),
-		SheetTitle:       sheetTitle,
+		SheetTitle:       os.Getenv("LARK_TEST_SHEET_TITLE"),
 
 		BaseAppToken: os.Getenv("LARK_TEST_APP_TOKEN"),
-
-		MailTo: os.Getenv("LARK_TEST_MAIL_TO"),
+		MailTo:       os.Getenv("LARK_TEST_MAIL_TO"),
 	}
+
+	// If spreadsheet token is not provided, create one (best-effort) for tests.
+	if fx.SpreadsheetToken == "" {
+		title := integrationFixturePrefix + "sheet-" + time.Now().Format("20060102-150405")
+		ssToken, err := sdk.CreateSpreadsheet(t.Context(), token, title, fx.DriveFolderToken)
+		if err != nil {
+			t.Fatalf("create spreadsheet: %v", err)
+		}
+		fx.SpreadsheetToken = ssToken
+		t.Cleanup(func() {
+			if err := sdk.DeleteDriveFile(context.Background(), token, ssToken, "sheet"); err != nil {
+				t.Logf("cleanup: delete spreadsheet %s: %v", ssToken, err)
+			}
+		})
+	}
+
+	// Derive sheet id/title from API.
+	if fx.SheetID == "" || fx.SheetTitle == "" {
+		sheets, err := sdk.ListSpreadsheetSheets(t.Context(), token, fx.SpreadsheetToken)
+		if err != nil {
+			t.Fatalf("list spreadsheet sheets: %v", err)
+		}
+		if len(sheets) == 0 {
+			t.Fatalf("no sheets found in spreadsheet %s", fx.SpreadsheetToken)
+		}
+		if fx.SheetID == "" {
+			fx.SheetID = sheets[0].SheetID
+		}
+		if fx.SheetTitle == "" {
+			fx.SheetTitle = sheets[0].Title
+		}
+	}
+	if fx.SheetTitle == "" {
+		fx.SheetTitle = "Sheet1"
+	}
+
+	return fx
 }
 
 func sanitizeForFixtureName(name string) string {

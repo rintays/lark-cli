@@ -26,7 +26,11 @@ func TestDriveUploadIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "drive", "upload", "--folder-token", folderToken, "--file", filePath})
+	args := []string{"--config", fx.ConfigPath, "--json", "drive", "upload", "--file", filePath}
+	if folderToken != "" {
+		args = append(args, "--folder-token", folderToken)
+	}
+	cmd.SetArgs(args)
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("drive upload failed: %v", err)
