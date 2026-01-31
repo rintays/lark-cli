@@ -20,12 +20,12 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
   - list chats
   - send messages (supports `--receive-id-type`)
 - **Drive**
-  - list/search/get/urls/download/upload
+  - list/search/info/urls/download/upload
   - share permission updates
 - **Docs (docx)**
-  - create/get/export/cat
+  - create/info/export/cat
 - **Sheets**
-  - read/update/append/clear/metadata
+  - read/update/append/clear/info
 - **Calendar**
   - list/create events
 - **Contacts**
@@ -47,7 +47,7 @@ go build -o lark ./cmd/lark
 ./lark --help
 ./lark chats list --help
 ./lark users list --help
-./lark users get --help
+./lark users info --help
 ./lark messages send --help  # alias: msg
 ```
 
@@ -73,7 +73,7 @@ Set the default platform base URL (optional):
 
 ```bash
 lark auth platform set feishu|lark
-lark auth platform get
+lark auth platform info
 ```
 
 Or set env vars (used only when config is empty; config wins):
@@ -86,7 +86,7 @@ export LARK_APP_SECRET=<APP_SECRET>
 View the currently loaded config:
 
 ```bash
-lark config get
+lark config info
 ```
 
 Set the base URL directly (optional):
@@ -188,7 +188,7 @@ lark drive list --folder-id <FOLDER_TOKEN> --limit 20
 Search files:
 
 ```bash
-lark drive search --query "budget" --limit 10 --type sheet --type docx
+lark drive search "budget" --limit 10 --type sheet --type docx
 ```
 
 Drive search uses a **user access token**. Make sure your app has `drive:drive`, `drive:drive:readonly`, or `search:docs:read` user scopes, then run `lark auth user login` to refresh user authorization.
@@ -196,13 +196,13 @@ Drive search uses a **user access token**. Make sure your app has `drive:drive`,
 Download:
 
 ```bash
-lark drive download --file-token <FILE_TOKEN> --out ./downloaded.bin
+lark drive download <FILE_TOKEN> --out ./downloaded.bin
 ```
 
 Upload:
 
 ```bash
-lark drive upload --file ./report.pdf --folder-token <FOLDER_TOKEN> --name "report.pdf"
+lark drive upload ./report.pdf --folder-token <FOLDER_TOKEN> --name "report.pdf"
 ```
 
 Update share:
@@ -222,19 +222,19 @@ lark docs list --folder-id <FOLDER_TOKEN> --limit 50
 Create:
 
 ```bash
-lark docs create --title "Weekly Update" --folder-id <FOLDER_TOKEN>
+lark docs create "Weekly Update" --folder-id <FOLDER_TOKEN>
 ```
 
 Export:
 
 ```bash
-lark docs export --doc-id <DOCUMENT_ID> --format pdf --out ./document.pdf
+lark docs export <DOCUMENT_ID> --format pdf --out ./document.pdf
 ```
 
 Cat:
 
 ```bash
-lark docs cat --doc-id <DOCUMENT_ID> --format txt
+lark docs cat <DOCUMENT_ID> --format txt
 ```
 
 ### Sheets
@@ -254,61 +254,61 @@ lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
 Read:
 
 ```bash
-lark sheets read --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
+lark sheets read <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
 ```
 
 Search:
 
 ```bash
-lark sheets search --query <TEXT> --limit 50
+lark sheets search <TEXT> --limit 50
 ```
 
 Update:
 
 ```bash
-lark sheets update --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
 ```
 
 Append:
 
 ```bash
-lark sheets append --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
 ```
 
 Clear:
 
 ```bash
-lark sheets clear --spreadsheet-id <SPREADSHEET_TOKEN> --range "Sheet1!A1:B2"
+lark sheets clear <SPREADSHEET_TOKEN> "Sheet1!A1:B2"
 ```
 
-Metadata:
+Info:
 
 ```bash
-lark sheets metadata --spreadsheet-id <SPREADSHEET_TOKEN>
+lark sheets info <SPREADSHEET_TOKEN>
 ```
 
 Insert rows:
 
 ```bash
-lark sheets rows insert --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets rows insert <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 Delete rows:
 
 ```bash
-lark sheets rows delete --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets rows delete <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 Insert cols:
 
 ```bash
-lark sheets cols insert --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets cols insert <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 Delete cols:
 
 ```bash
-lark sheets cols delete --spreadsheet-id <SPREADSHEET_TOKEN> --sheet-id <SHEET_ID> --start-index 1 --count 2
+lark sheets cols delete <SPREADSHEET_TOKEN> <SHEET_ID> 1 2
 ```
 
 ### Calendar
@@ -333,9 +333,9 @@ Manage default user OAuth scopes:
 
 ```bash
 lark auth user scopes list
-lark auth user scopes set --scopes "offline_access drive:drive:readonly"
-lark auth user scopes add --scopes "drive:drive"
-lark auth user scopes remove --scopes "drive:drive:readonly"
+lark auth user scopes set offline_access drive:drive:readonly
+lark auth user scopes add drive:drive
+lark auth user scopes remove drive:drive:readonly
 ```
 
 Log in with explicit scopes:
@@ -376,7 +376,7 @@ Current behavior:
 - Run `lark auth user login` to launch OAuth and store tokens locally (add `--force-consent` if you need to re-grant scopes / refresh token)
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
-- Mail commands `mail folders/list/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
+- Mail commands `mail folders/list/info/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
 - Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
 
 Example:
@@ -384,19 +384,19 @@ Example:
 ```bash
 ./lark auth user login --help
 ./lark mail public-mailboxes list --help
-./lark base table list --help
-./lark base field list --help
-./lark base view list --help
-./lark base record create --help
-./lark base record get --help
-./lark base record search --help
-./lark base record update --help
-./lark base record delete --help
+./lark bases table list --help  # alias: base
+./lark bases field list --help
+./lark bases view list --help
+./lark bases record create --help
+./lark bases record info --help
+./lark bases record search --help
+./lark bases record update --help
+./lark bases record delete --help
 ./lark wiki member list --help
 ./lark wiki member delete --help
 ./lark wiki node search --help
-./lark wiki task get --help # alias: wiki task list
-./lark mail mailbox get --help
+./lark wiki task info --help
+./lark mail mailbox info --help
 ./lark mail mailbox set --mailbox-id <MAILBOX_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
 ```
@@ -455,7 +455,7 @@ Items not finished yet (high-level):
 
 - **Mail UX:** use configured default mailbox for mail commands + additional mailbox management commands
 - **Sheets:** row/col insert/delete commands
-- **Base (Bitable):** `base` top-level command tree (records CRUD, tables/fields/views)
+- **Base (Bitable):** `bases` top-level command tree (records CRUD, tables/fields/views) (alias: `base`)
 - **Wiki:** v2 SDK endpoints (v1 node search is available via `wiki node search`)
 - **Integration tests:** `*_integration_test.go` suite gated by `LARK_INTEGRATION=1`
 

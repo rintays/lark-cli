@@ -19,7 +19,7 @@ func TestWikiSpaceCommandsRegistered(t *testing.T) {
 	cmd = newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"wiki", "space", "get", "--help"})
+	cmd.SetArgs([]string{"wiki", "space", "info", "--help"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("help failed: %v", err)
 	}

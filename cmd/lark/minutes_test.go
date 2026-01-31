@@ -14,7 +14,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestMinutesGetCommand(t *testing.T) {
+func TestMinutesInfoCommand(t *testing.T) {
 	t.Run("uses sdk client", func(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path != "/open-apis/minutes/v1/minutes/m1" {
@@ -59,9 +59,9 @@ func TestMinutesGetCommand(t *testing.T) {
 		state.SDK = sdkClient
 
 		cmd := newMinutesCmd(state)
-		cmd.SetArgs([]string{"get", "--minute-token", "m1", "--user-id-type", "open_id"})
+		cmd.SetArgs([]string{"info", "m1", "--user-id-type", "open_id"})
 		if err := cmd.Execute(); err != nil {
-			t.Fatalf("minutes get error: %v", err)
+			t.Fatalf("minutes info error: %v", err)
 		}
 
 		if !strings.Contains(buf.String(), "m1\tWeekly Sync\thttp://example.com/m1") {
@@ -82,7 +82,7 @@ func TestMinutesGetCommand(t *testing.T) {
 		}
 
 		cmd := newMinutesCmd(state)
-		cmd.SetArgs([]string{"get", "--minute-token", "m1"})
+		cmd.SetArgs([]string{"info", "m1"})
 		err := cmd.Execute()
 		if err == nil {
 			t.Fatal("expected error")
@@ -94,12 +94,12 @@ func TestMinutesGetCommand(t *testing.T) {
 
 	t.Run("requires minute token", func(t *testing.T) {
 		cmd := newMinutesCmd(&appState{})
-		cmd.SetArgs([]string{"get"})
+		cmd.SetArgs([]string{"info"})
 		err := cmd.Execute()
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if err.Error() != "required flag(s) \"minute-token\" not set" {
+		if err.Error() != "minute-token is required" {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

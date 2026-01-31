@@ -17,7 +17,7 @@ func newMeetingsCmd(state *appState) *cobra.Command {
 		Use:   "meetings",
 		Short: "Manage meetings",
 	}
-	cmd.AddCommand(newMeetingGetCmd(state))
+	cmd.AddCommand(newMeetingInfoCmd(state))
 	cmd.AddCommand(newMeetingListCmd(state))
 	cmd.AddCommand(newMeetingCreateCmd(state))
 	cmd.AddCommand(newMeetingUpdateCmd(state))
@@ -25,7 +25,7 @@ func newMeetingsCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func newMeetingGetCmd(state *appState) *cobra.Command {
+func newMeetingInfoCmd(state *appState) *cobra.Command {
 	var meetingID string
 	var withParticipants bool
 	var withMeetingAbility bool
@@ -33,8 +33,8 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 	var queryMode int
 
 	cmd := &cobra.Command{
-		Use:   "get <meeting-id>",
-		Short: "Get meeting details",
+		Use:   "info <meeting-id>",
+		Short: "Show meeting details",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -46,6 +46,10 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("meeting-id", args[0]); err != nil {
 					return err
 				}
+				return nil
+			}
+			if strings.TrimSpace(meetingID) == "" {
+				return errors.New("meeting-id is required")
 			}
 			return nil
 		},
@@ -90,7 +94,6 @@ func newMeetingGetCmd(state *appState) *cobra.Command {
 	cmd.Flags().BoolVar(&withMeetingAbility, "with-ability", false, "include meeting ability stats")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
 	cmd.Flags().IntVar(&queryMode, "query-mode", 0, "query mode: 0 for meeting info, 1 for related artifacts")
-	_ = cmd.MarkFlagRequired("meeting-id")
 	return cmd
 }
 

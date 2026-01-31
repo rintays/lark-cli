@@ -15,7 +15,7 @@ import (
 	"lark/internal/testutil"
 )
 
-func TestMeetingGetCommand(t *testing.T) {
+func TestMeetingInfoCommand(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET, got %s", r.Method)
@@ -77,7 +77,7 @@ func TestMeetingGetCommand(t *testing.T) {
 		t.Fatalf("expected command name meetings, got %s", cmd.Use)
 	}
 	cmd.SetArgs([]string{
-		"get",
+		"info",
 		"meet_1",
 		"--with-participants",
 		"--with-ability",
@@ -85,7 +85,7 @@ func TestMeetingGetCommand(t *testing.T) {
 		"--query-mode", "1",
 	})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("meetings get error: %v", err)
+		t.Fatalf("meetings info error: %v", err)
 	}
 
 	if !strings.Contains(buf.String(), "meet_1\tDemo\t2\t1700000000\t1700003600") {
@@ -93,14 +93,14 @@ func TestMeetingGetCommand(t *testing.T) {
 	}
 }
 
-func TestMeetingGetRequiresMeetingID(t *testing.T) {
+func TestMeetingInfoRequiresMeetingID(t *testing.T) {
 	cmd := newMeetingsCmd(&appState{})
-	cmd.SetArgs([]string{"get"})
+	cmd.SetArgs([]string{"info"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"meeting-id\" not set" {
+	if err.Error() != "meeting-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

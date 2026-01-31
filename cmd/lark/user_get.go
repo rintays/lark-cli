@@ -9,13 +9,13 @@ import (
 	"lark/internal/larksdk"
 )
 
-func newUserGetCmd(state *appState) *cobra.Command {
+func newUserInfoCmd(state *appState) *cobra.Command {
 	var openID string
 	var userID string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a contact user by ID",
+		Use:   "info",
+		Short: "Show a contact user by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
