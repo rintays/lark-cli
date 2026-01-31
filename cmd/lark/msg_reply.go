@@ -23,16 +23,11 @@ func newMsgReplyCmd(state *appState) *cobra.Command {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if messageID != "" && messageID != args[0] {
-					return errors.New("message-id provided twice")
-				}
-				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
-					return err
-				}
-				return nil
+			if len(args) == 0 {
+				return errors.New("message-id is required")
 			}
-			if strings.TrimSpace(messageID) == "" {
+			messageID = strings.TrimSpace(args[0])
+			if messageID == "" {
 				return errors.New("message-id is required")
 			}
 			return nil
@@ -65,7 +60,6 @@ func newMsgReplyCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID to reply to (or provide as positional argument)")
 	cmd.Flags().BoolVar(&replyInThread, "reply-in-thread", false, "reply in thread")
 	addMessageContentFlags(cmd, &contentOpts)
 	return cmd

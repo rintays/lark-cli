@@ -36,15 +36,13 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(query) == "" {
-					return errors.New("query is required")
-				}
-				return nil
+				return errors.New("query is required")
 			}
-			if query != "" && query != args[0] {
-				return errors.New("query provided twice")
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return errors.New("query is required")
 			}
-			return cmd.Flags().Set("query", args[0])
+			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
@@ -131,7 +129,6 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search keyword (or provide as positional argument)")
 	cmd.Flags().StringArrayVar(&fromIDs, "from-id", nil, "filter by sender IDs (repeatable)")
 	cmd.Flags().StringArrayVar(&chatIDs, "chat-id", nil, "filter by chat IDs (repeatable)")
 	cmd.Flags().StringVar(&messageType, "message-type", "", "message type (file, image, media)")
