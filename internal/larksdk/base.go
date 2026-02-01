@@ -836,10 +836,10 @@ func mapBaseRecordFromSDK(record *larkbitable.AppTableRecord) BaseRecord {
 		result.RecordID = *record.RecordId
 	}
 	if record.CreatedTime != nil {
-		result.CreatedTime = strconv.FormatInt(*record.CreatedTime, 10)
+		result.CreatedTime = TimestampString(strconv.FormatInt(*record.CreatedTime, 10))
 	}
 	if record.LastModifiedTime != nil {
-		result.LastModifiedTime = strconv.FormatInt(*record.LastModifiedTime, 10)
+		result.LastModifiedTime = TimestampString(strconv.FormatInt(*record.LastModifiedTime, 10))
 	}
 	return result
 }

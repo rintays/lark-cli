@@ -148,10 +148,10 @@ type BaseViewDeleteResult struct {
 }
 
 type BaseRecord struct {
-	RecordID         string         `json:"record_id"`
-	Fields           map[string]any `json:"fields,omitempty"`
-	CreatedTime      string         `json:"created_time"`
-	LastModifiedTime string         `json:"last_modified_time"`
+	RecordID         string          `json:"record_id"`
+	Fields           map[string]any  `json:"fields,omitempty"`
+	CreatedTime      TimestampString `json:"created_time"`
+	LastModifiedTime TimestampString `json:"last_modified_time"`
 }
 
 type BaseRecordUpdate struct {

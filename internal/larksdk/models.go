@@ -426,6 +426,33 @@ func (r *RevisionID) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("revision_id must be a string or number, got %s", string(data))
 }
 
+type TimestampString string
+
+func (t *TimestampString) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || string(data) == "null" {
+		*t = ""
+		return nil
+	}
+	if data[0] == '"' {
+		var value string
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		*t = TimestampString(value)
+		return nil
+	}
+	var value json.Number
+	if err := json.Unmarshal(data, &value); err == nil {
+		*t = TimestampString(value.String())
+		return nil
+	}
+	return fmt.Errorf("timestamp must be a string or number, got %s", string(data))
+}
+
+func (t TimestampString) String() string {
+	return string(t)
+}
+
 type DocxDisplaySetting struct {
 	ShowAuthors        *bool `json:"show_authors,omitempty"`
 	ShowCreateTime     *bool `json:"show_create_time,omitempty"`
