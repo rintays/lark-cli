@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
+	"lark/internal/output"
 )
 
 const maxMessagesPageSize = 50
@@ -25,18 +26,21 @@ func newMsgListCmd(state *appState) *cobra.Command {
 	var pageSize int
 
 	cmd := &cobra.Command{
-		Use:   "list <container-id>",
-		Short: "List messages in a chat or thread",
+		Use:     "list <container-id>",
+		Short:   "List messages in a chat or thread",
+		Example: `  lark messages list <chat_id>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
 			if len(args) == 0 {
-				return errors.New("container-id is required")
+				return usageError(cmd, "container-id is required", `Example:
+  lark messages list <chat_id>`)
 			}
 			containerID = strings.TrimSpace(args[0])
 			if containerID == "" {
-				return errors.New("container-id is required")
+				return usageError(cmd, "container-id is required", `Example:
+  lark messages list <chat_id>`)
 			}
 			return nil
 		},
@@ -94,7 +98,7 @@ func newMsgListCmd(state *appState) *cobra.Command {
 				messages = messages[:limit]
 			}
 			payload := map[string]any{"messages": messages}
-			text := "no messages found"
+			text := output.Notice(output.NoticeInfo, "no messages found", nil)
 			if len(messages) > 0 {
 				lines := make([]string, 0, len(messages))
 				for _, message := range messages {
