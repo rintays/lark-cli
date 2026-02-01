@@ -43,12 +43,21 @@ func TestUserOAuthScopesForCommand(t *testing.T) {
 		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 
-	_, _, _, ok, err = userOAuthScopesForCommand("chats list")
+	services, scopes, undeclared, ok, err = userOAuthScopesForCommand("chats list")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if ok {
-		t.Fatalf("expected ok=false for tenant-only service")
+	if !ok {
+		t.Fatalf("expected ok=true for user-token service")
+	}
+	if len(undeclared) != 0 {
+		t.Fatalf("expected no undeclared services, got %v", undeclared)
+	}
+	if want := []string{"im"}; !reflect.DeepEqual(services, want) {
+		t.Fatalf("services=%v, want %v", services, want)
+	}
+	if want := []string{"offline_access", "im:chat.group_info:readonly"}; !reflect.DeepEqual(scopes, want) {
+		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 
 	_, _, _, ok, err = userOAuthScopesForCommand("unknown cmd")
@@ -82,11 +91,14 @@ func TestUserOAuthReloginCommandForCommand(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if ok {
-			t.Fatalf("expected ok=false")
+		if !ok {
+			t.Fatalf("expected ok=true")
 		}
-		if cmd != "" || note != "" {
-			t.Fatalf("expected empty cmd/note for tenant-only command; got cmd=%q note=%q", cmd, note)
+		if cmd != "lark auth user login --scopes \"offline_access im:chat.group_info:readonly\" --force-consent" {
+			t.Fatalf("cmd=%q", cmd)
+		}
+		if note == "" {
+			t.Fatalf("expected note")
 		}
 	}
 

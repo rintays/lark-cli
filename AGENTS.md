@@ -136,16 +136,10 @@
 - 2026-02-02: Fixed build regressions for base record timestamp output, added missing sheets create import, and updated user OAuth service list test for task features.
 - 2026-02-02: Fixed panic when root command context is nil by defaulting to background for signal-aware execution.
 - 2026-02-02: Added `lark auth tenant`, removed deprecated user login `--scope`, surfaced available user OAuth scopes in help, and updated docs/tests.
-- 2026-02-02: Added Bubble Tea interactive picker for `lark auth user login` when no scopes/services flags are provided, with previous selections preselected and README updated.
-- 2026-02-02: Switched auth user login picker to Bubbles list + help with Lark blue theming, plus shared brand color in output theme.
 - 2026-02-02: Adjusted search-user OAuth scope mapping to require only `contact:user:search` (removed invalid contact user/department read scopes).
 - 2026-02-02: Merged docs/docx service scopes to docx OAuth scopes, added search-docs/drive-export services, and updated command scope mappings/tests (message search uses `im:message:readonly`).
 - 2026-02-02: Fixed interactive OAuth selection build error by removing invalid nil check on user account value.
 - 2026-02-02: Clarified drive permissions add help text to document positional args and member-type options, and switched example to openid.
 - 2026-02-02: Removed OAuth scope-change warning during user OAuth login.
-- 2026-02-02: Added user-token support for `lark whoami` via authen user_info, with docs/tests updates.
-- 2026-02-02: Refined messages list/search display to de-emphasize IDs and highlight content/sender details.
-- 2026-02-02: Set message content/sender color to pure black/white for higher contrast.
-- 2026-02-02: Added best-effort sender name resolution for message list/search output when tenant token is available.
-- 2026-02-02: Switched messages list/search layout to a fixed prefix column with human-readable timestamps.
-- 2026-02-02: Added Wiki node create/move/update-title/attach and space update-setting commands, fixed Wiki space create to use user tokens, added user-token support for Wiki v2 calls, and updated docs/coverage.
+- 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.
+- 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.

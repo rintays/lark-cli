@@ -111,7 +111,7 @@ func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
 	}
 }
 
-func TestAuthExplainChatsListNoUserToken(t *testing.T) {
+func TestAuthExplainChatsList(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{Printer: output.Printer{Writer: &buf, JSON: true}}
 
@@ -133,11 +133,20 @@ func TestAuthExplainChatsListNoUserToken(t *testing.T) {
 	if strings.Join(payload.Services, ",") != "im" {
 		t.Fatalf("services: expected [im], got %v", payload.Services)
 	}
-	if strings.Join(payload.TokenTypes, ",") != "tenant" {
-		t.Fatalf("token_types: expected [tenant], got %v", payload.TokenTypes)
+	if strings.Join(payload.TokenTypes, ",") != "tenant,user" {
+		t.Fatalf("token_types: expected [tenant user], got %v", payload.TokenTypes)
 	}
-	if payload.SuggestedUserLoginCommand != "" {
-		t.Fatalf("expected no suggested_user_login_command, got %q", payload.SuggestedUserLoginCommand)
+	if strings.Join(payload.RequiredUserScopes, ",") != "im:chat.group_info:readonly" {
+		t.Fatalf("required_user_scopes: expected [im:chat.group_info:readonly], got %v", payload.RequiredUserScopes)
+	}
+	if payload.SuggestedUserLoginCommand == "" {
+		t.Fatalf("expected suggested_user_login_command")
+	}
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "im:chat.group_info:readonly") {
+		t.Fatalf("expected suggested_user_login_command to include im:chat.group_info:readonly, got %q", payload.SuggestedUserLoginCommand)
+	}
+	if len(payload.SuggestedUserLoginScopes) == 0 || payload.SuggestedUserLoginScopes[0] != defaultUserOAuthScope {
+		t.Fatalf("expected suggested scopes to include %q first, got %v", defaultUserOAuthScope, payload.SuggestedUserLoginScopes)
 	}
 }
 

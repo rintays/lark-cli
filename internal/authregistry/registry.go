@@ -52,7 +52,15 @@ type ServiceDef struct {
 //
 // Keep this list stable and append-only where possible.
 var Registry = map[string]ServiceDef{
-	"im":             {Name: "im", TokenTypes: []TokenType{TokenTenant}},
+	"im": {
+		Name:               "im",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"im:chat.group_info:readonly"},
+		UserScopes: ServiceScopeSet{
+			Full:     []string{"im:chat"},
+			Readonly: []string{"im:chat.group_info:readonly"},
+		},
+	},
 	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"im:message:readonly", "search:message"}, RequiresOffline: true},
 	"search-user":    {Name: "search-user", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"contact:contact.base:readonly", "contact:user:search"}, RequiresOffline: true},
 	"search-docs":    {Name: "search-docs", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"search:docs:read"}, RequiresOffline: true},
@@ -156,11 +164,11 @@ var Registry = map[string]ServiceDef{
 		},
 		RequiresOffline: true,
 	},
-	"mail-send":   {Name: "mail send", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"mail:user_mailbox.message:send"}, RequiresOffline: true},
-	"mail-public": {Name: "mail public", TokenTypes: []TokenType{TokenTenant}},
+	"mail-send":    {Name: "mail send", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"mail:user_mailbox.message:send"}, RequiresOffline: true},
+	"mail-public":  {Name: "mail public", TokenTypes: []TokenType{TokenTenant}},
 	"drive-export": {Name: "drive export", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:export:readonly"}, RequiresOffline: true},
-	"wiki":        {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
-	"base":        {Name: "base", TokenTypes: []TokenType{TokenTenant}},
+	"wiki":         {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
+	"base":         {Name: "base", TokenTypes: []TokenType{TokenTenant}},
 }
 
 // AllServiceNames returns all known service names in stable-sorted order.

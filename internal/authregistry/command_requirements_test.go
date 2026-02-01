@@ -71,14 +71,14 @@ func TestRequirementsForCommandChatsAndMessagesMatch(t *testing.T) {
 	if !reflect.DeepEqual(svcs1, []string{"im"}) {
 		t.Fatalf("chats services=%v, want [im]", svcs1)
 	}
-	if !reflect.DeepEqual(tts1, []TokenType{TokenTenant}) {
-		t.Fatalf("chats tokenTypes=%v, want [tenant]", tts1)
+	if !reflect.DeepEqual(tts1, []TokenType{TokenTenant, TokenUser}) {
+		t.Fatalf("chats tokenTypes=%v, want [tenant user]", tts1)
 	}
 	if off1 {
 		t.Fatalf("chats offline=true, want false")
 	}
-	if len(scopes1) != 0 {
-		t.Fatalf("chats scopes=%v, want empty", scopes1)
+	if !reflect.DeepEqual(scopes1, []string{"im:chat.group_info:readonly"}) {
+		t.Fatalf("chats scopes=%v, want [im:chat.group_info:readonly]", scopes1)
 	}
 
 	if !reflect.DeepEqual(svcs1, svcs2) || !reflect.DeepEqual(tts1, tts2) || off1 != off2 || !reflect.DeepEqual(scopes1, scopes2) {
