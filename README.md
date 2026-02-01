@@ -144,7 +144,7 @@ Clears all stored user OAuth tokens (file or keychain).
 ### 2) Get tenant token
 
 ```bash
-lark auth
+lark auth tenant
 ```
 
 ### 3) Try basic commands

@@ -9,6 +9,22 @@ import (
 func newAuthCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
+		Short: "Authentication and tokens",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
+	}
+	cmd.AddCommand(newAuthTenantCmd(state))
+	cmd.AddCommand(newAuthLoginCmd(state))
+	cmd.AddCommand(newAuthPlatformCmd(state))
+	cmd.AddCommand(newAuthUserCmd(state))
+	cmd.AddCommand(newAuthExplainCmd(state))
+	return cmd
+}
+
+func newAuthTenantCmd(state *appState) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tenant",
 		Short: "Fetch and cache a tenant access token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := ensureTenantToken(cmd.Context(), state)
@@ -25,10 +41,6 @@ func newAuthCmd(state *appState) *cobra.Command {
 			)
 		},
 	}
-	cmd.AddCommand(newAuthLoginCmd(state))
-	cmd.AddCommand(newAuthPlatformCmd(state))
-	cmd.AddCommand(newAuthUserCmd(state))
-	cmd.AddCommand(newAuthExplainCmd(state))
 	return cmd
 }
 

@@ -77,7 +77,7 @@ func TestAuthPrintsTokenAndExpiry(t *testing.T) {
 	}
 
 	cmd := newAuthCmd(state)
-	cmd.SetArgs([]string{})
+	cmd.SetArgs([]string{"tenant"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("auth error: %v", err)

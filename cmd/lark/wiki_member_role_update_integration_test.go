@@ -25,7 +25,7 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 	state := integrationTestState(t)
 	// Wiki member v2 endpoints support tenant tokens.
 	if _, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser); err != nil {
-		t.Skipf("tenant token missing/unavailable (run `lark auth login` to cache a tenant token): %v", err)
+		t.Skipf("tenant token missing/unavailable (run `lark auth tenant` to cache a tenant token): %v", err)
 	}
 
 	initialRole, initialFound, err := wikiMemberRole(t, spaceID, email)

@@ -7,7 +7,7 @@ import (
 
 // userOAuthReloginCommand mirrors the CLI remediation command used elsewhere.
 // Kept here (internal package) so larksdk can append actionable guidance.
-const userOAuthReloginCommand = "lark auth user login --scope offline_access --force-consent"
+const userOAuthReloginCommand = "lark auth user login --scopes \"offline_access\" --force-consent"
 
 // withInsufficientScopeRemediation appends a best-effort remediation hint when the
 // server message suggests missing permission/scope.

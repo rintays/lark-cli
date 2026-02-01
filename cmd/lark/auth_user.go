@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"lark/internal/authregistry"
 	"lark/internal/config"
 	"lark/internal/output"
 )
@@ -63,7 +64,6 @@ func newAuthUserCmd(state *appState) *cobra.Command {
 
 func newAuthUserLoginCmd(state *appState) *cobra.Command {
 	var scopes string
-	var legacyScope string
 	var services []string
 	var readonly bool
 	var driveScope string
@@ -74,6 +74,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Log in with user OAuth and store tokens",
+		Long:  userOAuthLoginLongHelp(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := requireCredentials(state); err != nil {
 				return err
@@ -96,14 +97,6 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				}
 			}
 			scopeSet := cmd.Flags().Changed("scopes")
-			legacyScopeSet := cmd.Flags().Changed("scope")
-			if scopeSet && legacyScopeSet {
-				return errors.New("--scope and --scopes cannot be used together")
-			}
-			if legacyScopeSet {
-				scopes = legacyScope
-				scopeSet = true
-			}
 			if scopeSet {
 				if cmd.Flags().Changed("services") || cmd.Flags().Changed("readonly") || cmd.Flags().Changed("drive-scope") {
 					return errors.New("--scopes cannot be combined with --services, --readonly, or --drive-scope")
@@ -252,7 +245,6 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&legacyScope, "scope", "", "OAuth scopes (space-separated) (deprecated: use --scopes)")
 	cmd.Flags().StringVar(&scopes, "scopes", "", "OAuth scopes (space/comma-separated)")
 	cmd.Flags().StringSliceVar(&services, "services", nil, "OAuth service set (comma-separated, use `lark auth user services`)")
 	cmd.Flags().BoolVar(&readonly, "readonly", false, "use read-only OAuth scopes for selected services")
@@ -366,6 +358,55 @@ func userOAuthPrompt(forceConsent bool) string {
 		return "consent"
 	}
 	return ""
+}
+
+func userOAuthLoginLongHelp() string {
+	base := "Log in with user OAuth and store tokens."
+	scopesHelp := userOAuthScopesHelp()
+	if scopesHelp == "" {
+		return base
+	}
+	return base + "\n\n" + scopesHelp
+}
+
+func userOAuthScopesHelp() string {
+	scopes := userOAuthAvailableScopes()
+	if len(scopes) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("Available scopes:\n")
+	for _, scope := range scopes {
+		b.WriteString("  ")
+		b.WriteString(scope)
+		b.WriteString("\n")
+	}
+	b.WriteString("\nTips:\n")
+	b.WriteString("  - Use `lark auth user services` for service-based presets.\n")
+	b.WriteString("  - Use `lark auth user scopes list` to view current defaults.\n")
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func userOAuthAvailableScopes() []string {
+	scopes := []string{defaultUserOAuthScope}
+	for _, def := range authregistry.Registry {
+		if !serviceUsesUserToken(def.TokenTypes) {
+			continue
+		}
+		scopes = append(scopes, def.RequiredUserScopes...)
+		scopes = append(scopes, def.UserScopes.Full...)
+		scopes = append(scopes, def.UserScopes.Readonly...)
+	}
+	return canonicalizeUserOAuthScopes(normalizeScopes(scopes))
+}
+
+func serviceUsesUserToken(tokenTypes []authregistry.TokenType) bool {
+	for _, tt := range tokenTypes {
+		if tt == authregistry.TokenUser {
+			return true
+		}
+	}
+	return false
 }
 func buildUserAuthorizeURL(baseURL, appID, redirectURI, state, scope, prompt string, includeGrantedScopes bool) (string, error) {
 	base, err := url.Parse(baseURL)

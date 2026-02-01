@@ -15,7 +15,7 @@ func TestAuthIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--json", "auth"})
+	cmd.SetArgs([]string{"--json", "auth", "tenant"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("auth failed: %v", err)
