@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -17,6 +18,7 @@ func newWikiSpaceCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newWikiSpaceCreateCmd(state))
 	cmd.AddCommand(newWikiSpaceListCmd(state))
 	cmd.AddCommand(newWikiSpaceInfoCmd(state))
+	cmd.AddCommand(newWikiSpaceUpdateSettingCmd(state))
 	return cmd
 }
 
@@ -28,56 +30,62 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List Wiki spaces (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
-				return err
-			}
 			if limit <= 0 {
 				limit = 50
 			}
-			tenantToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-
-			items := make([]larksdk.WikiSpace, 0, limit)
-			pageToken := ""
-			remaining := limit
-			for {
-				ps := pageSize
-				if ps <= 0 {
-					ps = remaining
-					if ps > 200 {
-						ps = 200
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				items := make([]larksdk.WikiSpace, 0, limit)
+				pageToken := ""
+				remaining := limit
+				for {
+					ps := pageSize
+					if ps <= 0 {
+						ps = remaining
+						if ps > 200 {
+							ps = 200
+						}
+					}
+					var result larksdk.ListWikiSpacesResult
+					var err error
+					switch tokenType {
+					case tokenTypeTenant:
+						result, err = sdk.ListWikiSpacesV2(ctx, token, larksdk.ListWikiSpacesRequest{
+							PageSize:  ps,
+							PageToken: pageToken,
+						})
+					case tokenTypeUser:
+						result, err = sdk.ListWikiSpacesV2WithUserToken(ctx, token, larksdk.ListWikiSpacesRequest{
+							PageSize:  ps,
+							PageToken: pageToken,
+						})
+					default:
+						return nil, "", fmt.Errorf("unsupported token type %s", tokenType)
+					}
+					if err != nil {
+						return nil, "", err
+					}
+					items = append(items, result.Items...)
+					if len(items) >= limit || !result.HasMore {
+						break
+					}
+					remaining = limit - len(items)
+					pageToken = result.PageToken
+					if pageToken == "" {
+						break
 					}
 				}
-				result, err := state.SDK.ListWikiSpacesV2(cmd.Context(), tenantToken, larksdk.ListWikiSpacesRequest{
-					PageSize:  ps,
-					PageToken: pageToken,
-				})
-				if err != nil {
-					return err
+				if len(items) > limit {
+					items = items[:limit]
 				}
-				items = append(items, result.Items...)
-				if len(items) >= limit || !result.HasMore {
-					break
-				}
-				remaining = limit - len(items)
-				pageToken = result.PageToken
-				if pageToken == "" {
-					break
-				}
-			}
-			if len(items) > limit {
-				items = items[:limit]
-			}
 
-			payload := map[string]any{"spaces": items}
-			lines := make([]string, 0, len(items))
-			for _, s := range items {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", s.SpaceID, s.Name, s.SpaceType, s.Visibility))
-			}
-			text := tableText([]string{"space_id", "name", "space_type", "visibility"}, lines, "no spaces found")
-			return state.Printer.Print(payload, text)
+				payload := map[string]any{"spaces": items}
+				lines := make([]string, 0, len(items))
+				for _, s := range items {
+					lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", s.SpaceID, s.Name, s.SpaceType, s.Visibility))
+				}
+				text := tableText([]string{"space_id", "name", "space_type", "visibility"}, lines, "no spaces found")
+				return payload, text, nil
+			})
 		},
 	}
 
@@ -93,23 +101,28 @@ func newWikiSpaceInfoCmd(state *appState) *cobra.Command {
 		Use:   "info",
 		Short: "Show a Wiki space (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
-				return err
-			}
-			tenantToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			space, err := state.SDK.GetWikiSpaceV2(cmd.Context(), tenantToken, larksdk.GetWikiSpaceRequest{SpaceID: strings.TrimSpace(spaceID)})
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"space": space}
-			text := tableTextRow(
-				[]string{"space_id", "name", "space_type", "visibility"},
-				[]string{space.SpaceID, space.Name, space.SpaceType, space.Visibility},
-			)
-			return state.Printer.Print(payload, text)
+			spaceID = strings.TrimSpace(spaceID)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				var space larksdk.WikiSpace
+				var err error
+				switch tokenType {
+				case tokenTypeTenant:
+					space, err = sdk.GetWikiSpaceV2(ctx, token, larksdk.GetWikiSpaceRequest{SpaceID: spaceID})
+				case tokenTypeUser:
+					space, err = sdk.GetWikiSpaceV2WithUserToken(ctx, token, larksdk.GetWikiSpaceRequest{SpaceID: spaceID})
+				default:
+					return nil, "", fmt.Errorf("unsupported token type %s", tokenType)
+				}
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"space": space}
+				text := tableTextRow(
+					[]string{"space_id", "name", "space_type", "visibility"},
+					[]string{space.SpaceID, space.Name, space.SpaceType, space.Visibility},
+				)
+				return payload, text, nil
+			})
 		},
 	}
 

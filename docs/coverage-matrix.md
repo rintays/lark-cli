@@ -67,10 +67,18 @@ This doc is a **code-derived snapshot** of which Feishu/Lark OpenAPI surfaces in
 
 | Feature | Endpoint | Token | Ver | SDK? | Wrapper (if no SDK) |
 |---|---|---:|:---:|:---:|---|
-| List/get/create space (`wiki space …`) | `/open-apis/wiki/v2/spaces*` | tenant | v2 | yes |  |
-| List/get nodes (`wiki node …`) | `/open-apis/wiki/v2/spaces/*/nodes*` | tenant | v2 | yes |  |
-| Space members list/add/delete (`wiki member …`) | `/open-apis/wiki/v2/spaces/*/members*` | tenant | v2 | yes |  |
-| Task get (`wiki task get`) | `GET /open-apis/wiki/v2/tasks/:task_id` | tenant | v2 | yes |  |
+| List spaces (`wiki space list`) | `GET /open-apis/wiki/v2/spaces` | tenant/user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.ListWikiSpacesV2` |
+| Get space (`wiki space info`) | `GET /open-apis/wiki/v2/spaces/:space_id` | tenant/user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.GetWikiSpaceV2` |
+| Create space (`wiki space create`) | `POST /open-apis/wiki/v2/spaces` | user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.CreateWikiSpaceV2` |
+| Update space settings (`wiki space update-setting`) | `PUT /open-apis/wiki/v2/spaces/:space_id/setting` | tenant/user | v2 | yes | `internal/larksdk/wiki_space_setting_v2.go: Client.UpdateWikiSpaceSettingV2` |
+| List nodes (`wiki node list`) | `GET /open-apis/wiki/v2/spaces/:space_id/nodes` | tenant/user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.ListWikiNodesV2` |
+| Get node (`wiki node info`) | `GET /open-apis/wiki/v2/spaces/get_node` | tenant/user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.GetWikiNodeV2` |
+| Create node (`wiki node create`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.CreateWikiNodeV2` |
+| Move node (`wiki node move`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes/:node_token/move` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.MoveWikiNodeV2` |
+| Update node title (`wiki node update-title`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes/:node_token/update_title` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.UpdateWikiNodeTitleV2` |
+| Attach docs to wiki (`wiki node attach`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes/move_docs_to_wiki` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.MoveDocsToWikiV2` |
+| Space members list/add/delete (`wiki member …`) | `/open-apis/wiki/v2/spaces/*/members*` | tenant/user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.ListWikiSpaceMembersV2` |
+| Task get (`wiki task info`) | `GET /open-apis/wiki/v2/tasks/:task_id` | tenant/user | v2 | yes | `internal/larksdk/wiki_task_v2.go: Client.GetWikiTaskV2` |
 | Node search (`wiki node search`) | `POST /open-apis/wiki/v1/nodes/search` | user | v1 | no | `internal/larksdk/wiki_search_v1.go: Client.SearchWikiNodesV1` |
 
 ## Base (Bitable)

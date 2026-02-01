@@ -44,9 +44,9 @@ func (c *Client) CreateWikiSpaceV2(ctx context.Context, token string, req Create
 	if !c.available() {
 		return WikiSpace{}, ErrUnavailable
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return WikiSpace{}, errors.New("tenant access token is required")
+	userAccessToken := strings.TrimSpace(token)
+	if userAccessToken == "" {
+		return WikiSpace{}, errors.New("user access token is required")
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
@@ -68,7 +68,7 @@ func (c *Client) CreateWikiSpaceV2(ctx context.Context, token string, req Create
 	}
 
 	builder := larkwiki.NewCreateSpaceReqBuilder().Space(space)
-	resp, err := c.sdk.Wiki.V2.Space.Create(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Wiki.V2.Space.Create(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
 	if err != nil {
 		return WikiSpace{}, err
 	}
@@ -97,6 +97,34 @@ func (c *Client) GetWikiSpaceV2(ctx context.Context, token string, req GetWikiSp
 	}
 	builder := larkwiki.NewGetSpaceReqBuilder().SpaceId(req.SpaceID)
 	resp, err := c.sdk.Wiki.V2.Space.Get(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiSpace{}, err
+	}
+	if resp == nil {
+		return WikiSpace{}, errors.New("wiki space get failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiSpace{}, fmt.Errorf("wiki space get failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Space == nil {
+		return WikiSpace{}, errors.New("wiki space get failed: missing space")
+	}
+	return convertWikiSpace(resp.Data.Space), nil
+}
+
+func (c *Client) GetWikiSpaceV2WithUserToken(ctx context.Context, userAccessToken string, req GetWikiSpaceRequest) (WikiSpace, error) {
+	if !c.available() {
+		return WikiSpace{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return WikiSpace{}, errors.New("user access token is required")
+	}
+	if req.SpaceID == "" {
+		return WikiSpace{}, errors.New("space id is required")
+	}
+	builder := larkwiki.NewGetSpaceReqBuilder().SpaceId(req.SpaceID)
+	resp, err := c.sdk.Wiki.V2.Space.Get(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
 	if err != nil {
 		return WikiSpace{}, err
 	}
@@ -160,6 +188,54 @@ func (c *Client) ListWikiSpacesV2(ctx context.Context, token string, req ListWik
 	return out, nil
 }
 
+func (c *Client) ListWikiSpacesV2WithUserToken(ctx context.Context, userAccessToken string, req ListWikiSpacesRequest) (ListWikiSpacesResult, error) {
+	if !c.available() {
+		return ListWikiSpacesResult{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return ListWikiSpacesResult{}, errors.New("user access token is required")
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+	builder := larkwiki.NewListSpaceReqBuilder().PageSize(req.PageSize)
+	if req.PageToken != "" {
+		builder = builder.PageToken(req.PageToken)
+	}
+	resp, err := c.sdk.Wiki.V2.Space.List(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
+	if err != nil {
+		return ListWikiSpacesResult{}, err
+	}
+	if resp == nil {
+		return ListWikiSpacesResult{}, errors.New("wiki space list failed: empty response")
+	}
+	if !resp.Success() {
+		return ListWikiSpacesResult{}, fmt.Errorf("wiki space list failed: %s", resp.Msg)
+	}
+	out := ListWikiSpacesResult{}
+	if resp.Data == nil {
+		return out, nil
+	}
+	if resp.Data.HasMore != nil {
+		out.HasMore = *resp.Data.HasMore
+	}
+	if resp.Data.PageToken != nil {
+		out.PageToken = *resp.Data.PageToken
+	}
+	if resp.Data.Items == nil {
+		return out, nil
+	}
+	out.Items = make([]WikiSpace, 0, len(resp.Data.Items))
+	for _, s := range resp.Data.Items {
+		if s == nil {
+			continue
+		}
+		out.Items = append(out.Items, convertWikiSpace(s))
+	}
+	return out, nil
+}
+
 func convertWikiSpace(s *larkwiki.Space) WikiSpace {
 	ws := WikiSpace{}
 	if s.SpaceId != nil {
@@ -184,7 +260,14 @@ type WikiNode struct {
 	ObjType         string `json:"obj_type"`
 	ParentNodeToken string `json:"parent_node_token,omitempty"`
 	NodeType        string `json:"node_type,omitempty"`
+	OriginNodeToken string `json:"origin_node_token,omitempty"`
+	OriginSpaceID   string `json:"origin_space_id,omitempty"`
 	Title           string `json:"title,omitempty"`
+	ObjCreateTime   string `json:"obj_create_time,omitempty"`
+	ObjEditTime     string `json:"obj_edit_time,omitempty"`
+	NodeCreateTime  string `json:"node_create_time,omitempty"`
+	Creator         string `json:"creator,omitempty"`
+	Owner           string `json:"owner,omitempty"`
 	HasChild        bool   `json:"has_child,omitempty"`
 }
 
@@ -210,6 +293,38 @@ func (c *Client) GetWikiNodeV2(ctx context.Context, token string, req GetWikiNod
 
 	builder := larkwiki.NewGetNodeSpaceReqBuilder().Token(req.NodeToken).ObjType(req.ObjType)
 	resp, err := c.sdk.Wiki.V2.Space.GetNode(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiNode{}, err
+	}
+	if resp == nil {
+		return WikiNode{}, errors.New("wiki node get failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiNode{}, fmt.Errorf("wiki node get failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Node == nil {
+		return WikiNode{}, errors.New("wiki node get failed: missing node")
+	}
+	return convertWikiNode(resp.Data.Node), nil
+}
+
+func (c *Client) GetWikiNodeV2WithUserToken(ctx context.Context, userAccessToken string, req GetWikiNodeRequest) (WikiNode, error) {
+	if !c.available() {
+		return WikiNode{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return WikiNode{}, errors.New("user access token is required")
+	}
+	if req.NodeToken == "" {
+		return WikiNode{}, errors.New("node token is required")
+	}
+	if req.ObjType == "" {
+		return WikiNode{}, errors.New("obj type is required")
+	}
+
+	builder := larkwiki.NewGetNodeSpaceReqBuilder().Token(req.NodeToken).ObjType(req.ObjType)
+	resp, err := c.sdk.Wiki.V2.Space.GetNode(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
 	if err != nil {
 		return WikiNode{}, err
 	}
@@ -294,6 +409,62 @@ func (c *Client) ListWikiNodesV2(ctx context.Context, token string, req ListWiki
 	return out, nil
 }
 
+func (c *Client) ListWikiNodesV2WithUserToken(ctx context.Context, userAccessToken string, req ListWikiNodesRequest) (ListWikiNodesResult, error) {
+	if !c.available() {
+		return ListWikiNodesResult{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return ListWikiNodesResult{}, errors.New("user access token is required")
+	}
+	if req.SpaceID == "" {
+		return ListWikiNodesResult{}, errors.New("space id is required")
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+
+	builder := larkwiki.NewListSpaceNodeReqBuilder().SpaceId(req.SpaceID).PageSize(req.PageSize)
+	if req.PageToken != "" {
+		builder = builder.PageToken(req.PageToken)
+	}
+	if req.ParentNodeToken != "" {
+		builder = builder.ParentNodeToken(req.ParentNodeToken)
+	}
+
+	resp, err := c.sdk.Wiki.V2.SpaceNode.List(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
+	if err != nil {
+		return ListWikiNodesResult{}, err
+	}
+	if resp == nil {
+		return ListWikiNodesResult{}, errors.New("wiki node list failed: empty response")
+	}
+	if !resp.Success() {
+		return ListWikiNodesResult{}, fmt.Errorf("wiki node list failed: %s", resp.Msg)
+	}
+	out := ListWikiNodesResult{}
+	if resp.Data == nil {
+		return out, nil
+	}
+	if resp.Data.HasMore != nil {
+		out.HasMore = *resp.Data.HasMore
+	}
+	if resp.Data.PageToken != nil {
+		out.PageToken = *resp.Data.PageToken
+	}
+	if resp.Data.Items == nil {
+		return out, nil
+	}
+	out.Items = make([]WikiNode, 0, len(resp.Data.Items))
+	for _, n := range resp.Data.Items {
+		if n == nil {
+			continue
+		}
+		out.Items = append(out.Items, convertWikiNode(n))
+	}
+	return out, nil
+}
+
 func convertWikiNode(n *larkwiki.Node) WikiNode {
 	out := WikiNode{}
 	if n.SpaceId != nil {
@@ -314,8 +485,29 @@ func convertWikiNode(n *larkwiki.Node) WikiNode {
 	if n.NodeType != nil {
 		out.NodeType = *n.NodeType
 	}
+	if n.OriginNodeToken != nil {
+		out.OriginNodeToken = *n.OriginNodeToken
+	}
+	if n.OriginSpaceId != nil {
+		out.OriginSpaceID = *n.OriginSpaceId
+	}
 	if n.Title != nil {
 		out.Title = *n.Title
+	}
+	if n.ObjCreateTime != nil {
+		out.ObjCreateTime = *n.ObjCreateTime
+	}
+	if n.ObjEditTime != nil {
+		out.ObjEditTime = *n.ObjEditTime
+	}
+	if n.NodeCreateTime != nil {
+		out.NodeCreateTime = *n.NodeCreateTime
+	}
+	if n.Creator != nil {
+		out.Creator = *n.Creator
+	}
+	if n.Owner != nil {
+		out.Owner = *n.Owner
 	}
 	if n.HasChild != nil {
 		out.HasChild = *n.HasChild
@@ -363,6 +555,60 @@ func (c *Client) ListWikiSpaceMembersV2(ctx context.Context, token string, req L
 	}
 
 	resp, err := c.sdk.Wiki.V2.SpaceMember.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return ListWikiSpaceMembersResult{}, err
+	}
+	if resp == nil {
+		return ListWikiSpaceMembersResult{}, errors.New("wiki member list failed: empty response")
+	}
+	if !resp.Success() {
+		return ListWikiSpaceMembersResult{}, fmt.Errorf("wiki member list failed: %s", resp.Msg)
+	}
+
+	out := ListWikiSpaceMembersResult{}
+	if resp.Data == nil {
+		return out, nil
+	}
+	if resp.Data.HasMore != nil {
+		out.HasMore = *resp.Data.HasMore
+	}
+	if resp.Data.PageToken != nil {
+		out.PageToken = *resp.Data.PageToken
+	}
+	if resp.Data.Members == nil {
+		return out, nil
+	}
+	out.Members = make([]WikiSpaceMember, 0, len(resp.Data.Members))
+	for _, m := range resp.Data.Members {
+		if m == nil {
+			continue
+		}
+		out.Members = append(out.Members, convertWikiSpaceMember(m))
+	}
+	return out, nil
+}
+
+func (c *Client) ListWikiSpaceMembersV2WithUserToken(ctx context.Context, userAccessToken string, req ListWikiSpaceMembersRequest) (ListWikiSpaceMembersResult, error) {
+	if !c.available() {
+		return ListWikiSpaceMembersResult{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return ListWikiSpaceMembersResult{}, errors.New("user access token is required")
+	}
+	if req.SpaceID == "" {
+		return ListWikiSpaceMembersResult{}, errors.New("space id is required")
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 50
+	}
+
+	builder := larkwiki.NewListSpaceMemberReqBuilder().SpaceId(req.SpaceID).PageSize(req.PageSize)
+	if req.PageToken != "" {
+		builder = builder.PageToken(req.PageToken)
+	}
+
+	resp, err := c.sdk.Wiki.V2.SpaceMember.List(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
 	if err != nil {
 		return ListWikiSpaceMembersResult{}, err
 	}
@@ -448,6 +694,49 @@ func (c *Client) CreateWikiSpaceMemberV2(ctx context.Context, token string, req 
 	return convertWikiSpaceMember(resp.Data.Member), nil
 }
 
+func (c *Client) CreateWikiSpaceMemberV2WithUserToken(ctx context.Context, userAccessToken string, req CreateWikiSpaceMemberRequest) (WikiSpaceMember, error) {
+	if !c.available() {
+		return WikiSpaceMember{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return WikiSpaceMember{}, errors.New("user access token is required")
+	}
+	if req.SpaceID == "" {
+		return WikiSpaceMember{}, errors.New("space id is required")
+	}
+	if req.MemberType == "" {
+		return WikiSpaceMember{}, errors.New("member type is required")
+	}
+	if req.MemberID == "" {
+		return WikiSpaceMember{}, errors.New("member id is required")
+	}
+	if req.MemberRole == "" {
+		return WikiSpaceMember{}, errors.New("member role is required")
+	}
+
+	member := larkwiki.NewMemberBuilder().MemberType(req.MemberType).MemberId(req.MemberID).MemberRole(req.MemberRole).Build()
+	builder := larkwiki.NewCreateSpaceMemberReqBuilder().SpaceId(req.SpaceID).Member(member)
+	if req.NeedNotificationSet {
+		builder = builder.NeedNotification(req.NeedNotification)
+	}
+
+	resp, err := c.sdk.Wiki.V2.SpaceMember.Create(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
+	if err != nil {
+		return WikiSpaceMember{}, err
+	}
+	if resp == nil {
+		return WikiSpaceMember{}, errors.New("wiki member create failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiSpaceMember{}, fmt.Errorf("wiki member create failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Member == nil {
+		return WikiSpaceMember{}, nil
+	}
+	return convertWikiSpaceMember(resp.Data.Member), nil
+}
+
 type DeleteWikiSpaceMemberRequest struct {
 	SpaceID    string
 	MemberType string
@@ -475,6 +764,42 @@ func (c *Client) DeleteWikiSpaceMemberV2(ctx context.Context, token string, req 
 	member := larkwiki.NewMemberBuilder().MemberType(req.MemberType).MemberId(req.MemberID).Build()
 	builder := larkwiki.NewDeleteSpaceMemberReqBuilder().SpaceId(req.SpaceID).MemberId(req.MemberID).Member(member)
 	resp, err := c.sdk.Wiki.V2.SpaceMember.Delete(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return WikiSpaceMember{}, err
+	}
+	if resp == nil {
+		return WikiSpaceMember{}, errors.New("wiki member delete failed: empty response")
+	}
+	if !resp.Success() {
+		return WikiSpaceMember{}, fmt.Errorf("wiki member delete failed: %s", resp.Msg)
+	}
+	if resp.Data == nil || resp.Data.Member == nil {
+		return WikiSpaceMember{}, nil
+	}
+	return convertWikiSpaceMember(resp.Data.Member), nil
+}
+
+func (c *Client) DeleteWikiSpaceMemberV2WithUserToken(ctx context.Context, userAccessToken string, req DeleteWikiSpaceMemberRequest) (WikiSpaceMember, error) {
+	if !c.available() {
+		return WikiSpaceMember{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return WikiSpaceMember{}, errors.New("user access token is required")
+	}
+	if req.SpaceID == "" {
+		return WikiSpaceMember{}, errors.New("space id is required")
+	}
+	if req.MemberType == "" {
+		return WikiSpaceMember{}, errors.New("member type is required")
+	}
+	if req.MemberID == "" {
+		return WikiSpaceMember{}, errors.New("member id is required")
+	}
+
+	member := larkwiki.NewMemberBuilder().MemberType(req.MemberType).MemberId(req.MemberID).Build()
+	builder := larkwiki.NewDeleteSpaceMemberReqBuilder().SpaceId(req.SpaceID).MemberId(req.MemberID).Member(member)
+	resp, err := c.sdk.Wiki.V2.SpaceMember.Delete(ctx, builder.Build(), larkcore.WithUserAccessToken(userAccessToken))
 	if err != nil {
 		return WikiSpaceMember{}, err
 	}

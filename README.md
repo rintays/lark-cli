@@ -698,8 +698,15 @@ Example:
 ./lark bases record delete --help
 ./lark wiki member list --help
 ./lark wiki member delete --help
+./lark wiki node list --help
+./lark wiki node info --help
+./lark wiki node create --help
+./lark wiki node move --help
+./lark wiki node update-title --help
+./lark wiki node attach --help
 ./lark wiki node search --help
 ./lark wiki task info --help
+./lark wiki space update-setting --help
 ./lark mail mailbox info --help
 ./lark mail mailbox set <MAILBOX_ID>
 ./lark mail info <MESSAGE_ID>
@@ -778,7 +785,6 @@ Items not finished yet (high-level):
 - **Mail UX:** use configured default mailbox for mail commands + additional mailbox management commands
 - **Sheets:** row/col insert/delete commands
 - **Base (Bitable):** `bases` top-level command tree (records CRUD, tables/fields/views) (alias: `base`)
-- **Wiki:** v2 SDK endpoints (v1 node search is available via `wiki node search`)
 - **Integration tests:** `*_integration_test.go` suite gated by `LARK_INTEGRATION=1`
 
 For the full detailed task breakdown, see:

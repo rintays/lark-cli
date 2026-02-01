@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -18,7 +19,7 @@ func newWikiSpaceCreateCmd(state *appState) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "create <name>",
-		Short: "Create a Wiki space (v2)",
+		Short: "Create a Wiki space (v2, user token required)",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
@@ -35,29 +36,24 @@ func newWikiSpaceCreateCmd(state *appState) *cobra.Command {
 			return cmd.Flags().Set("name", args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
-				return err
-			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			space, err := state.SDK.CreateWikiSpaceV2(cmd.Context(), token, larksdk.CreateWikiSpaceRequest{
-				Name:        strings.TrimSpace(name),
-				Description: strings.TrimSpace(description),
-				SpaceType:   strings.TrimSpace(spaceType),
-				Visibility:  strings.TrimSpace(visibility),
-				OpenSharing: strings.TrimSpace(openSharing),
+			return runWithToken(cmd, state, tokenTypesUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				space, err := sdk.CreateWikiSpaceV2(ctx, token, larksdk.CreateWikiSpaceRequest{
+					Name:        strings.TrimSpace(name),
+					Description: strings.TrimSpace(description),
+					SpaceType:   strings.TrimSpace(spaceType),
+					Visibility:  strings.TrimSpace(visibility),
+					OpenSharing: strings.TrimSpace(openSharing),
+				})
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"space": space}
+				text := tableTextRow(
+					[]string{"space_id", "name", "space_type", "visibility"},
+					[]string{space.SpaceID, space.Name, space.SpaceType, space.Visibility},
+				)
+				return payload, text, nil
 			})
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"space": space}
-			text := tableTextRow(
-				[]string{"space_id", "name", "space_type", "visibility"},
-				[]string{space.SpaceID, space.Name, space.SpaceType, space.Visibility},
-			)
-			return state.Printer.Print(payload, text)
 		},
 	}
 
