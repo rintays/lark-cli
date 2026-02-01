@@ -21,7 +21,7 @@ func TestSheetsClearIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "clear", "--spreadsheet-id", sheetID, "--range", sheetRange})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "clear", sheetID, sheetRange})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets clear failed: %v", err)

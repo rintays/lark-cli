@@ -52,22 +52,17 @@ func newBaseDiscoverListCmd(state *appState, use, short string) *cobra.Command {
 	var pages int
 
 	cmd := &cobra.Command{
-		Use:   use,
+		Use:   fmt.Sprintf("%s <query>", use),
 		Short: short,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(query) == "" {
-					return errors.New("query is required")
-				}
-				return nil
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return errors.New("query is required")
 			}
-			if query != "" && query != args[0] {
-				return errors.New("query provided twice")
-			}
-			return cmd.Flags().Set("query", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state == nil {
@@ -111,7 +106,6 @@ func newBaseDiscoverListCmd(state *appState, use, short string) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of bases to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	return cmd

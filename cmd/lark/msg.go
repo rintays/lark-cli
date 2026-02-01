@@ -38,10 +38,19 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 	var contentOpts messageContentOptions
 
 	cmd := &cobra.Command{
-		Use:   "send",
+		Use:   "send <receive-id>",
 		Short: "Send a message to a chat or user",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			receiveID = strings.TrimSpace(args[0])
+			if receiveID == "" {
+				return errors.New("receive-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			receiveID = strings.TrimSpace(receiveID)
 			msgType, content, err := resolveMessageContent(contentOpts)
 			if err != nil {
 				return err
@@ -69,9 +78,7 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&receiveID, "receive-id", "", "receive ID to receive message")
 	cmd.Flags().StringVar(&receiveIDType, "receive-id-type", "chat_id", "receive ID type (chat_id, open_id, user_id, email)")
 	addMessageContentFlags(cmd, &contentOpts)
-	_ = cmd.MarkFlagRequired("receive-id")
 	return cmd
 }

@@ -19,7 +19,7 @@ func TestMsgSendIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "messages", "send", "--receive-id-type", "chat_id", "--receive-id", chatID, "--text", "ping"})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "messages", "send", chatID, "--receive-id-type", "chat_id", "--text", "ping"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("msg send failed: %v", err)

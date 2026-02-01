@@ -74,7 +74,7 @@ func TestBaseRecordCreateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--fields-json", `{"Title":"Task"}`})
+	cmd.SetArgs([]string{"record", "create", "tbl_1", "--app-token", "app_1", "--fields-json", `{"Title":"Task"}`})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record create error: %v", err)
 	}

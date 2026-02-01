@@ -350,7 +350,7 @@ func TestDocsInfoCommandFallbackURL(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"info", "--doc-id", "doc1"})
+	cmd.SetArgs([]string{"info", "doc1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs info error: %v", err)
 	}

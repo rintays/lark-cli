@@ -21,24 +21,17 @@ func newWikiTaskCmd(state *appState) *cobra.Command {
 }
 
 func newWikiTaskInfoCmd(state *appState) *cobra.Command {
-	var taskID string
 	var taskType string
 
 	cmd := &cobra.Command{
 		Use:   "info <task-id>",
 		Short: "Show Wiki task results (v2)",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				return nil
-			}
-			if taskID != "" && taskID != args[0] {
-				return errors.New("task-id provided twice")
-			}
-			if err := cmd.Flags().Set("task-id", args[0]); err != nil {
-				return err
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("task-id is required")
 			}
 			return nil
 		},
@@ -46,6 +39,7 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			taskID := strings.TrimSpace(args[0])
 			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -83,8 +77,6 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&taskID, "task-id", "", "wiki task id (or provide as positional argument)")
 	cmd.Flags().StringVar(&taskType, "task-type", "move", "task type (default: move)")
-	_ = cmd.MarkFlagRequired("task-id")
 	return cmd
 }

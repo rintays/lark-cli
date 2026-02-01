@@ -99,7 +99,7 @@ func TestMinutesInfoCommand(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if err.Error() != "minute-token is required" {
+		if err.Error() != "accepts 1 arg(s), received 0" {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

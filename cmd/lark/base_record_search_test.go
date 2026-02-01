@@ -80,7 +80,7 @@ func TestBaseRecordSearchCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "search", "--app-token", "app_1", "--table-id", "tbl_1", "--view-id", "viw_1"})
+	cmd.SetArgs([]string{"record", "search", "tbl_1", "--app-token", "app_1", "--view-id", "viw_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record search error: %v", err)
 	}

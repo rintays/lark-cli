@@ -215,7 +215,7 @@ func TestChatsAnnouncementUpdateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newChatsCmd(state)
-	cmd.SetArgs([]string{"announcement", "update", "--chat-id", "oc_1", "--revision", "12", "--request", "{\"requestType\":\"InsertBlocksRequestType\"}"})
+	cmd.SetArgs([]string{"announcement", "update", "oc_1", "--revision", "12", "--request", "{\"requestType\":\"InsertBlocksRequestType\"}"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("announcement update error: %v", err)
 	}

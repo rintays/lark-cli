@@ -23,16 +23,12 @@ func newChatsGetCmd(state *appState) *cobra.Command {
 		Use:   "get <chat-id>",
 		Short: "Get chat information",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if chatID != "" && chatID != args[0] {
-					return errors.New("chat-id provided twice")
-				}
-				if err := cmd.Flags().Set("chat-id", args[0]); err != nil {
-					return err
-				}
+			chatID = strings.TrimSpace(args[0])
+			if chatID == "" {
+				return errors.New("chat-id is required")
 			}
 			return nil
 		},
@@ -69,11 +65,9 @@ func newChatsGetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&chatID, "chat-id", "", "chat ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user ID type (open_id, union_id, user_id)")
 	cmd.Flags().IntVar(&membersLimit, "members-limit", 20, "max number of chat members to return (0 to skip)")
 	cmd.Flags().IntVar(&membersPageSize, "members-page-size", 0, "chat members page size (default: auto)")
-	_ = cmd.MarkFlagRequired("chat-id")
 	return cmd
 }
 

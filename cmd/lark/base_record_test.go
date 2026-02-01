@@ -59,7 +59,7 @@ func TestBaseRecordInfoCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "info", "--app-token", "app_1", "--table-id", "tbl_1", "--record-id", "rec_1"})
+	cmd.SetArgs([]string{"record", "info", "tbl_1", "rec_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record info error: %v", err)
 	}

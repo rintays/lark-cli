@@ -135,15 +135,13 @@ func TestDrivePermissionsAddMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	cmd.SetArgs([]string{
 		"permissions", "add",
 		"--type", "docx",
-		"--member-type", "openid",
-		"--member-id", "ou_1",
 		"--perm", "view",
 	})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "file-token is required" {
+	if err.Error() != "accepts 3 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

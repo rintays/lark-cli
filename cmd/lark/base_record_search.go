@@ -24,19 +24,14 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 		Use:   "search <table-id>",
 		Short: "Search Bitable records",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(tableID) == "" {
-					return errors.New("table-id is required")
-				}
-				return nil
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
-			if tableID != "" && tableID != args[0] {
-				return errors.New("table-id provided twice")
-			}
-			return cmd.Flags().Set("table-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -74,7 +69,6 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&viewID, "view-id", "", "Bitable view id")
 	cmd.Flags().StringVar(&filterJSON, "filter", "", "Record filter JSON")
 	cmd.Flags().StringVar(&filterJSON, "filter-json", "", "Record filter JSON (raw)")

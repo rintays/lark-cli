@@ -58,7 +58,7 @@ func TestBaseFieldListCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"field", "list", "--app-token", "app_1", "--table-id", "tbl_1"})
+	cmd.SetArgs([]string{"field", "list", "tbl_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base field list error: %v", err)
 	}

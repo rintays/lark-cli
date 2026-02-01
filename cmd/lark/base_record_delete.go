@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -16,24 +17,16 @@ func newBaseRecordDeleteCmd(state *appState) *cobra.Command {
 		Use:   "delete <table-id> <record-id>",
 		Short: "Delete a Bitable record",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if tableID != "" && tableID != args[0] {
-					return errors.New("table-id provided twice")
-				}
-				if err := cmd.Flags().Set("table-id", args[0]); err != nil {
-					return err
-				}
+			tableID = strings.TrimSpace(args[0])
+			recordID = strings.TrimSpace(args[1])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
-			if len(args) > 1 {
-				if recordID != "" && recordID != args[1] {
-					return errors.New("record-id provided twice")
-				}
-				if err := cmd.Flags().Set("record-id", args[1]); err != nil {
-					return err
-				}
+			if recordID == "" {
+				return errors.New("record-id is required")
 			}
 			return nil
 		},
@@ -59,10 +52,6 @@ func newBaseRecordDeleteCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
-	cmd.Flags().StringVar(&recordID, "record-id", "", "Bitable record id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
-	_ = cmd.MarkFlagRequired("record-id")
 	return cmd
 }

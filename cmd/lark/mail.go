@@ -90,16 +90,12 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 		Use:   "set <mailbox-id>",
 		Short: "Set the default mailbox",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if mailboxID != "" && mailboxID != args[0] {
-					return errors.New("mailbox-id provided twice")
-				}
-				if err := cmd.Flags().Set("mailbox-id", args[0]); err != nil {
-					return err
-				}
+			mailboxID = strings.TrimSpace(args[0])
+			if mailboxID == "" {
+				return errors.New("mailbox-id is required")
 			}
 			return nil
 		},
@@ -119,8 +115,6 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me'; or provide as positional argument)")
-	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
 
@@ -325,22 +319,16 @@ func newMailListCmd(state *appState) *cobra.Command {
 
 func newMailInfoCmd(state *appState) *cobra.Command {
 	var mailboxID string
-	var messageID string
 
 	cmd := &cobra.Command{
 		Use:   "info <message-id>",
 		Short: "Show mail message metadata",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if messageID != "" && messageID != args[0] {
-					return errors.New("message-id provided twice")
-				}
-				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("message-id is required")
 			}
 			return nil
 		},
@@ -349,6 +337,7 @@ func newMailInfoCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			messageID := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesUser)
 			if err != nil {
 				return err
@@ -365,29 +354,21 @@ func newMailInfoCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
-	_ = cmd.MarkFlagRequired("message-id")
 	return cmd
 }
 
 func newMailGetCmd(state *appState) *cobra.Command {
 	var mailboxID string
-	var messageID string
 
 	cmd := &cobra.Command{
 		Use:   "get <message-id>",
 		Short: "Get a mail message (full content)",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if messageID != "" && messageID != args[0] {
-					return errors.New("message-id provided twice")
-				}
-				if err := cmd.Flags().Set("message-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("message-id is required")
 			}
 			return nil
 		},
@@ -396,6 +377,7 @@ func newMailGetCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			messageID := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesUser)
 			if err != nil {
 				return err
@@ -411,8 +393,6 @@ func newMailGetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
-	cmd.Flags().StringVar(&messageID, "message-id", "", "message ID (or provide as positional argument)")
-	_ = cmd.MarkFlagRequired("message-id")
 	return cmd
 }
 

@@ -32,7 +32,6 @@ func newMeetingsCmd(state *appState) *cobra.Command {
 }
 
 func newMeetingInfoCmd(state *appState) *cobra.Command {
-	var meetingID string
 	var withParticipants bool
 	var withMeetingAbility bool
 	var userIDType string
@@ -42,19 +41,10 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 		Use:   "info <meeting-id>",
 		Short: "Show meeting details",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if meetingID != "" && meetingID != args[0] {
-					return errors.New("meeting-id provided twice")
-				}
-				if err := cmd.Flags().Set("meeting-id", args[0]); err != nil {
-					return err
-				}
-				return nil
-			}
-			if strings.TrimSpace(meetingID) == "" {
+			if strings.TrimSpace(args[0]) == "" {
 				return errors.New("meeting-id is required")
 			}
 			return nil
@@ -63,6 +53,7 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 			if queryMode < 0 || queryMode > 1 {
 				return errors.New("query-mode must be 0 or 1")
 			}
+			meetingID := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -95,7 +86,6 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&meetingID, "meeting-id", "", "meeting ID (or provide as positional argument)")
 	cmd.Flags().BoolVar(&withParticipants, "with-participants", false, "include participant list")
 	cmd.Flags().BoolVar(&withMeetingAbility, "with-ability", false, "include meeting ability stats")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
@@ -330,19 +320,11 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 		Use:   "update <reserve-id>",
 		Short: "Update a meeting reservation",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if reserveID != "" && reserveID != args[0] {
-					return errors.New("reserve-id provided twice")
-				}
-				if err := cmd.Flags().Set("reserve-id", args[0]); err != nil {
-					return err
-				}
-				return nil
-			}
-			if strings.TrimSpace(reserveID) == "" {
+			reserveID = strings.TrimSpace(args[0])
+			if reserveID == "" {
 				return errors.New("reserve-id is required")
 			}
 			return nil
@@ -388,7 +370,6 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&reserveID, "reserve-id", "", "reserve ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&endTime, "end-time", "", "end time (RFC3339 or unix seconds)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
 	cmd.Flags().StringVar(&topic, "topic", "", "meeting topic")
@@ -405,19 +386,11 @@ func newMeetingDeleteCmd(state *appState) *cobra.Command {
 		Use:   "delete <reserve-id>",
 		Short: "Delete a meeting reservation",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if reserveID != "" && reserveID != args[0] {
-					return errors.New("reserve-id provided twice")
-				}
-				if err := cmd.Flags().Set("reserve-id", args[0]); err != nil {
-					return err
-				}
-				return nil
-			}
-			if strings.TrimSpace(reserveID) == "" {
+			reserveID = strings.TrimSpace(args[0])
+			if reserveID == "" {
 				return errors.New("reserve-id is required")
 			}
 			return nil
@@ -439,7 +412,6 @@ func newMeetingDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&reserveID, "reserve-id", "", "reserve ID (or provide as positional argument)")
 	return cmd
 }
 

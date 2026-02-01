@@ -36,12 +36,12 @@ func TestWikiMemberDeleteCommandRequiresMemberID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"member", "delete", "--space-id", "spc1", "userid"})
+	cmd.SetArgs([]string{"member", "delete", "userid", "", "--space-id", "spc1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"member-id\" not set" {
+	if err.Error() != "member-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -69,12 +69,12 @@ func TestWikiMemberDeleteCommandRequiresMemberType(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"member", "delete", "--space-id", "spc1", "--member-id", "u1"})
+	cmd.SetArgs([]string{"member", "delete", "", "u1", "--space-id", "spc1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"member-type\" not set" {
+	if err.Error() != "member-type is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -136,7 +136,7 @@ func TestWikiMemberDeleteCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"member", "delete", "--space-id", "spc1", "userid", "u1"})
+	cmd.SetArgs([]string{"member", "delete", "userid", "u1", "--space-id", "spc1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("wiki member delete error: %v", err)
 	}

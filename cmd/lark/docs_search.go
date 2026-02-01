@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -17,16 +18,14 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 		Use:   "search <query>",
 		Short: "Search Docs (docx) by text",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				return nil
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return errors.New("query is required")
 			}
-			if query != "" && query != args[0] {
-				return errors.New("query provided twice")
-			}
-			return cmd.Flags().Set("query", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
@@ -57,10 +56,8 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
-	_ = cmd.MarkFlagRequired("query")
 
 	return cmd
 }

@@ -342,9 +342,18 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 	var chatIDs []string
 
 	cmd := &cobra.Command{
-		Use:   "search",
+		Use:   "search <query>",
 		Short: "Search events in a calendar",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return errors.New("query is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -432,7 +441,6 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "search query")
 	cmd.Flags().StringVar(&start, "start", "", "start time (RFC3339)")
 	cmd.Flags().StringVar(&end, "end", "", "end time (RFC3339)")
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
@@ -440,7 +448,6 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringArrayVar(&userIDs, "user-id", nil, "filter by attendee user id (repeatable)")
 	cmd.Flags().StringArrayVar(&roomIDs, "room-id", nil, "filter by room id (repeatable)")
 	cmd.Flags().StringArrayVar(&chatIDs, "chat-id", nil, "filter by chat id (repeatable)")
-	_ = cmd.MarkFlagRequired("query")
 
 	return cmd
 }
@@ -454,9 +461,18 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "get <event-id>",
 		Short: "Get calendar event details",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			eventID = strings.TrimSpace(args[0])
+			if eventID == "" {
+				return errors.New("event-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
@@ -523,12 +539,10 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
-	cmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
 	cmd.Flags().BoolVar(&needAttendee, "need-attendee", true, "include attendee info (requires permission)")
 	cmd.Flags().BoolVar(&needMeetingSettings, "need-meeting-settings", true, "include meeting settings for VC events")
 	cmd.Flags().IntVar(&maxAttendeeNum, "max-attendee-num", 100, "max number of attendees to return (only when --need-attendee)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user ID type (open_id, union_id, user_id)")
-	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
 }
@@ -574,9 +588,18 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 	var checkInNotifyAttendees bool
 
 	cmd := &cobra.Command{
-		Use:   "update",
+		Use:   "update <event-id>",
 		Short: "Update a calendar event",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			eventID = strings.TrimSpace(args[0])
+			if eventID == "" {
+				return errors.New("event-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			hasUpdate := summary != "" || description != "" || start != "" || end != "" || visibility != "" || attendeeAbility != "" || freeBusyStatus != "" || recurrence != "" || len(reminders) > 0 || len(schemaEntries) > 0 || len(attachments) > 0 || len(attachmentDeletes) > 0
 			hasUpdate = hasUpdate ||
@@ -697,7 +720,6 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
-	cmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
 	cmd.Flags().StringVar(&summary, "summary", "", "event summary")
 	cmd.Flags().StringVar(&description, "description", "", "event description")
 	cmd.Flags().StringVar(&start, "start", "", "start time (RFC3339)")
@@ -734,7 +756,6 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&checkInEndType, "check-in-end-type", "", "check-in end time type (before_event_start|after_event_start|after_event_end)")
 	cmd.Flags().IntVar(&checkInEndDuration, "check-in-end-duration", 0, "check-in end offset minutes (0,5,15,30,60)")
 	cmd.Flags().BoolVar(&checkInNotifyAttendees, "check-in-notify-attendees", false, "notify attendees when check-in starts")
-	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
 }
@@ -745,9 +766,18 @@ func newCalendarDeleteCmd(state *appState) *cobra.Command {
 	var notify bool
 
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <event-id>",
 		Short: "Delete a calendar event",
-		Args:  cobra.NoArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			eventID = strings.TrimSpace(args[0])
+			if eventID == "" {
+				return errors.New("event-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
@@ -782,9 +812,7 @@ func newCalendarDeleteCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
-	cmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
 	cmd.Flags().BoolVar(&notify, "notify", true, "notify attendees about deletion")
-	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
 }

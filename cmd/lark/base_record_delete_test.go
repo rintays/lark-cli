@@ -37,12 +37,12 @@ func TestBaseRecordDeleteCommandRequiresRecordID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "delete", "--app-token", "app_1", "tbl_1"})
+	cmd.SetArgs([]string{"record", "delete", "tbl_1", "--app-token", "app_1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"record-id\" not set" {
+	if err.Error() != "accepts 2 arg(s), received 1" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -70,12 +70,12 @@ func TestBaseRecordDeleteCommandRequiresTableID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "delete", "--app-token", "app_1", "--record-id", "rec_1"})
+	cmd.SetArgs([]string{"record", "delete", "--app-token", "app_1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"table-id\" not set" {
+	if err.Error() != "accepts 2 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -121,7 +121,7 @@ func TestBaseRecordDeleteCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "delete", "--app-token", "app_1", "tbl_1", "rec_1"})
+	cmd.SetArgs([]string{"record", "delete", "tbl_1", "rec_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record delete error: %v", err)
 	}

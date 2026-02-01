@@ -26,7 +26,7 @@ func TestSheetsUpdateIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "update", "--spreadsheet-id", sheetID, "--range", sheetRange, "--values", values})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "update", sheetID, sheetRange, "--values", values})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets update failed: %v", err)
@@ -44,7 +44,7 @@ func TestSheetsUpdateIntegration(t *testing.T) {
 	cmd = newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "read", "--spreadsheet-id", sheetID, "--range", sheetRange})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "read", sheetID, sheetRange})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets read failed: %v", err)
 	}

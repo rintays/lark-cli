@@ -21,25 +21,11 @@ func newBaseFieldUpdateCmd(state *appState) *cobra.Command {
 		Use:   "update <table-id> <field-id>",
 		Short: "Update a Bitable field",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if tableID != "" && tableID != args[0] {
-					return errors.New("table-id provided twice")
-				}
-				if err := cmd.Flags().Set("table-id", args[0]); err != nil {
-					return err
-				}
-			}
-			if len(args) > 1 {
-				if fieldID != "" && fieldID != args[1] {
-					return errors.New("field-id provided twice")
-				}
-				if err := cmd.Flags().Set("field-id", args[1]); err != nil {
-					return err
-				}
-			}
+			tableID = strings.TrimSpace(args[0])
+			fieldID = strings.TrimSpace(args[1])
 			if strings.TrimSpace(tableID) == "" {
 				return errors.New("table-id is required")
 			}
@@ -82,8 +68,6 @@ func newBaseFieldUpdateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
-	cmd.Flags().StringVar(&fieldID, "field-id", "", "Bitable field id (or provide as positional argument)")
 	cmd.Flags().StringVar(&fieldName, "name", "", "New field name")
 	cmd.Flags().StringVar(&propertyJSON, "property-json", "", "Field property JSON (object; see `bases field types` for hints)")
 	cmd.Flags().StringVar(&descriptionJSON, "description-json", "", "Field description JSON (object)")

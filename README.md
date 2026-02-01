@@ -144,7 +144,7 @@ lark auth
 lark whoami
 lark chats list --limit 10
 lark users search "Ada"
-lark messages send --receive-id <CHAT_ID> --text "hello"
+lark messages send <CHAT_ID> --text "hello"
 ```
 
 ---
@@ -182,25 +182,25 @@ Precedence:
 ### Send a message
 
 ```bash
-lark messages send --receive-id <CHAT_ID> --text "hello"
+lark messages send <CHAT_ID> --text "hello"
 ```
 
 Send to a user by email:
 
 ```bash
-lark messages send --receive-id-type email --receive-id user@example.com --text "hello"
+lark messages send user@example.com --receive-id-type email --text "hello"
 ```
 
 Send a post (rich text):
 
 ```bash
-lark messages send --receive-id <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
+lark messages send <CHAT_ID> --msg-type post --content '{"zh_cn":{"content":[[{"tag":"text","text":"hello"}]]}}'
 ```
 
 Send an image:
 
 ```bash
-lark messages send --receive-id <CHAT_ID> --image-key <IMAGE_KEY>
+lark messages send <CHAT_ID> --image-key <IMAGE_KEY>
 ```
 
 Reply in thread:
@@ -270,7 +270,7 @@ lark chats announcement get <CHAT_ID>
 Update chat announcement:
 
 ```bash
-lark chats announcement update --chat-id <CHAT_ID> --revision 12 --request '<REQUEST_JSON>'
+lark chats announcement update <CHAT_ID> --revision 12 --request '<REQUEST_JSON>'
 ```
 
 ### Drive
@@ -386,7 +386,7 @@ List:
 lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
 ```
 
-Note: `spreadsheet-id` is a Drive file token; use it as `FILE_TOKEN` with `lark drive permissions`.
+Note: `spreadsheet-token` is a Drive file token; use it as `FILE_TOKEN` with `lark drive permissions`.
 
 Create:
 
@@ -492,31 +492,31 @@ lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --e
 Search events:
 
 ```bash
-lark calendars search --query "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
+lark calendars search "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --limit 20
 ```
 
 Get event:
 
 ```bash
-lark calendars get --event-id <EVENT_ID> --need-attendee --need-meeting-settings --max-attendee-num 100
+lark calendars get <EVENT_ID> --need-attendee --need-meeting-settings --max-attendee-num 100
 ```
 
 Update event:
 
 ```bash
-lark calendars update --event-id <EVENT_ID> --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z"
+lark calendars update <EVENT_ID> --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z"
 ```
 
 Update event with advanced fields:
 
 ```bash
-lark calendars update --event-id <EVENT_ID> --visibility private --color -1
+lark calendars update <EVENT_ID> --visibility private --color -1
 ```
 
 Delete event:
 
 ```bash
-lark calendars delete --event-id <EVENT_ID> --notify=false
+lark calendars delete <EVENT_ID> --notify=false
 ```
 
 ---
@@ -601,7 +601,7 @@ Current behavior:
 - Provide via `--user-access-token <token>`
 - or env `LARK_USER_ACCESS_TOKEN`
 - Mail commands `mail folders/list/info/get/send` default `--mailbox-id` to `config.default_mailbox_id` or `me`
-- Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set --mailbox-id <id>`
+- Set a default with `lark config set --default-mailbox-id <id|me>` or `lark mail mailbox set <id>`
 - `mail info` shows metadata; `mail get` returns full message content (raw/body/attachments)
 
 Example:
@@ -636,7 +636,7 @@ Example:
 ./lark wiki node search --help
 ./lark wiki task info --help
 ./lark mail mailbox info --help
-./lark mail mailbox set --mailbox-id <MAILBOX_ID>
+./lark mail mailbox set <MAILBOX_ID>
 ./lark mail info <MESSAGE_ID>
 ./lark mail get <MESSAGE_ID>
 ./lark mail send --subject "Hello" --to "user@example.com" --text "Hi there"
