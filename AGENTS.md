@@ -136,4 +136,7 @@
 - 2026-02-02: Fixed build regressions for base record timestamp output, added missing sheets create import, and updated user OAuth service list test for task features.
 - 2026-02-02: Fixed panic when root command context is nil by defaulting to background for signal-aware execution.
 - 2026-02-02: Added `lark auth tenant`, removed deprecated user login `--scope`, surfaced available user OAuth scopes in help, and updated docs/tests.
+- 2026-02-02: Adjusted search-user OAuth scope mapping to require only `contact:user:search` (removed invalid contact user/department read scopes).
+- 2026-02-02: Merged docs/docx service scopes to docx OAuth scopes, added search-docs/drive-export services, and updated command scope mappings/tests (message search uses `im:message:readonly`).
+- 2026-02-02: Fixed interactive OAuth selection build error by removing invalid nil check on user account value.
 - 2026-02-02: Clarified drive permissions add help text to document positional args and member-type options, and switched example to openid.

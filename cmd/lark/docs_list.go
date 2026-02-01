@@ -75,6 +75,7 @@ func newDocsListCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive")
 
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")

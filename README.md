@@ -577,6 +577,8 @@ Log in with explicit scopes:
 lark auth user login --scopes "offline_access drive:drive:readonly" --force-consent
 ```
 
+Running `lark auth user login` without `--scopes`/`--services` opens an interactive picker (TTY only) to choose service- or scope-based authorization. Previously authorized selections are preselected.
+
 By default, `auth user login` uses incremental authorization (requests only new scopes). Disable with `--incremental=false` to request the full scope set.
 
 Service-style scopes (gog-like):
