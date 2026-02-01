@@ -69,11 +69,9 @@ func (b *wikiTreeBuilder) listNodes(ctx context.Context, parentToken string) ([]
 		ps := b.pageSize
 		if ps <= 0 {
 			ps = b.remaining
-			if ps > 200 {
-				ps = 200
-			}
-		} else if ps > 200 {
-			ps = 200
+		}
+		if ps > 50 {
+			ps = 50
 		}
 		req := larksdk.ListWikiNodesRequest{
 			SpaceID:         b.spaceID,

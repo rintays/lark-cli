@@ -152,4 +152,5 @@
 - 2026-02-02: Removed extra blank lines between message rows in list/search output.
 - 2026-02-02: Added Wiki node create/move/update-title/attach and space update-setting commands, fixed Wiki space create to use user tokens, added user-token support for Wiki v2 calls, and updated docs/coverage.
 - 2026-02-02: Added `lark wiki node tree` command for ASCII tree output with node tokens, plus docs/tests updates.
+- 2026-02-02: Capped wiki node tree page_size to 50 to match API limits and avoid invalid page_size errors.
 - 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.
