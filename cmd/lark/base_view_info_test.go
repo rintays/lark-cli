@@ -67,3 +67,27 @@ func TestBaseViewInfoCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", out)
 	}
 }
+
+func TestBaseViewInfoCommandRequiresTableID(t *testing.T) {
+	cmd := newBaseCmd(&appState{})
+	cmd.SetArgs([]string{"view", "info", "--app-token", "app_1", "--view-id", "viw_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"table-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestBaseViewInfoCommandRequiresViewID(t *testing.T) {
+	cmd := newBaseCmd(&appState{})
+	cmd.SetArgs([]string{"view", "info", "--app-token", "app_1", "--table-id", "tbl_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"view-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
