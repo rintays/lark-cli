@@ -33,6 +33,9 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 | Drive metadata | `/open-apis/drive/v1/files/:file_token` | Core ApiReq wrapper | tenant/user | v1 | `lark drive info` / `lark drive urls`. |
 | Drive upload | `/open-apis/drive/v1/files/upload_all` | Custom HTTP wrapper | tenant | v1 | Multipart upload. |
 | Drive permissions | `/open-apis/drive/v1/permissions/:file_token/public` | Core ApiReq wrapper | tenant/user | v1 | `lark drive share`. |
+| Drive permission members | `/open-apis/drive/v1/permissions/:token/members` | Core ApiReq wrapper | tenant/user | v1 | `lark drive permissions list/add`. |
+| Drive permission member update | `/open-apis/drive/v1/permissions/:token/members/:member_id` | Core ApiReq wrapper | tenant/user | v1 | `lark drive permissions update`. |
+| Drive permission member delete | `/open-apis/drive/v1/permissions/:token/members/:member_id` | Core ApiReq wrapper | tenant/user | v1 | `lark drive permissions delete`. |
 | Drive export task | `/open-apis/drive/v1/export_tasks` | Core ApiReq wrapper | tenant/user | v1 | Used by docs/drive export. |
 | Drive export status | `/open-apis/drive/v1/export_tasks/:ticket` | Core ApiReq wrapper | tenant/user | v1 | Used by docs/drive export. |
 | Drive export download | `/open-apis/drive/v1/export_tasks/file/:file_token/download` | Custom HTTP wrapper | tenant | v1 | File download. |

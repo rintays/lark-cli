@@ -24,7 +24,7 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
   - add/delete reactions, pin/unpin messages
 - **Drive**
   - list/search/info/urls/download/upload
-  - share permission updates
+  - share permission updates + collaborator access (list/add/update/delete)
 - **Docs (docx)**
   - create/info/export/get
 - **Sheets**
@@ -307,6 +307,30 @@ Update share:
 lark drive share <FILE_TOKEN> --type docx --link-share tenant_readable --external-access
 ```
 
+Add collaborator:
+
+```bash
+lark drive permissions add <FILE_TOKEN> openid <OPEN_ID> --type docx --perm view --member-kind user
+```
+
+List collaborators:
+
+```bash
+lark drive permissions list <FILE_TOKEN> --type docx
+```
+
+Update collaborator:
+
+```bash
+lark drive permissions update <FILE_TOKEN> openid <OPEN_ID> --type docx --perm edit
+```
+
+Delete collaborator:
+
+```bash
+lark drive permissions delete <FILE_TOKEN> openid <OPEN_ID> --type docx
+```
+
 ### Docs (docx)
 
 List:
@@ -351,6 +375,7 @@ lark docs convert --content "# Title"
 lark docs overwrite <DOCUMENT_ID> --content-file ./doc.md
 ```
 Note: `--content` unescapes `\\n`/`\\r`/`\\t` for quick multiline input.
+Note: `DOCUMENT_ID` is a Drive file token; use it as `FILE_TOKEN` with `lark drive permissions`.
 
 ### Sheets
 
@@ -359,6 +384,8 @@ List:
 ```bash
 lark sheets list --folder-id <FOLDER_TOKEN> --limit 50
 ```
+
+Note: `spreadsheet-id` is a Drive file token; use it as `FILE_TOKEN` with `lark drive permissions`.
 
 Create:
 
@@ -470,7 +497,7 @@ lark calendars search --query "Weekly Sync" --start "2026-01-02T03:04:05Z" --end
 Get event:
 
 ```bash
-lark calendars get --event-id <EVENT_ID> --need-attendee --need-meeting-settings --max-attendee-num 10
+lark calendars get --event-id <EVENT_ID> --need-attendee --need-meeting-settings --max-attendee-num 100
 ```
 
 Update event:

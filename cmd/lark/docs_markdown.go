@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
@@ -179,23 +180,13 @@ func readDocxContent(raw, path string) (string, error) {
 		}
 		raw = string(data)
 	} else {
-		raw = unescapeCLIContent(raw)
+		raw = normalizeDocxContentEscapes(raw)
 	}
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "", errors.New("content is required")
 	}
 	return raw, nil
-}
-
-func unescapeCLIContent(raw string) string {
-	replacer := strings.NewReplacer(
-		`\\r\\n`, "\r\n",
-		`\\n`, "\n",
-		`\\r`, "\r",
-		`\\t`, "\t",
-	)
-	return replacer.Replace(raw)
 }
 
 func normalizeDocxContentType(raw string) (string, error) {
@@ -211,6 +202,24 @@ func normalizeDocxContentType(raw string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported content type: %s", raw)
 	}
+}
+
+func normalizeDocxContentEscapes(raw string) string {
+	if raw == "" {
+		return raw
+	}
+	if strings.Contains(raw, "\n") || strings.Contains(raw, "\r") {
+		return raw
+	}
+	if !strings.Contains(raw, "\\") {
+		return raw
+	}
+	quoted := `"` + strings.ReplaceAll(raw, `"`, `\"`) + `"`
+	unquoted, err := strconv.Unquote(quoted)
+	if err != nil {
+		return raw
+	}
+	return unquoted
 }
 
 func scrubDocxTableMergeInfo(blocks []*larkdocx.Block) {
