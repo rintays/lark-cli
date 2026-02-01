@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
@@ -173,22 +172,10 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				}
 				styles := newMessageFormatStyles(state.Printer.Styled)
 				displays := make([]messageDisplay, 0, len(messages))
-				prefixWidth := 0
 				for _, message := range messages {
-					display := buildMessageDisplay(message, styles, senderNames)
-					for _, left := range display.leftPlain {
-						if w := lipgloss.Width(left); w > prefixWidth {
-							prefixWidth = w
-						}
-					}
-					displays = append(displays, display)
+					displays = append(displays, buildMessageDisplay(message, styles, senderNames))
 				}
-				lines := make([]string, 0, len(messages))
-				separator := " │ "
-				for _, display := range displays {
-					lines = append(lines, renderMessageDisplay(display, prefixWidth, separator)...)
-				}
-				text = strings.Join(lines, "\n")
+				text = renderMessageTable(displays, styles)
 			}
 			return state.Printer.Print(payload, text)
 		},

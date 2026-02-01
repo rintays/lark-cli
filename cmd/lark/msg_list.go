@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	liptable "github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
@@ -109,22 +110,10 @@ func newMsgListCmd(state *appState) *cobra.Command {
 				}
 				styles := newMessageFormatStyles(state.Printer.Styled)
 				displays := make([]messageDisplay, 0, len(messages))
-				prefixWidth := 0
 				for _, message := range messages {
-					display := buildMessageDisplay(message, styles, senderNames)
-					for _, left := range display.leftPlain {
-						if w := lipgloss.Width(left); w > prefixWidth {
-							prefixWidth = w
-						}
-					}
-					displays = append(displays, display)
+					displays = append(displays, buildMessageDisplay(message, styles, senderNames))
 				}
-				lines := make([]string, 0, len(messages))
-				separator := " │ "
-				for _, display := range displays {
-					lines = append(lines, renderMessageDisplay(display, prefixWidth, separator)...)
-				}
-				text = strings.Join(lines, "\n")
+				text = renderMessageTable(displays, styles)
 			}
 			return state.Printer.Print(payload, text)
 		},
@@ -143,23 +132,32 @@ type messageFormatStyles struct {
 	styled  bool
 	content lipgloss.Style
 	sender  lipgloss.Style
+	time    lipgloss.Style
 	dim     lipgloss.Style
+	meta    lipgloss.Style
+	border  lipgloss.Style
 }
 
 func newMessageFormatStyles(styled bool) messageFormatStyles {
 	if !styled {
 		return messageFormatStyles{styled: false}
 	}
+	brand := output.BrandColor()
 	dim := lipgloss.NewStyle().
 		Foreground(lipgloss.AdaptiveColor{Light: "245", Dark: "240"})
 	strong := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.AdaptiveColor{Light: "0", Dark: "15"})
+	meta := lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "61", Dark: "74"})
 	return messageFormatStyles{
 		styled:  true,
 		content: strong,
-		sender:  strong,
+		sender:  lipgloss.NewStyle().Bold(true).Foreground(brand),
+		time:    dim,
 		dim:     dim,
+		meta:    meta,
+		border:  dim,
 	}
 }
 
@@ -177,6 +175,13 @@ func (s messageFormatStyles) renderSender(text string) string {
 	return s.sender.Render(text)
 }
 
+func (s messageFormatStyles) renderTime(text string) string {
+	if !s.styled {
+		return text
+	}
+	return s.time.Render(text)
+}
+
 func (s messageFormatStyles) renderDim(text string) string {
 	if !s.styled {
 		return text
@@ -184,14 +189,20 @@ func (s messageFormatStyles) renderDim(text string) string {
 	return s.dim.Render(text)
 }
 
+func (s messageFormatStyles) renderMeta(text string) string {
+	if !s.styled {
+		return text
+	}
+	return s.meta.Render(text)
+}
+
 type messageDisplay struct {
-	leftPlain  []string
 	leftStyled []string
 	rightLines []string
 }
 
 func buildMessageDisplay(message larksdk.Message, styles messageFormatStyles, senderNames map[string]string) messageDisplay {
-	leftPlain, leftStyled := formatMessageSenderLines(message, styles, senderNames)
+	leftStyled := formatMessageSenderLines(message, styles, senderNames)
 	content := messageContentForDisplay(message)
 	contentLines := normalizeMessageContentLines(content)
 	if len(contentLines) == 0 {
@@ -201,41 +212,43 @@ func buildMessageDisplay(message larksdk.Message, styles messageFormatStyles, se
 	rightLines = append(rightLines, styles.renderContent(contentLines[0]))
 	meta := formatMessageMetaLine(message, styles)
 	if meta == "" {
-		meta = styles.renderDim("type - | message id: -")
+		meta = styles.renderMeta("type - | message id: -")
 	}
 	rightLines = append(rightLines, meta)
 	for _, line := range contentLines[1:] {
 		rightLines = append(rightLines, styles.renderContent(line))
 	}
 	return messageDisplay{
-		leftPlain:  leftPlain,
 		leftStyled: leftStyled,
 		rightLines: rightLines,
 	}
 }
 
-func renderMessageDisplay(display messageDisplay, prefixWidth int, separator string) []string {
-	totalLines := len(display.rightLines)
-	if len(display.leftStyled) > totalLines {
-		totalLines = len(display.leftStyled)
+func renderMessageTable(displays []messageDisplay, styles messageFormatStyles) string {
+	if len(displays) == 0 {
+		return ""
 	}
-	lines := make([]string, 0, totalLines)
-	for i := 0; i < totalLines; i++ {
-		left := ""
-		if i < len(display.leftStyled) {
-			left = display.leftStyled[i]
-		}
-		right := ""
-		if i < len(display.rightLines) {
-			right = display.rightLines[i]
-		}
-		leftCell := lipgloss.NewStyle().Width(prefixWidth).Render(left)
-		lines = append(lines, leftCell+separator+right)
+	rows := make([][]string, 0, len(displays))
+	for _, display := range displays {
+		left := strings.Join(display.leftStyled, "\n")
+		right := strings.Join(display.rightLines, "\n")
+		rows = append(rows, []string{left, right})
 	}
-	return lines
+	table := liptable.New().
+		Rows(rows...).
+		Border(lipgloss.NormalBorder()).
+		BorderTop(false).
+		BorderBottom(false).
+		BorderLeft(false).
+		BorderRight(false).
+		BorderHeader(false).
+		BorderColumn(true).
+		BorderRow(true).
+		BorderStyle(styles.border)
+	return table.Render()
 }
 
-func formatMessageSenderLines(message larksdk.Message, styles messageFormatStyles, senderNames map[string]string) ([]string, []string) {
+func formatMessageSenderLines(message larksdk.Message, styles messageFormatStyles, senderNames map[string]string) []string {
 	timeLabel := formatMessageTime(message.CreateTime)
 	if timeLabel == "" {
 		timeLabel = "-"
@@ -244,15 +257,12 @@ func formatMessageSenderLines(message larksdk.Message, styles messageFormatStyle
 	if name == "" {
 		name = "unknown"
 	}
-	line1Plain := fmt.Sprintf("[%s] %s", timeLabel, name)
-	line1Styled := styles.renderDim("["+timeLabel+"]") + " " + styles.renderSender(name)
-	line2Plain := "sender -"
-	line2Styled := styles.renderDim(line2Plain)
+	line1Styled := styles.renderTime("["+timeLabel+"]") + " " + styles.renderSender(name)
+	line2Styled := styles.renderDim("sender -")
 	if idLabel != "" {
-		line2Plain = "sender " + idLabel
-		line2Styled = styles.renderDim(line2Plain)
+		line2Styled = styles.renderDim("sender " + idLabel)
 	}
-	return []string{line1Plain, line2Plain}, []string{line1Styled, line2Styled}
+	return []string{line1Styled, line2Styled}
 }
 
 func messageSenderDisplay(message larksdk.Message, senderNames map[string]string) (string, string) {
@@ -287,12 +297,15 @@ func messageSenderDisplay(message larksdk.Message, senderNames map[string]string
 func formatMessageMetaLine(message larksdk.Message, styles messageFormatStyles) string {
 	parts := make([]string, 0, 3)
 	if message.MsgType != "" {
-		parts = append(parts, styles.renderDim("type "+message.MsgType))
+		parts = append(parts, "type "+message.MsgType)
 	}
 	if message.MessageID != "" {
-		parts = append(parts, styles.renderDim("message id: "+message.MessageID))
+		parts = append(parts, "message id: "+message.MessageID)
 	}
-	return strings.Join(parts, " | ")
+	if len(parts) == 0 {
+		return ""
+	}
+	return styles.renderMeta(strings.Join(parts, " | "))
 }
 
 func messageSenderKey(senderType, idType, id string) string {
