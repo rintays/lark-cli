@@ -6,9 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
@@ -23,6 +20,8 @@ const (
 	userOAuthSelectServices userOAuthSelectionMode = iota
 	userOAuthSelectScopes
 )
+
+var errUserOAuthCanceled = errors.New("login canceled")
 
 type userOAuthInteractiveSelection struct {
 	Mode     userOAuthSelectionMode
@@ -49,7 +48,7 @@ func promptUserOAuthSelection(state *appState, account string) (userOAuthInterac
 		return userOAuthInteractiveSelection{}, err
 	}
 	if canceled {
-		return userOAuthInteractiveSelection{}, errors.New("login canceled")
+		return userOAuthInteractiveSelection{}, errUserOAuthCanceled
 	}
 
 	if modeIndex == 0 {
@@ -132,7 +131,7 @@ func promptUserOAuthServices(previous []string) ([]string, error) {
 		return nil, err
 	}
 	if canceled {
-		return nil, errors.New("login canceled")
+		return nil, errUserOAuthCanceled
 	}
 	if len(selected) == 0 {
 		return nil, errors.New("no services selected")
@@ -175,7 +174,7 @@ func promptUserOAuthScopes(state *appState, previous []string) ([]string, error)
 		return nil, err
 	}
 	if canceled {
-		return nil, errors.New("login canceled")
+		return nil, errUserOAuthCanceled
 	}
 	selected = ensureOfflineAccess(selected)
 	return canonicalizeUserOAuthScopes(selected), nil
@@ -197,33 +196,16 @@ func appendMissingScopes(available []string, defaults []string) []string {
 }
 
 func runModeSelect(defaultMode userOAuthSelectionMode) (int, bool, error) {
-	delegate := brandDelegate()
-	delegate.ShowDescription = false
-	delegate.SetSpacing(0)
-
-	items := []list.Item{
-		modeItem{label: "Select by service (recommended)"},
-		modeItem{label: "Select by scope"},
+	options := []string{
+		"Select by service (recommended)",
+		"Select by scope",
 	}
-
-	model := list.New(items, delegate, 0, 0)
-	model.Title = "Choose OAuth selection mode"
-	model.Styles = brandListStyles()
-	model.SetShowHelp(false)
-	model.SetFilteringEnabled(false)
-	model.SetShowFilter(false)
-	model.SetShowStatusBar(false)
-	model.DisableQuitKeybindings()
-	model.Select(modeIndexFor(defaultMode))
-
-	keys := modeKeyMap{listKeys: list.DefaultKeyMap()}
-	m := &singleSelectModel{
-		list: model,
-		help: brandHelpModel(),
-		keys: keys,
+	model := &singleSelectModel{
+		title:   "Choose OAuth selection mode",
+		options: options,
+		cursor:  modeIndexFor(defaultMode),
 	}
-
-	program := tea.NewProgram(m, tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
+	program := tea.NewProgram(model, tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
 	result, err := program.Run()
 	if err != nil {
 		return 0, false, err
@@ -232,35 +214,16 @@ func runModeSelect(defaultMode userOAuthSelectionMode) (int, bool, error) {
 	if !ok {
 		return 0, false, errors.New("unexpected selection result")
 	}
-	return final.list.Index(), final.canceled, nil
+	return final.cursor, final.canceled, nil
 }
 
 func runMultiSelect(title string, items []optionItem, allowEmpty bool) ([]string, bool, error) {
-	delegate := brandDelegate()
-	delegate.ShowDescription = false
-
-	listItems := make([]list.Item, 0, len(items))
-	for _, item := range items {
-		listItems = append(listItems, item)
-	}
-
-	model := list.New(listItems, delegate, 0, 0)
-	model.Title = title
-	model.Styles = brandListStyles()
-	model.SetShowHelp(false)
-	model.SetFilteringEnabled(false)
-	model.SetShowFilter(false)
-	model.DisableQuitKeybindings()
-
-	keys := multiKeyMap{listKeys: list.DefaultKeyMap()}
-	m := &multiSelectModel{
-		list:       model,
-		help:       brandHelpModel(),
-		keys:       keys,
+	model := &multiSelectModel{
+		title:      title,
+		items:      items,
 		allowEmpty: allowEmpty,
 	}
-
-	program := tea.NewProgram(m, tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
+	program := tea.NewProgram(model, tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
 	result, err := program.Run()
 	if err != nil {
 		return nil, false, err
@@ -272,14 +235,6 @@ func runMultiSelect(title string, items []optionItem, allowEmpty bool) ([]string
 	return final.selectedValues(), final.canceled, nil
 }
 
-type modeItem struct {
-	label string
-}
-
-func (i modeItem) Title() string       { return i.label }
-func (i modeItem) Description() string { return "" }
-func (i modeItem) FilterValue() string { return i.label }
-
 type optionItem struct {
 	Label    string
 	Value    string
@@ -288,122 +243,87 @@ type optionItem struct {
 	Tag      string
 }
 
-func (i optionItem) Title() string {
-	box := "[ ]"
-	if i.Selected {
-		box = "[x]"
-	}
-	label := i.Label
-	if i.Locked && i.Tag != "" {
-		label = fmt.Sprintf("%s (%s)", label, i.Tag)
-	}
-	return fmt.Sprintf("%s %s", box, label)
-}
-
-func (i optionItem) Description() string { return "" }
-func (i optionItem) FilterValue() string { return i.Label + " " + i.Value }
-
-type modeKeyMap struct {
-	listKeys list.KeyMap
-	Confirm  key.Binding
-	Quit     key.Binding
-}
-
-func (k modeKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.listKeys.CursorUp, k.listKeys.CursorDown, k.Confirm, k.Quit}
-}
-
-func (k modeKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.listKeys.CursorUp, k.listKeys.CursorDown, k.Confirm, k.Quit}}
-}
-
-type multiKeyMap struct {
-	listKeys list.KeyMap
-	Toggle   key.Binding
-	Confirm  key.Binding
-	Quit     key.Binding
-}
-
-func (k multiKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.listKeys.CursorUp, k.listKeys.CursorDown, k.Toggle, k.Confirm, k.Quit}
-}
-
-func (k multiKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.listKeys.CursorUp, k.listKeys.CursorDown, k.Toggle, k.Confirm, k.Quit}}
-}
-
 type singleSelectModel struct {
-	list     list.Model
-	help     help.Model
-	keys     modeKeyMap
+	title    string
+	options  []string
+	cursor   int
 	canceled bool
 }
 
 func (m *singleSelectModel) Init() tea.Cmd {
-	m.keys.Confirm = key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "confirm"))
-	m.keys.Quit = key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "cancel"))
 	return nil
 }
 
 func (m *singleSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.list.SetSize(msg.Width, listHeight(msg.Height, 1, 0))
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "esc", "ctrl+c":
+		case "ctrl+c", "q", "esc":
 			m.canceled = true
 			return m, tea.Quit
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			if m.cursor < len(m.options)-1 {
+				m.cursor++
+			}
 		case "enter":
 			return m, tea.Quit
 		}
 	}
-
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	return m, nil
 }
 
 func (m *singleSelectModel) View() string {
-	helpView := m.help.View(m.keys)
-	if helpView == "" {
-		return m.list.View()
+	styles := newSelectorStyles()
+	var b strings.Builder
+	b.WriteString(styles.title.Render(m.title))
+	b.WriteString("\n\n")
+	for i, option := range m.options {
+		cursor := " "
+		line := option
+		if i == m.cursor {
+			cursor = styles.cursor.Render(">")
+			line = styles.active.Render(option)
+		}
+		b.WriteString(fmt.Sprintf("%s %s\n", cursor, line))
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, m.list.View(), helpView)
+	b.WriteString("\nenter confirm | q cancel")
+	return b.String()
 }
 
 type multiSelectModel struct {
-	list       list.Model
-	help       help.Model
-	keys       multiKeyMap
+	title      string
+	items      []optionItem
+	cursor     int
 	allowEmpty bool
 	canceled   bool
 	errMessage string
 }
 
 func (m *multiSelectModel) Init() tea.Cmd {
-	m.keys.Toggle = key.NewBinding(key.WithKeys(" "), key.WithHelp("space", "toggle"))
-	m.keys.Confirm = key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "confirm"))
-	m.keys.Quit = key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "cancel"))
 	return nil
 }
 
 func (m *multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		extra := 1
-		if m.errMessage != "" {
-			extra = 2
-		}
-		m.list.SetSize(msg.Width, listHeight(msg.Height, extra, 0))
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "esc", "ctrl+c":
+		case "ctrl+c", "q", "esc":
 			m.canceled = true
 			return m, tea.Quit
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			if m.cursor < len(m.items)-1 {
+				m.cursor++
+			}
 		case " ":
 			m.toggleSelected()
-			return m, nil
 		case "enter":
 			if !m.allowEmpty && len(m.selectedValues()) == 0 {
 				m.errMessage = "Select at least one item."
@@ -412,107 +332,78 @@ func (m *multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
-
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	return m, nil
 }
 
 func (m *multiSelectModel) View() string {
-	helpView := m.help.View(m.keys)
-	blocks := make([]string, 0, 3)
+	styles := newSelectorStyles()
+	var b strings.Builder
+	b.WriteString(styles.title.Render(m.title))
+	b.WriteString("\n\n")
 	if m.errMessage != "" {
-		blocks = append(blocks, errorStyle().Render(m.errMessage))
+		b.WriteString(styles.hint.Render(m.errMessage))
+		b.WriteString("\n\n")
 	}
-	blocks = append(blocks, m.list.View())
-	if helpView != "" {
-		blocks = append(blocks, helpView)
+	for i, item := range m.items {
+		cursor := " "
+		if i == m.cursor {
+			cursor = styles.cursor.Render(">")
+		}
+		box := "[ ]"
+		if item.Selected {
+			box = "[x]"
+		}
+		label := item.Label
+		if item.Locked && item.Tag != "" {
+			label = fmt.Sprintf("%s (%s)", label, item.Tag)
+		}
+		line := fmt.Sprintf("%s %s", box, label)
+		if i == m.cursor {
+			line = styles.active.Render(line)
+		}
+		b.WriteString(fmt.Sprintf("%s %s\n", cursor, line))
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, blocks...)
+	b.WriteString("\nspace toggle | enter confirm | q cancel")
+	return b.String()
 }
 
 func (m *multiSelectModel) toggleSelected() {
-	index := m.list.Index()
-	items := m.list.Items()
-	if index < 0 || index >= len(items) {
+	if m.cursor < 0 || m.cursor >= len(m.items) {
 		return
 	}
-	current, ok := items[index].(optionItem)
-	if !ok {
+	item := m.items[m.cursor]
+	if item.Locked {
 		return
 	}
-	if current.Locked {
-		return
-	}
-	current.Selected = !current.Selected
-	items[index] = current
-	_ = m.list.SetItems(items)
+	item.Selected = !item.Selected
+	m.items[m.cursor] = item
 }
 
 func (m *multiSelectModel) selectedValues() []string {
-	items := m.list.Items()
-	selected := make([]string, 0, len(items))
-	for _, item := range items {
-		opt, ok := item.(optionItem)
-		if !ok {
-			continue
-		}
-		if opt.Selected {
-			selected = append(selected, opt.Value)
+	selected := make([]string, 0, len(m.items))
+	for _, item := range m.items {
+		if item.Selected {
+			selected = append(selected, item.Value)
 		}
 	}
 	return selected
 }
 
-func listHeight(total, footerLines, headerLines int) int {
-	height := total - footerLines - headerLines
-	if height < 4 {
-		return 4
+type selectorStyles struct {
+	title  lipgloss.Style
+	cursor lipgloss.Style
+	active lipgloss.Style
+	hint   lipgloss.Style
+}
+
+func newSelectorStyles() selectorStyles {
+	brand := output.BrandColor()
+	return selectorStyles{
+		title:  lipgloss.NewStyle().Bold(true).Foreground(brand),
+		cursor: lipgloss.NewStyle().Bold(true).Foreground(brand),
+		active: lipgloss.NewStyle().Bold(true),
+		hint:   lipgloss.NewStyle().Foreground(brand),
 	}
-	return height
-}
-
-func brandDelegate() list.DefaultDelegate {
-	brand := output.BrandColor()
-	delegate := list.NewDefaultDelegate()
-	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Copy().
-		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(brand).
-		Foreground(brand)
-	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Copy().Foreground(brand)
-	return delegate
-}
-
-func brandListStyles() list.Styles {
-	brand := output.BrandColor()
-	styles := list.DefaultStyles()
-	styles.Title = styles.Title.Copy().
-		Background(brand).
-		Foreground(lipgloss.Color("255")).
-		Bold(true)
-	styles.TitleBar = styles.TitleBar.Copy().Padding(0, 0, 1, 1)
-	styles.PaginationStyle = styles.PaginationStyle.Copy().Foreground(brand)
-	styles.ActivePaginationDot = styles.ActivePaginationDot.Copy().Foreground(brand)
-	styles.ArabicPagination = styles.ArabicPagination.Copy().Foreground(brand)
-	styles.HelpStyle = styles.HelpStyle.Copy().Foreground(brand)
-	styles.StatusBar = styles.StatusBar.Copy().Foreground(brand)
-	styles.StatusBarActiveFilter = styles.StatusBarActiveFilter.Copy().Foreground(brand)
-	styles.StatusBarFilterCount = styles.StatusBarFilterCount.Copy().Foreground(brand)
-	return styles
-}
-
-func brandHelpModel() help.Model {
-	brand := output.BrandColor()
-	m := help.New()
-	m.Styles.ShortKey = m.Styles.ShortKey.Copy().Foreground(brand).Bold(true)
-	m.Styles.FullKey = m.Styles.FullKey.Copy().Foreground(brand).Bold(true)
-	m.Styles.ShortSeparator = m.Styles.ShortSeparator.Copy().Foreground(brand)
-	m.Styles.FullSeparator = m.Styles.FullSeparator.Copy().Foreground(brand)
-	return m
-}
-
-func errorStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#E02E2E")).Bold(true)
 }
 
 func modeIndexFor(mode userOAuthSelectionMode) int {

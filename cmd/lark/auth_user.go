@@ -104,6 +104,12 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if !scopeSet && !servicesSet && !readonlySet && !driveScopeSet {
 				selection, err := promptUserOAuthSelection(state, account)
 				if err != nil {
+					if errors.Is(err, errUserOAuthCanceled) {
+						message := output.JoinBlocks(output.Notice(output.NoticeInfo, "Login canceled", []string{
+							"Re-run with --scopes or --services to bypass the picker.",
+						}))
+						return state.Printer.Print(map[string]any{"canceled": true}, message)
+					}
 					return err
 				}
 				if selection.Mode == userOAuthSelectServices {
