@@ -144,6 +144,7 @@ lark auth
 lark whoami
 lark chats list --limit 10
 lark users search "Ada"
+lark users search --email "ada@example.com"
 lark messages send <CHAT_ID> --text "hello"
 ```
 

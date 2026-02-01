@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"lark/internal/config"
 	"lark/internal/larksdk"
@@ -83,6 +84,16 @@ func newRootCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		if errors.Is(err, pflag.ErrHelp) {
+			return err
+		}
+		usage := ""
+		if cmd != nil {
+			usage = cmd.UsageString()
+		}
+		return usageErrorWithUsage(cmd, err.Error(), flagErrorHint(cmd, err), usage)
+	})
 
 	cmd.PersistentFlags().StringVar(&state.ConfigPath, "config", "", "config path (default: ~/.config/lark/config.json; uses profile path when --profile or LARK_PROFILE is set)")
 	cmd.PersistentFlags().StringVar(&state.Profile, "profile", "", "config profile (env: LARK_PROFILE)")
@@ -364,9 +375,45 @@ func expireUserToken(state *appState, account string, cause error) error {
 
 func execute() int {
 	cmd := newRootCmd()
+	targetCmd := commandForArgs(cmd, os.Args[1:])
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if targetCmd != nil && !isUsageError(err) && isRequiredFlagError(err) {
+			err = usageErrorWithUsage(targetCmd, err.Error(), flagErrorHint(targetCmd, err), targetCmd.UsageString())
+		}
+		fmt.Fprintln(os.Stderr, output.FormatError(err, output.AutoStyle(os.Stderr)))
 		return 1
 	}
 	return 0
+}
+
+func commandForArgs(cmd *cobra.Command, args []string) *cobra.Command {
+	if cmd == nil {
+		return nil
+	}
+	if len(args) == 0 {
+		return cmd
+	}
+	found, _, err := cmd.Find(args)
+	if err != nil {
+		return cmd
+	}
+	if found == nil {
+		return cmd
+	}
+	return found
+}
+
+func isUsageError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var usageErr output.UsageError
+	return errors.As(err, &usageErr)
+}
+
+func isRequiredFlagError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "required flag(s)")
 }

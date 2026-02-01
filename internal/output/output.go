@@ -48,6 +48,7 @@ func FormatText(text string) string {
 	if text == "" {
 		return text
 	}
+	theme := NewTheme(true)
 	lines := strings.Split(text, "\n")
 	hasTabs := false
 	for _, line := range lines {
@@ -57,7 +58,11 @@ func FormatText(text string) string {
 		}
 	}
 	if !hasTabs {
-		return text
+		styled := make([]string, len(lines))
+		for i, line := range lines {
+			styled[i] = styleNoticeLine(line, theme)
+		}
+		return strings.Join(styled, "\n")
 	}
 
 	rows := make([][]string, len(lines))
@@ -70,7 +75,11 @@ func FormatText(text string) string {
 		}
 	}
 	if maxCols == 0 {
-		return text
+		styled := make([]string, len(lines))
+		for i, line := range lines {
+			styled[i] = styleNoticeLine(line, theme)
+		}
+		return strings.Join(styled, "\n")
 	}
 
 	widths := make([]int, maxCols)
@@ -83,20 +92,34 @@ func FormatText(text string) string {
 		}
 	}
 
+	headerRow := -1
+	separatorRow := -1
+	if len(rows) >= 2 && isSeparatorRow(rows[1]) {
+		headerRow = 0
+		separatorRow = 1
+	}
+
 	out := make([]string, 0, len(rows))
-	for _, row := range rows {
+	for rowIndex, row := range rows {
 		if len(row) == 1 && row[0] == "" {
 			out = append(out, "")
 			continue
 		}
 		var b strings.Builder
-		for i, col := range row {
-			if i >= len(widths) {
+		for colIndex, col := range row {
+			if colIndex >= len(widths) {
 				break
 			}
-			style := lipgloss.NewStyle().Width(widths[i]).Align(lipgloss.Left)
-			b.WriteString(style.Render(col))
-			if i < len(row)-1 {
+			cell := col
+			if rowIndex == headerRow {
+				cell = theme.RenderHeader(cell)
+			}
+			if rowIndex == separatorRow {
+				cell = theme.RenderSeparator(cell)
+			}
+			style := lipgloss.NewStyle().Width(widths[colIndex]).Align(lipgloss.Left)
+			b.WriteString(style.Render(cell))
+			if colIndex < len(row)-1 {
 				b.WriteString("  ")
 			}
 		}

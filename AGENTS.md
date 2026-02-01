@@ -121,4 +121,7 @@
 - 2026-02-01: Docs URL lookup now always retries with user token when available.
 - 2026-02-01: Docs get --format md now renders Markdown from docx blocks instead of raw_content.
 - 2026-02-01: Switched users search to search/v1/user with positional query, user-token scopes, and updated output/tests/docs.
+- 2026-02-01: Refined terminal output system (styled notices/table headers, usage error formatting), refreshed auth user login messaging, and improved users help/usage hints.
+- 2026-02-01: Standardized empty-state notices for tables/messages and added usage examples for message list/search.
+- 2026-02-01: Added detailed flag error usage output, expanded drive permissions examples, and enabled users search by email with updated columns.
 - 2026-02-01: Standardized required identifiers to positional args across chats/messages/calendar/drive/docs/sheets/wiki/base/meetings/minutes/mail, made search queries positional, and refreshed tests/README/examples.

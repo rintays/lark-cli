@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
+	"lark/internal/output"
 )
 
 const maxMessageSearchPageSize = 100
@@ -30,18 +31,21 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 	var userAccessToken string
 
 	cmd := &cobra.Command{
-		Use:   "search <query>",
-		Short: "Search messages by keyword",
+		Use:     "search <query>",
+		Short:   "Search messages by keyword",
+		Example: `  lark messages search "hello"`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
 			if len(args) == 0 {
-				return errors.New("query is required")
+				return usageError(cmd, "query is required", `Example:
+  lark messages search "hello"`)
 			}
 			query = strings.TrimSpace(args[0])
 			if query == "" {
-				return errors.New("query is required")
+				return usageError(cmd, "query is required", `Example:
+  lark messages search "hello"`)
 			}
 			return nil
 		},
@@ -148,7 +152,7 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				"message_ids": items,
 				"messages":    messages,
 			}
-			text := "no messages found"
+			text := output.Notice(output.NoticeInfo, "no messages found", nil)
 			if len(messages) > 0 {
 				lines := make([]string, 0, len(messages))
 				for _, message := range messages {
