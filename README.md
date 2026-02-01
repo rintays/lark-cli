@@ -454,6 +454,13 @@ Create event:
 lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
+Create event with advanced fields (raw JSON payload additions):
+
+```bash
+lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" \
+  --body-json '{"visibility":"public","reminders":[{"minutes":5}]}'
+```
+
 Search events:
 
 ```bash
@@ -463,13 +470,19 @@ lark calendars search --query "Weekly Sync" --start "2026-01-02T03:04:05Z" --end
 Get event:
 
 ```bash
-lark calendars get --event-id <EVENT_ID>
+lark calendars get --event-id <EVENT_ID> --need-attendee --need-meeting-settings --max-attendee-num 10
 ```
 
 Update event:
 
 ```bash
 lark calendars update --event-id <EVENT_ID> --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z"
+```
+
+Update event with advanced fields:
+
+```bash
+lark calendars update --event-id <EVENT_ID> --body-json '{"visibility":"private","color":-1}'
 ```
 
 Delete event:

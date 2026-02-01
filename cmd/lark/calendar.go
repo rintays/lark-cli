@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -138,25 +141,50 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 	var summary string
 	var description string
 	var attendees []string
+	var bodyJSON string
+	var bodyFile string
+	var userIDType string
+	var idempotencyKey string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a calendar event",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if start == "" || end == "" {
+			extra, err := parseCalendarExtra(bodyJSON, bodyFile)
+			if err != nil {
+				return err
+			}
+			if summary == "" && (extra == nil || extra["summary"] == nil) {
+				return errors.New("summary is required")
+			}
+			if start != "" || end != "" {
+				if start == "" || end == "" {
+					return errors.New("start and end times are required")
+				}
+			} else if extra == nil {
 				return errors.New("start and end times are required")
+			} else {
+				startExtra := extra["start_time"] != nil
+				endExtra := extra["end_time"] != nil
+				if startExtra != endExtra {
+					return errors.New("start_time and end_time must be provided together")
+				}
 			}
-			startTime, err := time.Parse(time.RFC3339, start)
-			if err != nil {
-				return fmt.Errorf("invalid start time: %w", err)
-			}
-			endTime, err := time.Parse(time.RFC3339, end)
-			if err != nil {
-				return fmt.Errorf("invalid end time: %w", err)
-			}
-			if !endTime.After(startTime) {
-				return errors.New("end time must be after start time")
+			var startTime time.Time
+			var endTime time.Time
+			if start != "" {
+				startTime, err = time.Parse(time.RFC3339, start)
+				if err != nil {
+					return fmt.Errorf("invalid start time: %w", err)
+				}
+				endTime, err = time.Parse(time.RFC3339, end)
+				if err != nil {
+					return fmt.Errorf("invalid end time: %w", err)
+				}
+				if !endTime.After(startTime) {
+					return errors.New("end time must be after start time")
+				}
 			}
 			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
@@ -169,13 +197,19 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			event, err := state.SDK.CreateCalendarEvent(context.Background(), token, larksdk.CreateCalendarEventRequest{
-				CalendarID:  resolvedCalendarID,
-				Summary:     summary,
-				Description: description,
-				StartTime:   startTime.Unix(),
-				EndTime:     endTime.Unix(),
-			})
+			req := larksdk.CreateCalendarEventRequest{
+				CalendarID:     resolvedCalendarID,
+				Summary:        summary,
+				Description:    description,
+				IdempotencyKey: idempotencyKey,
+				UserIDType:     userIDType,
+				Extra:          extra,
+			}
+			if start != "" {
+				req.StartTime = startTime.Unix()
+				req.EndTime = endTime.Unix()
+			}
+			event, err := state.SDK.CreateCalendarEvent(context.Background(), token, req)
 			if err != nil {
 				return err
 			}
@@ -203,9 +237,17 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 				"event":       event,
 				"attendees":   attendees,
 			}
+			startText := formatEventTime(event.StartTime)
+			if startText == "" && !startTime.IsZero() {
+				startText = startTime.Format(time.RFC3339)
+			}
+			endText := formatEventTime(event.EndTime)
+			if endText == "" && !endTime.IsZero() {
+				endText = endTime.Format(time.RFC3339)
+			}
 			text := tableTextRow(
 				[]string{"event_id", "start_time", "end_time", "summary", "status"},
-				[]string{event.EventID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), event.Summary, event.Status},
+				[]string{event.EventID, startText, endText, event.Summary, event.Status},
 			)
 			return state.Printer.Print(payload, text)
 		},
@@ -217,7 +259,11 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&summary, "summary", "", "event summary")
 	cmd.Flags().StringVar(&description, "description", "", "event description")
 	cmd.Flags().StringArrayVar(&attendees, "attendee", nil, "attendee email (repeatable)")
-	_ = cmd.MarkFlagRequired("summary")
+	cmd.Flags().StringVar(&bodyJSON, "body-json", "", "JSON object of additional event fields")
+	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to JSON file of additional event fields")
+	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user id type (open_id|union_id|user_id)")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "idempotency key for event creation")
+	cmd.MarkFlagsMutuallyExclusive("body-json", "body-file")
 
 	return cmd
 }
@@ -339,6 +385,10 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 func newCalendarGetCmd(state *appState) *cobra.Command {
 	var calendarID string
 	var eventID string
+	var needMeetingSettings bool
+	var needAttendee bool
+	var maxAttendeeNum int
+	var userIDType string
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -356,10 +406,24 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			event, err := state.SDK.GetCalendarEvent(context.Background(), token, larksdk.GetCalendarEventRequest{
+			req := larksdk.GetCalendarEventRequest{
 				CalendarID: resolvedCalendarID,
 				EventID:    eventID,
-			})
+				UserIDType: userIDType,
+			}
+			if cmd.Flags().Changed("need-meeting-settings") {
+				value := needMeetingSettings
+				req.NeedMeetingSettings = &value
+			}
+			if cmd.Flags().Changed("need-attendee") {
+				value := needAttendee
+				req.NeedAttendee = &value
+			}
+			if cmd.Flags().Changed("max-attendee-num") {
+				value := maxAttendeeNum
+				req.MaxAttendeeNum = &value
+			}
+			event, err := state.SDK.GetCalendarEvent(context.Background(), token, req)
 			if err != nil {
 				return err
 			}
@@ -377,6 +441,10 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
 	cmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
+	cmd.Flags().BoolVar(&needMeetingSettings, "need-meeting-settings", false, "include VC meeting settings")
+	cmd.Flags().BoolVar(&needAttendee, "need-attendee", false, "include attendee details")
+	cmd.Flags().IntVar(&maxAttendeeNum, "max-attendee-num", 0, "max attendee entries to return")
+	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user id type (open_id|union_id|user_id)")
 	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
@@ -389,13 +457,20 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 	var description string
 	var start string
 	var end string
+	var bodyJSON string
+	var bodyFile string
+	var userIDType string
 
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a calendar event",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if summary == "" && description == "" && start == "" && end == "" {
+			extra, err := parseCalendarExtra(bodyJSON, bodyFile)
+			if err != nil {
+				return err
+			}
+			if summary == "" && description == "" && start == "" && end == "" && extra == nil {
 				return errors.New("at least one field must be provided")
 			}
 			var startTime time.Time
@@ -417,6 +492,12 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				}
 				startTime = parsedStart
 				endTime = parsedEnd
+			} else if extra != nil {
+				startExtra := extra["start_time"] != nil
+				endExtra := extra["end_time"] != nil
+				if startExtra != endExtra {
+					return errors.New("start_time and end_time must be provided together")
+				}
 			}
 
 			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
@@ -435,6 +516,8 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				EventID:     eventID,
 				Summary:     summary,
 				Description: description,
+				UserIDType:  userIDType,
+				Extra:       extra,
 			}
 			if start != "" {
 				startUnix := startTime.Unix()
@@ -464,6 +547,10 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "event description")
 	cmd.Flags().StringVar(&start, "start", "", "start time (RFC3339)")
 	cmd.Flags().StringVar(&end, "end", "", "end time (RFC3339)")
+	cmd.Flags().StringVar(&bodyJSON, "body-json", "", "JSON object of additional event fields")
+	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to JSON file of additional event fields")
+	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user id type (open_id|union_id|user_id)")
+	cmd.MarkFlagsMutuallyExclusive("body-json", "body-file")
 	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
@@ -557,4 +644,31 @@ func formatEventTime(eventTime larksdk.CalendarEventTime) string {
 		return eventTime.Date
 	}
 	return ""
+}
+
+func parseCalendarExtra(raw, path string) (map[string]any, error) {
+	if strings.TrimSpace(raw) == "" && strings.TrimSpace(path) == "" {
+		return nil, nil
+	}
+	var data []byte
+	if strings.TrimSpace(path) != "" {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read body file: %w", err)
+		}
+		data = content
+	} else {
+		data = []byte(raw)
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
+		return nil, errors.New("body is empty")
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, fmt.Errorf("body must be valid JSON object: %w", err)
+	}
+	if payload == nil {
+		return nil, errors.New("body must be a JSON object")
+	}
+	return payload, nil
 }

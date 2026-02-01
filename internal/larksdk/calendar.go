@@ -363,6 +363,18 @@ func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCale
 	}
 	apiReq.PathParams.Set("calendar_id", req.CalendarID)
 	apiReq.PathParams.Set("event_id", req.EventID)
+	if req.NeedMeetingSettings != nil {
+		apiReq.QueryParams.Set("need_meeting_settings", fmt.Sprintf("%t", *req.NeedMeetingSettings))
+	}
+	if req.NeedAttendee != nil {
+		apiReq.QueryParams.Set("need_attendee", fmt.Sprintf("%t", *req.NeedAttendee))
+	}
+	if req.MaxAttendeeNum != nil {
+		apiReq.QueryParams.Set("max_attendee_num", fmt.Sprintf("%d", *req.MaxAttendeeNum))
+	}
+	if req.UserIDType != "" {
+		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
+	}
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -410,14 +422,72 @@ func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req Upda
 	if req.Description != "" {
 		payload["description"] = req.Description
 	}
-	if req.StartTime != nil {
+	if req.Start != nil || req.End != nil {
+		if req.Start == nil || req.End == nil {
+			return CalendarEvent{}, errors.New("start_time and end_time must be provided together")
+		}
+		payload["start_time"] = req.Start
+		payload["end_time"] = req.End
+	} else if req.StartTime != nil || req.EndTime != nil {
+		if req.StartTime == nil || req.EndTime == nil {
+			return CalendarEvent{}, errors.New("start and end timestamps must be provided together")
+		}
 		payload["start_time"] = map[string]string{
 			"timestamp": fmt.Sprintf("%d", *req.StartTime),
 		}
-	}
-	if req.EndTime != nil {
 		payload["end_time"] = map[string]string{
 			"timestamp": fmt.Sprintf("%d", *req.EndTime),
+		}
+	}
+	if req.NeedNotification != nil {
+		payload["need_notification"] = *req.NeedNotification
+	}
+	if req.Visibility != "" {
+		payload["visibility"] = req.Visibility
+	}
+	if req.AttendeeAbility != "" {
+		payload["attendee_ability"] = req.AttendeeAbility
+	}
+	if req.FreeBusyStatus != "" {
+		payload["free_busy_status"] = req.FreeBusyStatus
+	}
+	if req.Location != nil {
+		payload["location"] = req.Location
+	}
+	if req.Color != nil {
+		payload["color"] = *req.Color
+	}
+	if req.Reminders != nil {
+		payload["reminders"] = req.Reminders
+	}
+	if req.Recurrence != "" {
+		payload["recurrence"] = req.Recurrence
+	}
+	if req.VChat != nil {
+		payload["vchat"] = req.VChat
+	}
+	if req.Schemas != nil {
+		payload["schemas"] = req.Schemas
+	}
+	if req.Attachments != nil {
+		payload["attachments"] = req.Attachments
+	}
+	if req.EventCheckIn != nil {
+		payload["event_check_in"] = req.EventCheckIn
+	}
+	if req.Extra != nil {
+		startExtra := req.Extra["start_time"] != nil
+		endExtra := req.Extra["end_time"] != nil
+		if req.Start == nil && req.End == nil && req.StartTime == nil && req.EndTime == nil && startExtra != endExtra {
+			return CalendarEvent{}, errors.New("start_time and end_time must be provided together")
+		}
+	}
+	if req.Extra != nil {
+		for key, value := range req.Extra {
+			if _, exists := payload[key]; exists {
+				continue
+			}
+			payload[key] = value
 		}
 	}
 	if len(payload) == 0 {
@@ -434,6 +504,9 @@ func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req Upda
 	}
 	apiReq.PathParams.Set("calendar_id", req.CalendarID)
 	apiReq.PathParams.Set("event_id", req.EventID)
+	if req.UserIDType != "" {
+		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
+	}
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
@@ -518,28 +591,91 @@ func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req Crea
 	if req.CalendarID == "" {
 		return CalendarEvent{}, errors.New("calendar id is required")
 	}
-	if req.Summary == "" {
+	if req.Summary == "" && (req.Extra == nil || req.Extra["summary"] == nil) {
 		return CalendarEvent{}, errors.New("summary is required")
 	}
-	if req.StartTime == 0 || req.EndTime == 0 {
+	if req.StartTime == 0 && req.EndTime == 0 && req.Start == nil && req.End == nil && (req.Extra == nil || (req.Extra["start_time"] == nil && req.Extra["end_time"] == nil)) {
 		return CalendarEvent{}, errors.New("start and end times are required")
+	}
+	if req.StartTime == 0 && req.EndTime == 0 && req.Start == nil && req.End == nil && req.Extra != nil {
+		startExtra := req.Extra["start_time"] != nil
+		endExtra := req.Extra["end_time"] != nil
+		if startExtra != endExtra {
+			return CalendarEvent{}, errors.New("start_time and end_time must be provided together")
+		}
 	}
 	tenantToken := c.tenantToken(token)
 	if tenantToken == "" {
 		return CalendarEvent{}, errors.New("tenant access token is required")
 	}
 
-	payload := map[string]any{
-		"summary": req.Summary,
-		"start_time": map[string]string{
-			"timestamp": fmt.Sprintf("%d", req.StartTime),
-		},
-		"end_time": map[string]string{
-			"timestamp": fmt.Sprintf("%d", req.EndTime),
-		},
+	payload := map[string]any{}
+	if req.Summary != "" {
+		payload["summary"] = req.Summary
 	}
 	if req.Description != "" {
 		payload["description"] = req.Description
+	}
+	if req.Start != nil || req.End != nil {
+		if req.Start == nil || req.End == nil {
+			return CalendarEvent{}, errors.New("start_time and end_time must be provided together")
+		}
+		payload["start_time"] = req.Start
+		payload["end_time"] = req.End
+	} else if req.StartTime != 0 || req.EndTime != 0 {
+		if req.StartTime == 0 || req.EndTime == 0 {
+			return CalendarEvent{}, errors.New("start and end times are required")
+		}
+		payload["start_time"] = map[string]string{
+			"timestamp": fmt.Sprintf("%d", req.StartTime),
+		}
+		payload["end_time"] = map[string]string{
+			"timestamp": fmt.Sprintf("%d", req.EndTime),
+		}
+	}
+	if req.NeedNotification != nil {
+		payload["need_notification"] = *req.NeedNotification
+	}
+	if req.Visibility != "" {
+		payload["visibility"] = req.Visibility
+	}
+	if req.AttendeeAbility != "" {
+		payload["attendee_ability"] = req.AttendeeAbility
+	}
+	if req.FreeBusyStatus != "" {
+		payload["free_busy_status"] = req.FreeBusyStatus
+	}
+	if req.Location != nil {
+		payload["location"] = req.Location
+	}
+	if req.Color != nil {
+		payload["color"] = *req.Color
+	}
+	if req.Reminders != nil {
+		payload["reminders"] = req.Reminders
+	}
+	if req.Recurrence != "" {
+		payload["recurrence"] = req.Recurrence
+	}
+	if req.VChat != nil {
+		payload["vchat"] = req.VChat
+	}
+	if req.Schemas != nil {
+		payload["schemas"] = req.Schemas
+	}
+	if req.Attachments != nil {
+		payload["attachments"] = req.Attachments
+	}
+	if req.EventCheckIn != nil {
+		payload["event_check_in"] = req.EventCheckIn
+	}
+	if req.Extra != nil {
+		for key, value := range req.Extra {
+			if _, exists := payload[key]; exists {
+				continue
+			}
+			payload[key] = value
+		}
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -551,6 +687,12 @@ func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req Crea
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
 	apiReq.PathParams.Set("calendar_id", req.CalendarID)
+	if req.IdempotencyKey != "" {
+		apiReq.QueryParams.Set("idempotency_key", req.IdempotencyKey)
+	}
+	if req.UserIDType != "" {
+		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
+	}
 
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
