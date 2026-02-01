@@ -704,6 +704,7 @@ Example:
 ./lark wiki node move --help
 ./lark wiki node update-title --help
 ./lark wiki node attach --help
+./lark wiki node tree --help
 ./lark wiki node search --help
 ./lark wiki task info --help
 ./lark wiki space update-setting --help

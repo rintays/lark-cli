@@ -11,6 +11,7 @@ func TestWikiNodeExtraCommandsRegistered(t *testing.T) {
 		{"wiki", "node", "move", "--help"},
 		{"wiki", "node", "update-title", "--help"},
 		{"wiki", "node", "attach", "--help"},
+		{"wiki", "node", "tree", "--help"},
 	}
 	for _, args := range commands {
 		cmd := newRootCmd()

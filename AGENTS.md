@@ -141,5 +141,8 @@
 - 2026-02-02: Fixed interactive OAuth selection build error by removing invalid nil check on user account value.
 - 2026-02-02: Clarified drive permissions add help text to document positional args and member-type options, and switched example to openid.
 - 2026-02-02: Removed OAuth scope-change warning during user OAuth login.
-- 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.
+- 2026-02-02: Added user-token support for `lark whoami` via authen user_info, with docs/tests updates.
+- 2026-02-02: Refined messages list/search display to de-emphasize IDs and highlight content/sender details.
+- 2026-02-02: Added Wiki node create/move/update-title/attach and space update-setting commands, fixed Wiki space create to use user tokens, added user-token support for Wiki v2 calls, and updated docs/coverage.
+- 2026-02-02: Added `lark wiki node tree` command for ASCII tree output with node tokens, plus docs/tests updates.
 - 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.

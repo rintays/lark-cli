@@ -77,6 +77,7 @@ This doc is a **code-derived snapshot** of which Feishu/Lark OpenAPI surfaces in
 | Move node (`wiki node move`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes/:node_token/move` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.MoveWikiNodeV2` |
 | Update node title (`wiki node update-title`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes/:node_token/update_title` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.UpdateWikiNodeTitleV2` |
 | Attach docs to wiki (`wiki node attach`) | `POST /open-apis/wiki/v2/spaces/:space_id/nodes/move_docs_to_wiki` | tenant/user | v2 | yes | `internal/larksdk/wiki_node_v2_extra.go: Client.MoveDocsToWikiV2` |
+| Tree nodes (`wiki node tree`) | `GET /open-apis/wiki/v2/spaces/:space_id/nodes` | tenant/user | v2 | yes | `cmd/lark/wiki_node_tree.go` |
 | Space members list/add/delete (`wiki member …`) | `/open-apis/wiki/v2/spaces/*/members*` | tenant/user | v2 | yes | `internal/larksdk/wiki_v2.go: Client.ListWikiSpaceMembersV2` |
 | Task get (`wiki task info`) | `GET /open-apis/wiki/v2/tasks/:task_id` | tenant/user | v2 | yes | `internal/larksdk/wiki_task_v2.go: Client.GetWikiTaskV2` |
 | Node search (`wiki node search`) | `POST /open-apis/wiki/v1/nodes/search` | user | v1 | no | `internal/larksdk/wiki_search_v1.go: Client.SearchWikiNodesV1` |
