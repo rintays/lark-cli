@@ -469,20 +469,39 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			attendeeFlagChanged := cmd.Flags().Changed("need-attendee")
+			meetingFlagChanged := cmd.Flags().Changed("need-meeting-settings")
+			maxAttendeeChanged := cmd.Flags().Changed("max-attendee-num")
 			req := larksdk.GetCalendarEventRequest{
 				CalendarID: resolvedCalendarID,
 				EventID:    eventID,
 				UserIDType: userIDType,
 			}
-			needMeeting := needMeetingSettings
-			needAttend := needAttendee
-			req.NeedMeetingSettings = &needMeeting
-			req.NeedAttendee = &needAttend
-			if maxAttendeeNum > 0 {
-				value := maxAttendeeNum
-				req.MaxAttendeeNum = &value
+			if meetingFlagChanged || needMeetingSettings {
+				value := needMeetingSettings
+				req.NeedMeetingSettings = &value
+			}
+			if attendeeFlagChanged || needAttendee {
+				value := needAttendee
+				req.NeedAttendee = &value
+				if value && maxAttendeeNum > 0 {
+					req.MaxAttendeeNum = &maxAttendeeNum
+				} else if maxAttendeeChanged {
+					valueNum := maxAttendeeNum
+					req.MaxAttendeeNum = &valueNum
+				}
 			}
 			event, err := state.SDK.GetCalendarEvent(context.Background(), token, req)
+			var extraErr error
+			if err != nil && (needAttendee || needMeetingSettings) && !attendeeFlagChanged && !meetingFlagChanged {
+				extraErr = err
+				fallbackReq := larksdk.GetCalendarEventRequest{
+					CalendarID: resolvedCalendarID,
+					EventID:    eventID,
+					UserIDType: userIDType,
+				}
+				event, err = state.SDK.GetCalendarEvent(context.Background(), token, fallbackReq)
+			}
 			if err != nil {
 				return err
 			}
@@ -490,7 +509,14 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 				"calendar_id": resolvedCalendarID,
 				"event":       event,
 			}
+			if extraErr != nil {
+				payload["extra_error"] = extraErr.Error()
+			}
 			rows := calendarEventDetailRows(event)
+			if extraErr != nil {
+				payload["extra_error"] = extraErr.Error()
+				rows = append(rows, []string{"extra_error", extraErr.Error()})
+			}
 			text := tableTextFromRows([]string{"name", "value"}, rows, "no event found")
 			return state.Printer.Print(payload, text)
 		},
@@ -498,10 +524,10 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
 	cmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
-	cmd.Flags().BoolVar(&needMeetingSettings, "need-meeting-settings", true, "include VC meeting settings")
-	cmd.Flags().BoolVar(&needAttendee, "need-attendee", true, "include attendee details")
-	cmd.Flags().IntVar(&maxAttendeeNum, "max-attendee-num", 10, "max attendee entries to return")
-	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user id type (open_id|union_id|user_id)")
+	cmd.Flags().BoolVar(&needAttendee, "need-attendee", true, "include attendee info (requires permission)")
+	cmd.Flags().BoolVar(&needMeetingSettings, "need-meeting-settings", true, "include meeting settings for VC events")
+	cmd.Flags().IntVar(&maxAttendeeNum, "max-attendee-num", 100, "max number of attendees to return (only when --need-attendee)")
+	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user ID type (open_id, union_id, user_id)")
 	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
@@ -1012,8 +1038,10 @@ func calendarEventDetailRows(event larksdk.CalendarEvent) [][]string {
 	add("app_link", event.AppLink)
 	add("event_organizer", formatOrganizer(event.EventOrganizer))
 	add("schemas", formatSchemas(event.Schemas))
+	add("attendees.count", strconv.Itoa(len(event.Attendees)))
 	add("attendees", formatAttendeesSummary(event.Attendees))
 	add("has_more_attendee", formatBoolPtr(event.HasMoreAttendee))
+	add("attachments.count", strconv.Itoa(len(event.Attachments)))
 	add("attachments", formatAttachments(event.Attachments))
 	add("event_check_in", formatEventCheckIn(event.EventCheckIn))
 
@@ -1041,8 +1069,11 @@ func formatStringSlice(values []string) string {
 	return strings.Join(values, ",")
 }
 
-func formatFloat(value float64) string {
-	return strconv.FormatFloat(value, 'f', -1, 64)
+func formatFloat(value *float64) string {
+	if value == nil {
+		return ""
+	}
+	return strconv.FormatFloat(*value, 'f', -1, 64)
 }
 
 func formatEpoch(value string) string {
@@ -1197,11 +1228,11 @@ func formatLocation(location *larksdk.CalendarEventLocation) string {
 	if location.Address != "" {
 		parts = append(parts, "address="+location.Address)
 	}
-	if location.Latitude != 0 || location.Longitude != 0 {
-		if location.Latitude != 0 {
+	if location.Latitude != nil || location.Longitude != nil {
+		if location.Latitude != nil {
 			parts = append(parts, "latitude="+formatFloat(location.Latitude))
 		}
-		if location.Longitude != 0 {
+		if location.Longitude != nil {
 			parts = append(parts, "longitude="+formatFloat(location.Longitude))
 		}
 	}

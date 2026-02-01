@@ -25,9 +25,10 @@ func newDocsCmd(state *appState) *cobra.Command {
 		Short: "Manage Docs (docx) documents",
 		Long: `Docs (docx) are document files stored in Drive.
 
-- document_id is the docx file token.
+- document_id is the docx file token (use it as FILE_TOKEN for drive permissions).
 - A doc contains blocks (paragraphs, headings, lists, tables, images) that make up its structure and content.
 - Documents can live in a Drive folder (folder-id).
+- Use lark drive permissions to manage collaborators for docs.
 - Use info/export/get to inspect or download content.`,
 	}
 	cmd.AddCommand(newDocsListCmd(state))
@@ -274,6 +275,13 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				content = normalizeDocxContentEscapes(content)
+				if content != "" {
+					doc, err := state.SDK.GetDocxDocument(context.Background(), token, documentID)
+					if err == nil && doc.Title != "" {
+						content = stripDocxTitlePrefix(content, doc.Title)
+					}
+				}
 				if state.JSON {
 					payload := map[string]any{
 						"document_id": documentID,
@@ -361,6 +369,23 @@ func formatDocxInfo(doc larksdk.DocxDocument) string {
 		rows[len(rows)-1][1] = infoValueFloatPtr(cover.OffsetRatioY)
 	}
 	return formatInfoTable(rows, "no document found")
+}
+
+func stripDocxTitlePrefix(content, title string) string {
+	title = strings.TrimSpace(title)
+	if title == "" || content == "" {
+		return content
+	}
+	if content == title {
+		return ""
+	}
+	if strings.HasPrefix(content, title+"\r\n") {
+		return strings.TrimPrefix(content, title+"\r\n")
+	}
+	if strings.HasPrefix(content, title+"\n") {
+		return strings.TrimPrefix(content, title+"\n")
+	}
+	return content
 }
 
 type exportTaskClient interface {

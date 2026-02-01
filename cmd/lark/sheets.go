@@ -22,8 +22,9 @@ func newSheetsCmd(state *appState) *cobra.Command {
 		Short: "Read Sheets data",
 		Long: `Sheets are spreadsheet files stored in Drive.
 
-- spreadsheet-id identifies the file.
+- spreadsheet-id identifies the file (use it as FILE_TOKEN for drive permissions).
 - Each spreadsheet contains sheets (tabs) with sheet_id.
+- Use lark drive permissions to manage collaborators for sheets.
 - Ranges use A1 notation: <sheet_id>!A1:B2; rows/cols act on a sheet.`,
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))

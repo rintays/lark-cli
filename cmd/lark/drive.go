@@ -34,6 +34,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newDriveUploadCmd(state))
 	cmd.AddCommand(newDriveURLsCmd(state))
 	cmd.AddCommand(newDriveShareCmd(state))
+	cmd.AddCommand(newDrivePermissionsCmd(state))
 	return cmd
 }
 

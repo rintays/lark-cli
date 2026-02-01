@@ -40,10 +40,10 @@ type CalendarEventVChat struct {
 }
 
 type CalendarEventLocation struct {
-	Name      string  `json:"name,omitempty"`
-	Address   string  `json:"address,omitempty"`
-	Latitude  float64 `json:"latitude,omitempty"`
-	Longitude float64 `json:"longitude,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	Address   string   `json:"address,omitempty"`
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
 }
 
 type CalendarEventReminder struct {
@@ -223,17 +223,17 @@ type CreateCalendarEventRequest struct {
 type CalendarEventAttendee struct {
 	Type            string                            `json:"type,omitempty"`
 	AttendeeID      string                            `json:"attendee_id,omitempty"`
-	UserID          string                            `json:"user_id,omitempty"`
-	ChatID          string                            `json:"chat_id,omitempty"`
-	RoomID          string                            `json:"room_id,omitempty"`
-	ThirdPartyEmail string                            `json:"third_party_email,omitempty"`
-	OperateID       string                            `json:"operate_id,omitempty"`
 	RsvpStatus      string                            `json:"rsvp_status,omitempty"`
 	IsOptional      *bool                             `json:"is_optional,omitempty"`
 	IsOrganizer     *bool                             `json:"is_organizer,omitempty"`
 	IsExternal      *bool                             `json:"is_external,omitempty"`
 	DisplayName     string                            `json:"display_name,omitempty"`
 	ChatMembers     []CalendarEventAttendeeChatMember `json:"chat_members,omitempty"`
+	UserID          string                            `json:"user_id,omitempty"`
+	ChatID          string                            `json:"chat_id,omitempty"`
+	RoomID          string                            `json:"room_id,omitempty"`
+	ThirdPartyEmail string                            `json:"third_party_email,omitempty"`
+	OperateID       string                            `json:"operate_id,omitempty"`
 }
 
 type CreateCalendarEventAttendeesRequest struct {

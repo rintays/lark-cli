@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -364,12 +365,12 @@ func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCale
 	apiReq.PathParams.Set("calendar_id", req.CalendarID)
 	apiReq.PathParams.Set("event_id", req.EventID)
 	if req.NeedMeetingSettings != nil {
-		apiReq.QueryParams.Set("need_meeting_settings", fmt.Sprintf("%t", *req.NeedMeetingSettings))
+		apiReq.QueryParams.Set("need_meeting_settings", strconv.FormatBool(*req.NeedMeetingSettings))
 	}
 	if req.NeedAttendee != nil {
-		apiReq.QueryParams.Set("need_attendee", fmt.Sprintf("%t", *req.NeedAttendee))
+		apiReq.QueryParams.Set("need_attendee", strconv.FormatBool(*req.NeedAttendee))
 	}
-	if req.MaxAttendeeNum != nil {
+	if req.MaxAttendeeNum != nil && *req.MaxAttendeeNum > 0 {
 		apiReq.QueryParams.Set("max_attendee_num", fmt.Sprintf("%d", *req.MaxAttendeeNum))
 	}
 	if req.UserIDType != "" {
