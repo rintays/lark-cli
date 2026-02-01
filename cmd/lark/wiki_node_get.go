@@ -37,12 +37,6 @@ func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 					return err
 				}
 			}
-			if strings.TrimSpace(nodeToken) == "" {
-				return errors.New("node-token is required")
-			}
-			if strings.TrimSpace(objType) == "" {
-				return errors.New("obj-type is required")
-			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -71,5 +65,7 @@ func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&nodeToken, "node-token", "", "wiki node token (or provide as positional argument)")
 	cmd.Flags().StringVar(&objType, "obj-type", "", "object type (docx|doc|sheet|bitable|file|slides|mindnote) (or provide as positional argument)")
+	_ = cmd.MarkFlagRequired("node-token")
+	_ = cmd.MarkFlagRequired("obj-type")
 	return cmd
 }

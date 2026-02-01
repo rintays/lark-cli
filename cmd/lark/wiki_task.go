@@ -32,15 +32,15 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(taskID) == "" {
-					return errors.New("task-id is required")
-				}
 				return nil
 			}
 			if taskID != "" && taskID != args[0] {
 				return errors.New("task-id provided twice")
 			}
-			return cmd.Flags().Set("task-id", args[0])
+			if err := cmd.Flags().Set("task-id", args[0]); err != nil {
+				return err
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -85,5 +85,6 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&taskID, "task-id", "", "wiki task id (or provide as positional argument)")
 	cmd.Flags().StringVar(&taskType, "task-type", "move", "task type (default: move)")
+	_ = cmd.MarkFlagRequired("task-id")
 	return cmd
 }

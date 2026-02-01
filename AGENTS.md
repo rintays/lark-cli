@@ -106,4 +106,8 @@
 - 2026-01-31: Clarified wiki help text (space/node/task definitions) and corrected meetings help to reflect the default list time range.
 - 2026-01-31: Clarified docs help text to describe document blocks.
 - 2026-01-31: Added wiki space create command (v2) with name/visibility/type settings.
+- 2026-01-31: Calendar primary lookup now respects user vs tenant access tokens when defaulting calendar_id.
+- 2026-02-01: Expanded calendar event models, added create/update/get support for extra fields (body-json/body-file + query flags), and updated README examples.
+- 2026-02-01: Removed docs get/doc create legacy flags for required args, added best-effort URL fetch after docs create, and unescaped CLI content for docs convert/overwrite.
+- 2026-02-01: Calendar get now renders key/value details for all event fields and defaults to fetching attendees/meeting settings.
 - 2026-02-01: Docs get now unescapes content, strips title from raw content output, and docs create backfills missing URLs from Drive metadata.

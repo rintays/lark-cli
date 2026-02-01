@@ -350,6 +350,7 @@ Convert/Overwrite:
 lark docs convert --content "# Title"
 lark docs overwrite <DOCUMENT_ID> --content-file ./doc.md
 ```
+Note: `--content` unescapes `\\n`/`\\r`/`\\t` for quick multiline input.
 
 ### Sheets
 
@@ -453,6 +454,13 @@ Create event:
 lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" --attendee dev@example.com
 ```
 
+Create event with advanced fields (raw JSON payload additions):
+
+```bash
+lark calendars create --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z" \
+  --body-json '{"visibility":"public","reminders":[{"minutes":5}]}'
+```
+
 Search events:
 
 ```bash
@@ -462,13 +470,19 @@ lark calendars search --query "Weekly Sync" --start "2026-01-02T03:04:05Z" --end
 Get event:
 
 ```bash
-lark calendars get --event-id <EVENT_ID>
+lark calendars get --event-id <EVENT_ID> --need-attendee --need-meeting-settings --max-attendee-num 10
 ```
 
 Update event:
 
 ```bash
 lark calendars update --event-id <EVENT_ID> --summary "Weekly Sync" --start "2026-01-02T03:04:05Z" --end "2026-01-02T04:04:05Z"
+```
+
+Update event with advanced fields:
+
+```bash
+lark calendars update --event-id <EVENT_ID> --body-json '{"visibility":"private","color":-1}'
 ```
 
 Delete event:
@@ -575,10 +589,16 @@ Example:
 ./lark bases table create --help
 ./lark bases field list --help
 ./lark bases field create --help
+./lark bases field update --help
 ./lark bases field types --help
 ./lark bases view list --help
 ./lark bases view create --help
+./lark bases view delete --help
+./lark bases view info --help
 ./lark bases record create --help
+./lark bases record batch-create --help
+./lark bases record batch-delete --help
+./lark bases record batch-update --help
 ./lark bases record info --help
 ./lark bases record search --help
 ./lark bases record update --help

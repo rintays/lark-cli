@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
 )
 
 type BitableApp struct {
@@ -37,6 +38,30 @@ type BitableAppCopyOptions struct {
 	FolderToken    string
 	WithoutContent *bool
 	TimeZone       string
+}
+
+func (c *Client) bitableAppGetSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.App != nil
+}
+
+func mapBitableAppFromSDKDisplay(app *larkbitable.DisplayApp) BitableApp {
+	var out BitableApp
+	if app == nil {
+		return out
+	}
+	if app.AppToken != nil {
+		out.AppToken = *app.AppToken
+	}
+	if app.Name != nil {
+		out.Name = *app.Name
+	}
+	if app.TimeZone != nil {
+		out.TimeZone = *app.TimeZone
+	}
+	if app.IsAdvanced != nil {
+		out.IsAdvanced = app.IsAdvanced
+	}
+	return out
 }
 
 type createBitableAppResponse struct {
@@ -163,6 +188,28 @@ func (c *Client) GetBitableApp(ctx context.Context, token string, appToken strin
 		return BitableApp{}, errors.New("tenant access token is required")
 	}
 
+	if c.bitableAppGetSDKAvailable() {
+		req := larkbitable.NewGetAppReqBuilder().AppToken(appToken).Build()
+		resp, err := c.sdk.Bitable.V1.App.Get(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+		if err != nil {
+			return BitableApp{}, err
+		}
+		if resp == nil {
+			return BitableApp{}, errors.New("get bitable app failed: empty response")
+		}
+		if !resp.Success() {
+			return BitableApp{}, fmt.Errorf("get bitable app failed: %s", resp.Msg)
+		}
+		if resp.Data == nil || resp.Data.App == nil {
+			return BitableApp{}, errors.New("get bitable app failed: missing app")
+		}
+		app := mapBitableAppFromSDKDisplay(resp.Data.App)
+		if app.AppToken == "" {
+			return BitableApp{}, errors.New("get bitable app failed: missing app_token")
+		}
+		return app, nil
+	}
+
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token",
 		HttpMethod:                http.MethodGet,
@@ -179,20 +226,20 @@ func (c *Client) GetBitableApp(ctx context.Context, token string, appToken strin
 	if apiResp == nil {
 		return BitableApp{}, errors.New("get bitable app failed: empty response")
 	}
-	resp := &getBitableAppResponse{ApiResp: apiResp}
-	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+	fallbackResp := &getBitableAppResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(fallbackResp, c.coreConfig); err != nil {
 		return BitableApp{}, err
 	}
-	if !resp.Success() {
-		return BitableApp{}, fmt.Errorf("get bitable app failed: %s", resp.Msg)
+	if !fallbackResp.Success() {
+		return BitableApp{}, fmt.Errorf("get bitable app failed: %s", fallbackResp.Msg)
 	}
-	if resp.Data == nil || resp.Data.App == nil {
+	if fallbackResp.Data == nil || fallbackResp.Data.App == nil {
 		return BitableApp{}, errors.New("get bitable app failed: missing app")
 	}
-	if resp.Data.App.AppToken == "" {
+	if fallbackResp.Data.App.AppToken == "" {
 		return BitableApp{}, errors.New("get bitable app failed: missing app_token")
 	}
-	return *resp.Data.App, nil
+	return *fallbackResp.Data.App, nil
 }
 
 func (c *Client) UpdateBitableApp(ctx context.Context, token string, appToken string, opts BitableAppUpdateOptions) (BitableApp, error) {

@@ -115,9 +115,6 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(query) == "" {
-					return errors.New("query is required")
-				}
 				return nil
 			}
 			if query != "" && query != args[0] {
@@ -163,6 +160,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
+	_ = cmd.MarkFlagRequired("query")
 	cmd.Flags().StringArrayVar(&fileTypes, "type", nil, "filter by doc type (docx|doc|sheet|slides|bitable|mindnote|file); repeatable")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope the search")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
@@ -321,9 +319,6 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(fileToken) == "" {
-					return errors.New("file-token is required")
-				}
 				return nil
 			}
 			if fileToken != "" && fileToken != args[0] {
@@ -371,6 +366,7 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (or provide as positional argument)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
+	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("out")
 	return cmd
 }

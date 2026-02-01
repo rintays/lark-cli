@@ -131,10 +131,20 @@ type BaseField struct {
 	Type      int    `json:"type"`
 }
 
+type BaseFieldDeleteResult struct {
+	FieldID string `json:"field_id"`
+	Deleted bool   `json:"deleted"`
+}
+
 type BaseView struct {
 	ViewID   string `json:"view_id"`
 	Name     string `json:"name"`
 	ViewType string `json:"view_type"`
+}
+
+type BaseViewDeleteResult struct {
+	ViewID  string `json:"view_id"`
+	Deleted bool   `json:"deleted"`
 }
 
 type BaseRecord struct {
@@ -142,6 +152,11 @@ type BaseRecord struct {
 	Fields           map[string]any `json:"fields,omitempty"`
 	CreatedTime      string         `json:"created_time"`
 	LastModifiedTime string         `json:"last_modified_time"`
+}
+
+type BaseRecordUpdate struct {
+	RecordID string         `json:"record_id"`
+	Fields   map[string]any `json:"fields"`
 }
 
 type BaseRecordDeleteResult struct {

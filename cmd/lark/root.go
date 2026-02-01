@@ -46,23 +46,19 @@ func newRootCmd() *cobra.Command {
 			if state.Profile == "" {
 				state.Profile = strings.TrimSpace(os.Getenv("LARK_PROFILE"))
 			}
+			state.Profile = strings.TrimSpace(state.Profile)
+			if state.Profile == "" || strings.EqualFold(state.Profile, "default") {
+				state.Profile = "default"
+			}
 			if state.UserAccount == "" {
 				state.UserAccount = strings.TrimSpace(os.Getenv("LARK_ACCOUNT"))
 			}
 			if state.ConfigPath == "" {
-				if state.Profile != "" {
-					path, err := config.DefaultPathForProfile(state.Profile)
-					if err != nil {
-						return err
-					}
-					state.ConfigPath = path
-				} else {
-					path, err := config.DefaultPath()
-					if err != nil {
-						return err
-					}
-					state.ConfigPath = path
+				path, err := config.DefaultPathForProfile(state.Profile)
+				if err != nil {
+					return err
 				}
+				state.ConfigPath = path
 			}
 			cfg, err := config.Load(state.ConfigPath)
 			if err != nil {

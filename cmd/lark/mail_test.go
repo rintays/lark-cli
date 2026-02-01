@@ -399,6 +399,18 @@ func TestMailMailboxInfoCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestMailMailboxSetCommandRequiresMailboxID(t *testing.T) {
+	cmd := newMailCmd(&appState{})
+	cmd.SetArgs([]string{"mailbox", "set"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"mailbox-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestMailMailboxSetCommandPersistsDefaultMailbox(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.json")
 	state := &appState{

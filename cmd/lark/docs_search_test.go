@@ -96,3 +96,15 @@ func TestDocsSearchCommandUsesDocsSearchEndpoint(t *testing.T) {
 		t.Fatalf("unexpected output: %q", out)
 	}
 }
+
+func TestDocsSearchCommandRequiresQuery(t *testing.T) {
+	cmd := newDocsCmd(&appState{})
+	cmd.SetArgs([]string{"search"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"query\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

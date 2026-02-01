@@ -83,16 +83,17 @@ func TestDocsCreateCommand(t *testing.T) {
 	}
 }
 
-func TestDocsCreateCommandURLFallback(t *testing.T) {
+func TestDocsCreateCommandFetchesURL(t *testing.T) {
+	createCalled := 0
+	docxCalled := 0
+	driveCalled := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/open-apis/docx/v1/documents":
-			if r.Method != http.MethodPost {
-				t.Fatalf("unexpected method: %s", r.Method)
-			}
-			if r.Header.Get("Authorization") != "Bearer token" {
-				t.Fatalf("missing auth header")
-			}
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/docx/v1/documents":
+			createCalled++
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code": 0,
@@ -105,13 +106,24 @@ func TestDocsCreateCommandURLFallback(t *testing.T) {
 					},
 				},
 			})
-		case "/open-apis/drive/v1/files/doc1":
-			if r.Method != http.MethodGet {
-				t.Fatalf("unexpected method: %s", r.Method)
-			}
-			if r.Header.Get("Authorization") != "Bearer token" {
-				t.Fatalf("missing auth header")
-			}
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/docx/v1/documents/doc1":
+			docxCalled++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"document": map[string]any{
+						"document_id": "doc1",
+						"title":       "Specs",
+						"url":         "",
+					},
+				},
+			})
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/files/doc1":
+			driveCalled++
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code": 0,
@@ -123,8 +135,9 @@ func TestDocsCreateCommandURLFallback(t *testing.T) {
 					},
 				},
 			})
+			return
 		default:
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
 	})
 	httpClient, baseURL := testutil.NewTestClient(handler)
@@ -152,6 +165,9 @@ func TestDocsCreateCommandURLFallback(t *testing.T) {
 		t.Fatalf("docs create error: %v", err)
 	}
 
+	if createCalled != 1 || docxCalled != 1 || driveCalled != 1 {
+		t.Fatalf("unexpected call counts: create=%d docx=%d drive=%d", createCalled, docxCalled, driveCalled)
+	}
 	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
