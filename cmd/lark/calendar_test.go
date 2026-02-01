@@ -431,16 +431,16 @@ func TestCalendarGetCommand(t *testing.T) {
 	if !strings.Contains(output, "description\tReview details") {
 		t.Fatalf("missing description output: %q", output)
 	}
-	if !strings.Contains(output, "vchat.vc_type\tvc") {
+	if !strings.Contains(output, "vchat\tvc_type=vc") {
 		t.Fatalf("missing vchat output: %q", output)
 	}
-	if !strings.Contains(output, "location.name\tHQ") {
+	if !strings.Contains(output, "location\tname=HQ") {
 		t.Fatalf("missing location output: %q", output)
 	}
 	if !strings.Contains(output, "free_busy_status\tbusy") {
 		t.Fatalf("missing free/busy output: %q", output)
 	}
-	if !strings.Contains(output, "event_organizer.display_name\tAlice") {
+	if !strings.Contains(output, "event_organizer\tAlice") {
 		t.Fatalf("missing organizer output: %q", output)
 	}
 	if !strings.Contains(output, "attendees.count\t1") {
