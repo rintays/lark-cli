@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"strings"
 
@@ -27,16 +26,17 @@ func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			nodeToken := strings.TrimSpace(args[0])
 			objType := strings.TrimSpace(args[1])
-			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			ctx := cmd.Context()
+			tenantToken, err := tokenFor(ctx, state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			node, err := state.SDK.GetWikiNodeV2(context.Background(), tenantToken, larksdk.GetWikiNodeRequest{
+			node, err := state.SDK.GetWikiNodeV2(ctx, tenantToken, larksdk.GetWikiNodeRequest{
 				NodeToken: strings.TrimSpace(nodeToken),
 				ObjType:   strings.TrimSpace(objType),
 			})

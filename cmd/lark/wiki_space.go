@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -30,13 +28,13 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List Wiki spaces (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if limit <= 0 {
 				limit = 50
 			}
-			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			tenantToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -52,7 +50,7 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 						ps = 200
 					}
 				}
-				result, err := state.SDK.ListWikiSpacesV2(context.Background(), tenantToken, larksdk.ListWikiSpacesRequest{
+				result, err := state.SDK.ListWikiSpacesV2(cmd.Context(), tenantToken, larksdk.ListWikiSpacesRequest{
 					PageSize:  ps,
 					PageToken: pageToken,
 				})
@@ -95,14 +93,14 @@ func newWikiSpaceInfoCmd(state *appState) *cobra.Command {
 		Use:   "info",
 		Short: "Show a Wiki space (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			tenantToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			space, err := state.SDK.GetWikiSpaceV2(context.Background(), tenantToken, larksdk.GetWikiSpaceRequest{SpaceID: strings.TrimSpace(spaceID)})
+			space, err := state.SDK.GetWikiSpaceV2(cmd.Context(), tenantToken, larksdk.GetWikiSpaceRequest{SpaceID: strings.TrimSpace(spaceID)})
 			if err != nil {
 				return err
 			}

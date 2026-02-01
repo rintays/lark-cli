@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -32,13 +31,13 @@ func newWikiMemberListCmd(state *appState) *cobra.Command {
 		Short: "List Wiki space members (v2)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if limit <= 0 {
 				limit = 50
 			}
-			accessToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -54,7 +53,7 @@ func newWikiMemberListCmd(state *appState) *cobra.Command {
 						ps = 200
 					}
 				}
-				result, err := state.SDK.ListWikiSpaceMembersV2(context.Background(), accessToken, larksdk.ListWikiSpaceMembersRequest{
+				result, err := state.SDK.ListWikiSpaceMembersV2(cmd.Context(), accessToken, larksdk.ListWikiSpaceMembersRequest{
 					SpaceID:   strings.TrimSpace(spaceID),
 					PageSize:  ps,
 					PageToken: pageToken,
@@ -118,16 +117,16 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			accessToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 
 			needNotificationSet := cmd.Flags().Changed("need-notification")
-			member, err := state.SDK.CreateWikiSpaceMemberV2(context.Background(), accessToken, larksdk.CreateWikiSpaceMemberRequest{
+			member, err := state.SDK.CreateWikiSpaceMemberV2(cmd.Context(), accessToken, larksdk.CreateWikiSpaceMemberRequest{
 				SpaceID:             strings.TrimSpace(spaceID),
 				MemberType:          strings.TrimSpace(memberType),
 				MemberID:            strings.TrimSpace(memberID),
@@ -178,15 +177,15 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			accessToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 
-			member, err := state.SDK.DeleteWikiSpaceMemberV2(context.Background(), accessToken, larksdk.DeleteWikiSpaceMemberRequest{
+			member, err := state.SDK.DeleteWikiSpaceMemberV2(cmd.Context(), accessToken, larksdk.DeleteWikiSpaceMemberRequest{
 				SpaceID:    strings.TrimSpace(spaceID),
 				MemberType: strings.TrimSpace(memberType),
 				MemberID:   strings.TrimSpace(memberID),

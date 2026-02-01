@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -47,14 +46,14 @@ func newMsgReactionsAddCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			reaction, err := state.SDK.CreateMessageReaction(context.Background(), token, messageID, emojiType)
+			reaction, err := state.SDK.CreateMessageReaction(cmd.Context(), token, messageID, emojiType)
 			if err != nil {
 				return err
 			}
@@ -98,14 +97,14 @@ func newMsgReactionsDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			reaction, err := state.SDK.DeleteMessageReaction(context.Background(), token, messageID, reactionID)
+			reaction, err := state.SDK.DeleteMessageReaction(cmd.Context(), token, messageID, reactionID)
 			if err != nil {
 				return err
 			}

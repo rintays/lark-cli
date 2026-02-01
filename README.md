@@ -70,6 +70,12 @@ Store credentials in config (default: `~/.config/lark/config.json`, or `~/.confi
 lark auth login --app-id <APP_ID> --app-secret <APP_SECRET>
 ```
 
+Store app secret in the OS keychain (optional):
+
+```bash
+lark auth login --app-id <APP_ID> --app-secret <APP_SECRET> --store-secret-in-keyring
+```
+
 Or (equivalent):
 
 ```bash
@@ -164,6 +170,27 @@ Examples:
 lark chats list --json
 lark users search "Ada" --json
 ```
+
+---
+
+## Shell completion
+
+Generate completion scripts:
+
+```bash
+lark completion bash
+lark completion zsh
+lark completion fish
+lark completion powershell
+```
+
+---
+
+## I/O shortcuts
+
+- Many commands accept a Lark/Feishu web URL anywhere a token/id is expected (docx/sheet/file).
+- File input flags (e.g., `--content-file`, `--raw-file`) accept `-` to read from stdin.
+- Export/download output flags accept `--out -` to stream to stdout (binary).
 
 ---
 
@@ -593,6 +620,8 @@ Token storage backend: `keyring_backend=file|keychain|auto` (config).
 - `file`: store user OAuth tokens in `config.json`.
 - `keychain`: store user OAuth tokens in the OS keychain (via go-keyring).
 - `auto`: prefer `keychain` on macOS/Windows; otherwise fall back to `file`.
+
+App secrets can also be stored in the keychain via `--store-secret-in-keyring` (auth login/config set).
 
 Explain auth requirements (services → token types/scopes) for a command:
 

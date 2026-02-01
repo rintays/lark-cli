@@ -25,6 +25,7 @@ func newMailCmd(state *appState) *cobra.Command {
 - Folders (e.g., Inbox) contain messages; folder_id identifies the folder.
 - Messages are identified by message_id; send/list/info operate within a mailbox.`,
 	}
+	annotateAuthServices(cmd, "mail")
 	cmd.AddCommand(newMailMailboxCmd(state))
 	cmd.AddCommand(newMailPublicMailboxesCmd(state))
 	// Backwards-compatible alias: historically users ran `lark mail mailboxes list`.
@@ -56,17 +57,17 @@ func newMailMailboxInfoCmd(state *appState) *cobra.Command {
 		Use:   "info",
 		Short: "Show mailbox details",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
 			// Default mailbox resolution: flag > config default > "me".
 			mailboxID = resolveMailboxID(state, mailboxID)
 
-			mailbox, err := state.SDK.GetMailbox(context.Background(), token, mailboxID)
+			mailbox, err := state.SDK.GetMailbox(cmd.Context(), token, mailboxID)
 			if err != nil {
 				return withUserScopeHintForCommand(state, err)
 			}
@@ -123,6 +124,7 @@ func newMailPublicMailboxesCmd(state *appState) *cobra.Command {
 		Use:   "public-mailboxes",
 		Short: "Discover public mailboxes",
 	}
+	annotateAuthServices(cmd, "mail-public")
 	cmd.AddCommand(newMailPublicMailboxesListCmd(state))
 	return cmd
 }
@@ -133,6 +135,7 @@ func newMailMailboxesCmd(state *appState) *cobra.Command {
 		Short: "List mailboxes (alias for public-mailboxes)",
 		Long:  "This is a backwards-compatible alias. Feishu OpenAPI does not provide a user mailbox list endpoint; use public mailboxes discovery or pass --mailbox-id me for user mailbox operations.",
 	}
+	annotateAuthServices(cmd, "mail-public")
 	cmd.AddCommand(newMailMailboxesListCmd(state))
 	return cmd
 }
@@ -142,14 +145,14 @@ func newMailMailboxesListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List mailboxes (public mailboxes)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenant)
 			if err != nil {
 				return err
 			}
-			mailboxes, err := state.SDK.ListPublicMailboxes(context.Background(), token)
+			mailboxes, err := state.SDK.ListPublicMailboxes(cmd.Context(), token)
 			if err != nil {
 				return err
 			}
@@ -170,14 +173,14 @@ func newMailPublicMailboxesListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List public mailboxes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenant)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			mailboxes, err := state.SDK.ListPublicMailboxes(context.Background(), token)
+			mailboxes, err := state.SDK.ListPublicMailboxes(cmd.Context(), token)
 			if err != nil {
 				return err
 			}
@@ -200,15 +203,15 @@ func newMailFoldersCmd(state *appState) *cobra.Command {
 		Use:   "folders",
 		Short: "List mail folders",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			mailboxID = resolveMailboxID(state, mailboxID)
-			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
-			folders, err := state.SDK.ListMailFolders(context.Background(), token, mailboxID)
+			folders, err := state.SDK.ListMailFolders(cmd.Context(), token, mailboxID)
 			if err != nil {
 				return withUserScopeHintForCommand(state, err)
 			}
@@ -240,19 +243,19 @@ func newMailListCmd(state *appState) *cobra.Command {
 				return errors.New("limit must be greater than 0")
 			}
 			mailboxID = resolveMailboxID(state, mailboxID)
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
-			folderID, err = resolveMailFolderID(context.Background(), state, token, mailboxID, folderID)
+			folderID, err = resolveMailFolderID(cmd.Context(), state, token, mailboxID, folderID)
 			if err != nil {
 				return withUserScopeHintForCommand(state, err)
 			}
 			debugf(state, "mail list: mailbox_id=%q folder_id=%q limit=%d only_unread=%t\n", mailboxID, folderID, limit, onlyUnread)
-			ctx := context.Background()
+			ctx := cmd.Context()
 			messages := make([]larksdk.MailMessage, 0, limit)
 			pageToken := ""
 			remaining := limit
@@ -334,15 +337,15 @@ func newMailInfoCmd(state *appState) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mailboxID = resolveMailboxID(state, mailboxID)
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			messageID := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
-			message, err := state.SDK.GetMailMessage(context.Background(), token, mailboxID, messageID)
+			message, err := state.SDK.GetMailMessage(cmd.Context(), token, mailboxID, messageID)
 			if err != nil {
 				return withUserScopeHintForCommand(state, err)
 			}
@@ -374,15 +377,15 @@ func newMailGetCmd(state *appState) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mailboxID = resolveMailboxID(state, mailboxID)
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			messageID := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
-			message, err := state.SDK.GetMailMessage(context.Background(), token, mailboxID, messageID)
+			message, err := state.SDK.GetMailMessage(cmd.Context(), token, mailboxID, messageID)
 			if err != nil {
 				return withUserScopeHintForCommand(state, err)
 			}
@@ -419,7 +422,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 			}
 			if token != "" {
 				var err error
-				token, err = tokenForOverride(context.Background(), state, tokenTypesUser, tokenOverride{
+				token, err = tokenForOverride(cmd.Context(), state, tokenTypesUser, tokenOverride{
 					Token: token,
 					Type:  tokenTypeUser,
 				})
@@ -428,7 +431,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 				}
 			} else {
 				var err error
-				token, err = tokenFor(context.Background(), state, tokenTypesUser)
+				token, err = tokenFor(cmd.Context(), state, tokenTypesUser)
 				if err != nil {
 					return err
 				}
@@ -437,8 +440,8 @@ func newMailSendCmd(state *appState) *cobra.Command {
 			// Default mailbox resolution: flag > config default > "me".
 			mailboxID = resolveMailboxID(state, mailboxID)
 
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			rawValue := strings.TrimSpace(raw)
 			rawFile = strings.TrimSpace(rawFile)
@@ -446,7 +449,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 				return errors.New("raw and raw-file are mutually exclusive")
 			}
 			if rawFile != "" {
-				data, readErr := os.ReadFile(rawFile)
+				data, readErr := readInputFile(rawFile)
 				if readErr != nil {
 					return fmt.Errorf("read raw file: %w", readErr)
 				}
@@ -481,7 +484,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 				BodyHTML:      bodyHTML,
 				Raw:           rawValue,
 			}
-			messageID, err := state.SDK.SendMail(context.Background(), token, mailboxID, request)
+			messageID, err := state.SDK.SendMail(cmd.Context(), token, mailboxID, request)
 			if err != nil {
 				return withUserScopeHintForCommand(state, err)
 			}
@@ -489,6 +492,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, fmt.Sprintf("message_id: %s", messageID))
 		},
 	}
+	annotateAuthServices(cmd, "mail-send")
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me')")
 	cmd.Flags().StringVar(&subject, "subject", "", "message subject")
@@ -498,7 +502,7 @@ func newMailSendCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&bodyText, "text", "", "plain text body")
 	cmd.Flags().StringVar(&bodyHTML, "html", "", "HTML body")
 	cmd.Flags().StringVar(&raw, "raw", "", "raw EML content (base64url-encoded)")
-	cmd.Flags().StringVar(&rawFile, "raw-file", "", "path to .eml file (will be base64url-encoded)")
+	cmd.Flags().StringVar(&rawFile, "raw-file", "", "path to .eml file (will be base64url-encoded; use - for stdin)")
 	cmd.Flags().StringVar(&headFrom, "from-name", "", "display name for From header")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
 	return cmd

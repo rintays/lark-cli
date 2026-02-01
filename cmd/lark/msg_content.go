@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -27,7 +26,7 @@ func addMessageContentFlags(cmd *cobra.Command, opts *messageContentOptions) {
 	cmd.Flags().StringVar(&opts.Text, "text", "", "text content")
 	cmd.Flags().StringVar(&opts.Post, "post", "", "post (rich text) JSON content")
 	cmd.Flags().StringVar(&opts.Content, "content", "", "raw JSON content for msg_type")
-	cmd.Flags().StringVar(&opts.ContentFile, "content-file", "", "path to file containing raw JSON content")
+	cmd.Flags().StringVar(&opts.ContentFile, "content-file", "", "path to file containing raw JSON content (or - for stdin)")
 	cmd.Flags().StringVar(&opts.ImageKey, "image-key", "", "image key (msg_type=image)")
 	cmd.Flags().StringVar(&opts.FileKey, "file-key", "", "file key (msg_type=file|audio|media)")
 	cmd.Flags().StringVar(&opts.MediaKey, "media-key", "", "media key (msg_type=media)")
@@ -37,7 +36,7 @@ func addMessageContentFlags(cmd *cobra.Command, opts *messageContentOptions) {
 func resolveMessageContent(opts messageContentOptions) (msgType string, content string, err error) {
 	content = strings.TrimSpace(opts.Content)
 	if opts.ContentFile != "" {
-		data, readErr := os.ReadFile(opts.ContentFile)
+		data, readErr := readInputFile(opts.ContentFile)
 		if readErr != nil {
 			return "", "", fmt.Errorf("read content file: %w", readErr)
 		}

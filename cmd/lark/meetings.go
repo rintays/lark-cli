@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -54,14 +53,14 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 				return errors.New("query-mode must be 0 or 1")
 			}
 			meetingID := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			meeting, err := state.SDK.GetMeeting(context.Background(), token, larksdk.GetMeetingRequest{
+			meeting, err := state.SDK.GetMeeting(cmd.Context(), token, larksdk.GetMeetingRequest{
 				MeetingID:          meetingID,
 				WithParticipants:   withParticipants,
 				WithMeetingAbility: withMeetingAbility,
@@ -156,10 +155,10 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 			if filterCount > 1 {
 				return errors.New("meeting-no, user-id, room-id, and meeting-type are mutually exclusive")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -201,7 +200,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 					req.StartTime = strconv.FormatInt(startUnix, 10)
 					req.EndTime = strconv.FormatInt(endUnix, 10)
 				}
-				result, err := state.SDK.ListMeetings(context.Background(), token, req)
+				result, err := state.SDK.ListMeetings(cmd.Context(), token, req)
 				if err != nil {
 					return err
 				}
@@ -260,10 +259,10 @@ func newMeetingCreateCmd(state *appState) *cobra.Command {
 		Short: "Create a meeting reservation",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -275,7 +274,7 @@ func newMeetingCreateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("invalid end time: %w", err)
 			}
 			settings := buildReserveMeetingSettings(cmd, topic, meetingInitialType, autoRecord, password)
-			reserve, correction, err := state.SDK.ApplyReserve(context.Background(), token, larksdk.ApplyReserveRequest{
+			reserve, correction, err := state.SDK.ApplyReserve(cmd.Context(), token, larksdk.ApplyReserveRequest{
 				EndTime:         strconv.FormatInt(endUnix, 10),
 				OwnerID:         ownerID,
 				UserIDType:      userIDType,
@@ -330,10 +329,10 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -349,7 +348,7 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 			if endUnix == "" && settings == nil {
 				return errors.New("no fields to update")
 			}
-			reserve, correction, err := state.SDK.UpdateReserve(context.Background(), token, larksdk.UpdateReserveRequest{
+			reserve, correction, err := state.SDK.UpdateReserve(cmd.Context(), token, larksdk.UpdateReserveRequest{
 				ReserveID:       reserveID,
 				EndTime:         endUnix,
 				UserIDType:      userIDType,
@@ -396,14 +395,14 @@ func newMeetingDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if err := state.SDK.DeleteReserve(context.Background(), token, larksdk.DeleteReserveRequest{ReserveID: reserveID}); err != nil {
+			if err := state.SDK.DeleteReserve(cmd.Context(), token, larksdk.DeleteReserveRequest{ReserveID: reserveID}); err != nil {
 				return err
 			}
 			payload := map[string]any{"deleted": true, "reserve_id": reserveID}

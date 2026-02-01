@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -25,7 +27,9 @@ type appState struct {
 	TokenType      string
 	UserAccount    string
 	Printer        output.Printer
+	ErrWriter      io.Writer
 	SDK            *larksdk.Client
+	sdkInitErr     error
 	Platform       string
 	BaseURL        string
 	baseURLPersist string
@@ -69,7 +73,14 @@ func newRootCmd() *cobra.Command {
 			if err := applyBaseURLOverrides(state, cfg); err != nil {
 				return err
 			}
+			if err := hydrateAppSecretFromKeyring(state); err != nil {
+				return err
+			}
 			out := cmd.OutOrStdout()
+			state.ErrWriter = cmd.ErrOrStderr()
+			if state.ErrWriter == nil {
+				state.ErrWriter = os.Stderr
+			}
 			state.Printer = output.Printer{
 				Writer: out,
 				JSON:   state.JSON,
@@ -78,8 +89,11 @@ func newRootCmd() *cobra.Command {
 			sdkClient, err := larksdk.New(cfg)
 			if err == nil {
 				state.SDK = sdkClient
-			} else if state.Verbose {
-				fmt.Fprintf(state.Printer.Writer, "SDK disabled: %v\n", err)
+			} else {
+				state.sdkInitErr = err
+				if state.Verbose {
+					fmt.Fprintf(errWriter(state), "SDK disabled: %v\n", err)
+				}
 			}
 			return nil
 		},
@@ -105,6 +119,7 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&state.BaseURL, "base-url", "", "base URL override")
 
 	cmd.AddCommand(newVersionCmd(state))
+	cmd.AddCommand(newCompletionCmd())
 	cmd.AddCommand(newAuthCmd(state))
 	cmd.AddCommand(newWhoamiCmd(state))
 	cmd.AddCommand(newMsgCmd(state))
@@ -123,6 +138,8 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newMailCmd(state))
 	cmd.AddCommand(newBaseCmd(state))
 	cmd.AddCommand(newConfigCmd(state))
+
+	registerAuthServices(cmd)
 
 	return cmd
 }
@@ -189,7 +206,40 @@ func (state *appState) saveConfig() error {
 	if state.BaseURL != "" || state.Platform != "" {
 		cfg.BaseURL = state.baseURLPersist
 	}
+	if cfg.AppSecretInKeyring {
+		cfg.AppSecret = ""
+	}
 	return config.Save(state.ConfigPath, &cfg)
+}
+
+func requireSDK(state *appState) (*larksdk.Client, error) {
+	if state == nil {
+		return nil, errors.New("sdk client is required")
+	}
+	if state.SDK != nil {
+		return state.SDK, nil
+	}
+	if state.Config == nil {
+		return nil, errors.New("config is required")
+	}
+	if err := requireCredentials(state); err != nil {
+		return nil, err
+	}
+	if state.sdkInitErr != nil {
+		if errors.Is(state.sdkInitErr, larksdk.ErrUnavailable) {
+			return nil, errors.New("missing app credentials: run `lark auth login` or `lark config set --app-id/--app-secret`")
+		}
+		return nil, fmt.Errorf("init sdk: %w", state.sdkInitErr)
+	}
+	sdk, err := larksdk.New(state.Config)
+	if err != nil {
+		if errors.Is(err, larksdk.ErrUnavailable) {
+			return nil, errors.New("missing app credentials: run `lark auth login` or `lark config set --app-id/--app-secret`")
+		}
+		return nil, fmt.Errorf("init sdk: %w", err)
+	}
+	state.SDK = sdk
+	return sdk, nil
 }
 
 func canonicalCommandPath(cmd *cobra.Command) string {
@@ -216,11 +266,14 @@ func canonicalCommandPath(cmd *cobra.Command) string {
 	return path
 }
 
-func requireCredentials(cfg *config.Config) error {
-	if cfg.AppID == "" || cfg.AppSecret == "" {
+func requireCredentials(state *appState) error {
+	if state == nil || state.Config == nil {
+		return errors.New("config is required")
+	}
+	if strings.TrimSpace(state.Config.AppID) == "" {
 		return errors.New("app_id and app_secret must be set in config")
 	}
-	return nil
+	return ensureAppSecret(state)
 }
 
 func cachedTokenValid(cfg *config.Config, now time.Time) bool {
@@ -238,21 +291,21 @@ func cachedUserTokenValid(token userToken, now time.Time) bool {
 }
 
 func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
-	if err := requireCredentials(state.Config); err != nil {
+	if err := requireCredentials(state); err != nil {
 		return "", err
 	}
 	if cachedTokenValid(state.Config, time.Now()) {
 		return state.Config.TenantAccessToken, nil
 	}
 	if state.Verbose {
-		fmt.Fprintln(state.Printer.Writer, "refreshing tenant access token")
+		fmt.Fprintln(errWriter(state), "refreshing tenant access token")
 	}
 	sdk := state.SDK
 	if sdk == nil {
 		var err error
 		sdk, err = larksdk.New(state.Config)
 		if err != nil {
-			return "", errors.New("auth client is required")
+			return "", fmt.Errorf("init sdk: %w", err)
 		}
 		state.SDK = sdk
 	}
@@ -269,7 +322,7 @@ func ensureTenantToken(ctx context.Context, state *appState) (string, error) {
 }
 
 func ensureUserToken(ctx context.Context, state *appState) (string, error) {
-	if err := requireCredentials(state.Config); err != nil {
+	if err := requireCredentials(state); err != nil {
 		return "", err
 	}
 	account := resolveUserAccountName(state)
@@ -289,14 +342,14 @@ func ensureUserToken(ctx context.Context, state *appState) (string, error) {
 		return "", expireUserToken(state, account, errors.New("refresh token missing"))
 	}
 	if state.Verbose {
-		fmt.Fprintln(state.Printer.Writer, "refreshing user access token")
+		fmt.Fprintln(errWriter(state), "refreshing user access token")
 	}
 	sdk := state.SDK
 	if sdk == nil {
 		var err error
 		sdk, err = larksdk.New(state.Config)
 		if err != nil {
-			return "", errors.New("auth client is required")
+			return "", fmt.Errorf("init sdk: %w", err)
 		}
 		state.SDK = sdk
 	}
@@ -378,11 +431,16 @@ func expireUserToken(state *appState, account string, cause error) error {
 func execute() int {
 	cmd := newRootCmd()
 	targetCmd := commandForArgs(cmd, os.Args[1:])
-	if err := cmd.Execute(); err != nil {
+	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+	defer stop()
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		if targetCmd != nil && !isUsageError(err) && isRequiredFlagError(err) {
 			err = usageErrorWithUsage(targetCmd, err.Error(), flagErrorHint(targetCmd, err), targetCmd.UsageString())
 		}
 		fmt.Fprintln(os.Stderr, output.FormatError(err, output.AutoStyle(os.Stderr)))
+		if isUsageError(err) {
+			return 2
+		}
 		return 1
 	}
 	return 0

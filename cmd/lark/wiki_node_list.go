@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -21,8 +20,8 @@ func newWikiNodeListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List Wiki nodes (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if strings.TrimSpace(spaceID) == "" {
 				return errors.New("space-id is required")
@@ -30,7 +29,7 @@ func newWikiNodeListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				limit = 50
 			}
-			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			tenantToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -46,7 +45,7 @@ func newWikiNodeListCmd(state *appState) *cobra.Command {
 						ps = 200
 					}
 				}
-				result, err := state.SDK.ListWikiNodesV2(context.Background(), tenantToken, larksdk.ListWikiNodesRequest{
+				result, err := state.SDK.ListWikiNodesV2(cmd.Context(), tenantToken, larksdk.ListWikiNodesRequest{
 					SpaceID:         strings.TrimSpace(spaceID),
 					ParentNodeToken: strings.TrimSpace(parentNodeToken),
 					PageSize:        ps,

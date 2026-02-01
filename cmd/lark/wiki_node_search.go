@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -39,8 +38,8 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 			if pages <= 0 {
 				return errors.New("pages must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 
 			token := strings.TrimSpace(userAccessToken)
@@ -49,7 +48,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 			}
 			if token != "" {
 				var err error
-				token, err = tokenForOverride(context.Background(), state, tokenTypesUser, tokenOverride{
+				token, err = tokenForOverride(cmd.Context(), state, tokenTypesUser, tokenOverride{
 					Token: token,
 					Type:  tokenTypeUser,
 				})
@@ -58,7 +57,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 				}
 			} else {
 				var err error
-				token, err = tokenFor(context.Background(), state, tokenTypesUser)
+				token, err = tokenFor(cmd.Context(), state, tokenTypesUser)
 				if err != nil {
 					return err
 				}
@@ -77,7 +76,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 				if pageSize > 200 {
 					pageSize = 200
 				}
-				result, err := state.SDK.SearchWikiNodesV1(context.Background(), token, larksdk.WikiNodeSearchV1Request{
+				result, err := state.SDK.SearchWikiNodesV1(cmd.Context(), token, larksdk.WikiNodeSearchV1Request{
 					Query:     query,
 					SpaceID:   spaceID,
 					PageSize:  pageSize,

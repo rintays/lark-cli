@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
@@ -49,16 +47,16 @@ func newDocsBlocksGetCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			block, err := state.SDK.GetDocxBlock(context.Background(), token, documentID, blockID, revisionID, userIDType)
+			block, err := state.SDK.GetDocxBlock(cmd.Context(), token, documentID, blockID, revisionID, userIDType)
 			if err != nil {
 				return err
 			}
@@ -101,11 +99,11 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -122,7 +120,7 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 			pageToken := ""
 			for {
 				items, nextToken, hasMore, err := state.SDK.ListDocxBlocks(
-					context.Background(),
+					cmd.Context(),
 					token,
 					documentID,
 					pageSize,
@@ -181,8 +179,8 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
@@ -195,12 +193,12 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("body must be valid JSON: %w", err)
 			}
 
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.PatchDocxBlock(
-				context.Background(),
+				cmd.Context(),
 				token,
 				documentID,
 				blockID,
@@ -231,7 +229,7 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&bodyJSON, "body-json", "", "JSON body for update request")
-	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to file containing JSON body")
+	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to file containing JSON body (or - for stdin)")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
 	cmd.Flags().StringVar(&clientToken, "client-token", "", "idempotency token")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user id type (open_id|union_id|user_id)")
@@ -258,8 +256,8 @@ func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			raw, err := readInput(requestsJSON, requestsFile, "requests")
@@ -274,12 +272,12 @@ func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
 				return errors.New("requests must be a non-empty JSON array")
 			}
 
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.BatchUpdateDocxBlocks(
-				context.Background(),
+				cmd.Context(),
 				token,
 				documentID,
 				requests,
@@ -349,12 +347,12 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -371,7 +369,7 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 			pageToken := ""
 			for {
 				items, nextToken, hasMore, err := state.SDK.GetDocxBlockChildren(
-					context.Background(),
+					cmd.Context(),
 					token,
 					documentID,
 					blockID,
@@ -434,8 +432,8 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
@@ -448,12 +446,12 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("body must be valid JSON: %w", err)
 			}
 
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.CreateDocxBlockChildren(
-				context.Background(),
+				cmd.Context(),
 				token,
 				documentID,
 				blockID,
@@ -514,18 +512,18 @@ func newDocsBlocksChildrenDeleteCmd(state *appState) *cobra.Command {
 			if endIndex <= startIndex {
 				return errors.New("end-index must be greater than start-index")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 
 			resp, err := state.SDK.BatchDeleteDocxBlockChildren(
-				context.Background(),
+				cmd.Context(),
 				token,
 				documentID,
 				blockID,
@@ -589,8 +587,8 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
@@ -603,12 +601,12 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("body must be valid JSON: %w", err)
 			}
 
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.CreateDocxBlockDescendant(
-				context.Background(),
+				cmd.Context(),
 				token,
 				documentID,
 				blockID,
@@ -643,7 +641,7 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 
 func readInput(raw, path, label string) (string, error) {
 	if path != "" {
-		data, err := os.ReadFile(path)
+		data, err := readInputFile(path)
 		if err != nil {
 			return "", fmt.Errorf("read %s file: %w", label, err)
 		}

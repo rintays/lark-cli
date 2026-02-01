@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseViewDeleteCmd(state *appState) *cobra.Command {
@@ -32,20 +34,15 @@ func newBaseViewDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			res, err := state.SDK.DeleteBaseView(context.Background(), token, appToken, tableID, viewID)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"result": res}
-			text := tableTextRow([]string{"deleted", "view_id"}, []string{strconv.FormatBool(res.Deleted), res.ViewID})
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				res, err := sdk.DeleteBaseView(ctx, token, appToken, tableID, viewID)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"result": res}
+				text := tableTextRow([]string{"deleted", "view_id"}, []string{strconv.FormatBool(res.Deleted), res.ViewID})
+				return payload, text, nil
+			})
 		},
 	}
 

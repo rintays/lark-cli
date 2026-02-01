@@ -31,6 +31,7 @@ func newDocsCmd(state *appState) *cobra.Command {
 - Use lark drive permissions to manage collaborators for docs.
 - Use info/export/get to inspect or download content.`,
 	}
+	annotateAuthServices(cmd, "docs")
 	cmd.AddCommand(newDocsListCmd(state))
 	cmd.AddCommand(newDocsCreateCmd(state))
 	cmd.AddCommand(newDocsInfoCmd(state))
@@ -59,15 +60,15 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			title := args[0]
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			doc, err := state.SDK.CreateDocxDocument(context.Background(), token, larksdk.CreateDocxDocumentRequest{
+			doc, err := state.SDK.CreateDocxDocument(cmd.Context(), token, larksdk.CreateDocxDocumentRequest{
 				Title:       title,
 				FolderToken: folderID,
 			})
@@ -75,7 +76,7 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if doc.URL == "" && doc.DocumentID != "" {
-				doc.URL = docxDriveURL(context.Background(), state, tokenType, token, doc.DocumentID)
+				doc.URL = docxDriveURL(cmd.Context(), state, tokenType, token, doc.DocumentID)
 			}
 			payload := map[string]any{"document": doc}
 			text := tableTextRow(
@@ -98,26 +99,34 @@ func newDocsInfoCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			if strings.TrimSpace(args[0]) == "" {
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(token) == "" {
 				return errors.New("document-id is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			documentID := strings.TrimSpace(args[0])
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, _, err := parseResourceRef(args[0])
 			if err != nil {
 				return err
 			}
-			doc, err := state.SDK.GetDocxDocument(context.Background(), token, documentID)
+			documentID := strings.TrimSpace(token)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
+			if err != nil {
+				return err
+			}
+			doc, err := state.SDK.GetDocxDocument(cmd.Context(), token, documentID)
 			if err != nil {
 				return err
 			}
 			if doc.URL == "" {
-				doc.URL = docxDriveURL(context.Background(), state, tokenType, token, documentID)
+				doc.URL = docxDriveURL(cmd.Context(), state, tokenType, token, documentID)
 			}
 			payload := map[string]any{"document": doc}
 			text := formatDocxInfo(doc)
@@ -138,25 +147,37 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			if strings.TrimSpace(args[0]) == "" {
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(token) == "" {
 				return errors.New("document-id is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if info, err := os.Stat(outPath); err == nil && info.IsDir() {
-				return fmt.Errorf("output path is a directory: %s", outPath)
+			outPath = strings.TrimSpace(outPath)
+			writeStdout := outPath == "-"
+			if !writeStdout {
+				if info, err := os.Stat(outPath); err == nil && info.IsDir() {
+					return fmt.Errorf("output path is a directory: %s", outPath)
+				}
 			}
 			format = strings.ToLower(format)
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			documentID := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			refToken, _, err := parseResourceRef(args[0])
 			if err != nil {
 				return err
 			}
-			ticket, err := state.SDK.CreateExportTask(context.Background(), token, larksdk.CreateExportTaskRequest{
+			documentID := strings.TrimSpace(refToken)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			if err != nil {
+				return err
+			}
+			ticket, err := state.SDK.CreateExportTask(cmd.Context(), token, larksdk.CreateExportTaskRequest{
 				Token:         documentID,
 				Type:          "docx",
 				FileExtension: format,
@@ -164,23 +185,36 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(context.Background(), state.SDK, token, ticket)
+			result, err := pollExportTask(cmd.Context(), state.SDK, token, ticket)
 			if err != nil {
 				return err
 			}
-			reader, err := state.SDK.DownloadExportedFile(context.Background(), token, result.FileToken)
+			reader, err := state.SDK.DownloadExportedFile(cmd.Context(), token, result.FileToken)
 			if err != nil {
 				return err
 			}
 			defer reader.Close()
-			outFile, err := os.Create(outPath)
+			var out io.Writer
+			var outFile *os.File
+			if writeStdout {
+				out = cmd.OutOrStdout()
+			} else {
+				outFile, err = os.Create(outPath)
+				if err != nil {
+					return err
+				}
+				defer outFile.Close()
+				out = outFile
+			}
+			written, err := io.Copy(out, reader)
 			if err != nil {
 				return err
 			}
-			defer outFile.Close()
-			written, err := io.Copy(outFile, reader)
-			if err != nil {
-				return err
+			if writeStdout {
+				if state.Verbose {
+					fmt.Fprintf(errWriter(state), "wrote %d bytes to stdout\n", written)
+				}
+				return nil
 			}
 			payload := map[string]any{
 				"document_id":   documentID,
@@ -198,7 +232,7 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&format, "format", "", "export format (pdf)")
-	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
+	cmd.Flags().StringVar(&outPath, "out", "", "output file path (or - for stdout)")
 	_ = cmd.MarkFlagRequired("format")
 	_ = cmd.MarkFlagRequired("out")
 	return cmd
@@ -214,27 +248,35 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			if strings.TrimSpace(args[0]) == "" {
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(token) == "" {
 				return errors.New("document-id is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			format = strings.ToLower(strings.TrimSpace(format))
 			if format == "" {
 				format = "md"
 			}
-			documentID := strings.TrimSpace(args[0])
+			refToken, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			documentID := strings.TrimSpace(refToken)
 			switch format {
 			case "md", "markdown":
-				blocks, err := listDocxBlocks(context.Background(), state.SDK, token, documentID)
+				blocks, err := listDocxBlocks(cmd.Context(), state.SDK, accessToken, documentID)
 				if err != nil {
 					return err
 				}
@@ -250,13 +292,13 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				_, err = io.WriteString(state.Printer.Writer, content)
 				return err
 			case "txt", "text":
-				content, err := state.SDK.GetDocxRawContent(context.Background(), token, documentID)
+				content, err := state.SDK.GetDocxRawContent(cmd.Context(), accessToken, documentID)
 				if err != nil {
 					return err
 				}
 				content = normalizeDocxContentEscapes(content)
 				if content != "" {
-					doc, err := state.SDK.GetDocxDocument(context.Background(), token, documentID)
+					doc, err := state.SDK.GetDocxDocument(cmd.Context(), accessToken, documentID)
 					if err == nil && doc.Title != "" {
 						content = stripDocxTitlePrefix(content, doc.Title)
 					}
@@ -272,7 +314,7 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				_, err = io.WriteString(state.Printer.Writer, content)
 				return err
 			case "blocks":
-				blocks, err := listDocxBlocks(context.Background(), state.SDK, token, documentID)
+				blocks, err := listDocxBlocks(cmd.Context(), state.SDK, accessToken, documentID)
 				if err != nil {
 					return err
 				}
@@ -377,7 +419,7 @@ func docxDriveURL(ctx context.Context, state *appState, accessType tokenType, to
 		return ""
 	}
 	if state.Verbose {
-		fmt.Fprintln(state.Printer.Writer, "retrying docs url lookup with user access token")
+		fmt.Fprintln(errWriter(state), "retrying docs url lookup with user access token")
 	}
 	fallbackFile, err := driveFileMetadataWithToken(ctx, state.SDK, tokenTypeUser, userToken, documentID)
 	if err != nil || fallbackFile.URL == "" {
@@ -410,6 +452,9 @@ type exportTaskClient interface {
 func pollExportTask(ctx context.Context, client exportTaskClient, token, ticket string) (larksdk.ExportTaskResult, error) {
 	var lastResult larksdk.ExportTaskResult
 	for attempt := 0; attempt < exportTaskMaxAttempts; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return larksdk.ExportTaskResult{}, err
+		}
 		result, err := client.GetExportTask(ctx, token, ticket)
 		if err != nil {
 			return larksdk.ExportTaskResult{}, err
@@ -429,7 +474,11 @@ func pollExportTask(ctx context.Context, client exportTaskClient, token, ticket 
 			return larksdk.ExportTaskResult{}, fmt.Errorf("export task failed with status %d", result.JobStatus)
 		}
 		if exportTaskPollInterval > 0 {
-			time.Sleep(exportTaskPollInterval)
+			select {
+			case <-ctx.Done():
+				return larksdk.ExportTaskResult{}, ctx.Err()
+			case <-time.After(exportTaskPollInterval):
+			}
 		}
 	}
 	if lastResult.JobErrorMsg != "" {

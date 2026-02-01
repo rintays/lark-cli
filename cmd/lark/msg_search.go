@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -59,19 +59,31 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 			if pages <= 0 {
 				return errors.New("pages must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			now := time.Now()
+			parsedStart, err := parseTimeArg(startTime, now)
+			if err != nil {
+				return usageError(cmd, "invalid start-time", err.Error())
+			}
+			parsedEnd, err := parseTimeArg(endTime, now)
+			if err != nil {
+				return usageError(cmd, "invalid end-time", err.Error())
+			}
+			startTime = parsedStart
+			endTime = parsedEnd
+
 			token := strings.TrimSpace(userAccessToken)
 			if token == "" {
 				token = strings.TrimSpace(os.Getenv("LARK_USER_ACCESS_TOKEN"))
 			}
 			if token != "" {
 				var err error
-				token, err = tokenForOverride(context.Background(), state, tokenTypesUser, tokenOverride{
+				token, err = tokenForOverride(cmd.Context(), state, tokenTypesUser, tokenOverride{
 					Token: token,
 					Type:  tokenTypeUser,
 				})
@@ -80,7 +92,7 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				}
 			} else {
 				var err error
-				token, err = tokenFor(context.Background(), state, tokenTypesUser)
+				token, err = tokenFor(cmd.Context(), state, tokenTypesUser)
 				if err != nil {
 					return err
 				}
@@ -108,7 +120,7 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				if size <= 0 {
 					break
 				}
-				result, err := state.SDK.SearchMessages(context.Background(), token, larksdk.MessageSearchRequest{
+				result, err := state.SDK.SearchMessages(cmd.Context(), token, larksdk.MessageSearchRequest{
 					Query:        query,
 					FromIDs:      fromIDs,
 					ChatIDs:      chatIDs,
@@ -141,7 +153,7 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 
 			messages := make([]larksdk.Message, 0, len(items))
 			for _, messageID := range items {
-				message, err := state.SDK.GetMessage(context.Background(), token, messageID, userIDType)
+				message, err := state.SDK.GetMessage(cmd.Context(), token, messageID, userIDType)
 				if err != nil {
 					return withUserScopeHintForCommand(state, err)
 				}
@@ -163,15 +175,16 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "search-message")
 
-	cmd.Flags().StringArrayVar(&fromIDs, "from-id", nil, "filter by sender IDs (repeatable)")
-	cmd.Flags().StringArrayVar(&chatIDs, "chat-id", nil, "filter by chat IDs (repeatable)")
+	cmd.Flags().StringSliceVar(&fromIDs, "from-id", nil, "filter by sender IDs (repeatable or comma-separated)")
+	cmd.Flags().StringSliceVar(&chatIDs, "chat-id", nil, "filter by chat IDs (repeatable or comma-separated)")
 	cmd.Flags().StringVar(&messageType, "message-type", "", "message type (file, image, media)")
-	cmd.Flags().StringArrayVar(&atChatterIDs, "at-id", nil, "filter by @ user IDs (repeatable)")
+	cmd.Flags().StringSliceVar(&atChatterIDs, "at-id", nil, "filter by @ user IDs (repeatable or comma-separated)")
 	cmd.Flags().StringVar(&fromType, "from-type", "", "sender type (bot or user)")
 	cmd.Flags().StringVar(&chatType, "chat-type", "", "chat type (group_chat or p2p_chat)")
-	cmd.Flags().StringVar(&startTime, "start-time", "", "start time (unix seconds)")
-	cmd.Flags().StringVar(&endTime, "end-time", "", "end time (unix seconds)")
+	cmd.Flags().StringVar(&startTime, "start-time", "", "start time (unix seconds, RFC3339, or relative like -24h/-7d)")
+	cmd.Flags().StringVar(&endTime, "end-time", "", "end time (unix seconds, RFC3339, or relative like -24h/-7d)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of message IDs to return")
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "page size per request (default: auto)")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")

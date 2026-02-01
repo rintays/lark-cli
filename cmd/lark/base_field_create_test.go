@@ -217,7 +217,7 @@ func TestBaseFieldCreateCommandRequiresTableID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "requires at least 1 arg(s), only received 0" {
+	if err.Error() != "accepts between 1 and 2 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

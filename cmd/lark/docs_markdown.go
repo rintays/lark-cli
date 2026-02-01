@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -25,8 +24,8 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 		Use:   "convert",
 		Short: "Convert Markdown/HTML to Docx blocks",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
@@ -37,11 +36,11 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 				return err
 			}
 
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			resp, err := state.SDK.ConvertDocxContent(context.Background(), token, normalized, raw)
+			resp, err := state.SDK.ConvertDocxContent(cmd.Context(), token, normalized, raw)
 			if err != nil {
 				return err
 			}
@@ -59,7 +58,7 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&contentType, "content-type", "markdown", "content type (markdown|html)")
 	cmd.Flags().StringVar(&content, "content", "", "raw markdown/html content")
-	cmd.Flags().StringVar(&contentFile, "content-file", "", "path to file containing markdown/html content")
+	cmd.Flags().StringVar(&contentFile, "content-file", "", "path to file containing markdown/html content (or - for stdin)")
 	return cmd
 }
 
@@ -81,10 +80,14 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			documentID := strings.TrimSpace(args[0])
+			refToken, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			documentID := strings.TrimSpace(refToken)
 			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
 				return err
@@ -94,11 +97,11 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 				return err
 			}
 
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			convertResp, err := state.SDK.ConvertDocxContent(context.Background(), token, normalized, raw)
+			convertResp, err := state.SDK.ConvertDocxContent(cmd.Context(), accessToken, normalized, raw)
 			if err != nil {
 				return err
 			}
@@ -107,7 +110,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			}
 			scrubDocxTableMergeInfo(convertResp.Blocks)
 
-			deleted, err := clearDocxBlockChildren(context.Background(), state.SDK, token, documentID, documentID)
+			deleted, err := clearDocxBlockChildren(cmd.Context(), state.SDK, accessToken, documentID, documentID)
 			if err != nil {
 				return err
 			}
@@ -117,8 +120,8 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 				Descendants: convertResp.Blocks,
 			}
 			created, err := state.SDK.CreateDocxBlockDescendant(
-				context.Background(),
-				token,
+				cmd.Context(),
+				accessToken,
 				documentID,
 				documentID,
 				createBody,
@@ -167,7 +170,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 
 func readDocxContent(raw, path string) (string, error) {
 	if path != "" {
-		data, err := os.ReadFile(path)
+		data, err := readInputFile(path)
 		if err != nil {
 			return "", fmt.Errorf("read content file: %w", err)
 		}

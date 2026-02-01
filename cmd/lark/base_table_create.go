@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseTableCreateCmd(state *appState) *cobra.Command {
@@ -26,20 +28,15 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			table, err := state.SDK.CreateBaseTable(context.Background(), token, appToken, tableName)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"table": table}
-			text := tableTextRow([]string{"table_id", "name"}, []string{table.TableID, table.Name})
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				table, err := sdk.CreateBaseTable(ctx, token, appToken, tableName)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"table": table}
+				text := tableTextRow([]string{"table_id", "name"}, []string{table.TableID, table.Name})
+				return payload, text, nil
+			})
 		},
 	}
 

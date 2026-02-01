@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -33,18 +32,18 @@ func newMsgReplyCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			msgType, content, err := resolveMessageContent(contentOpts)
 			if err != nil {
 				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			replyID, err := state.SDK.ReplyMessage(context.Background(), token, larksdk.ReplyMessageRequest{
+			replyID, err := state.SDK.ReplyMessage(cmd.Context(), token, larksdk.ReplyMessageRequest{
 				MessageID:     messageID,
 				MsgType:       msgType,
 				Content:       content,

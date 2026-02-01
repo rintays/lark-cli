@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,13 +50,13 @@ func newMsgListCmd(state *appState) *cobra.Command {
 			if pageSize <= 0 {
 				return errors.New("page-size must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -72,7 +71,7 @@ func newMsgListCmd(state *appState) *cobra.Command {
 				if size > remaining {
 					size = remaining
 				}
-				result, err := state.SDK.ListMessages(context.Background(), token, larksdk.ListMessagesRequest{
+				result, err := state.SDK.ListMessages(cmd.Context(), token, larksdk.ListMessagesRequest{
 					ContainerIDType: containerIDType,
 					ContainerID:     containerID,
 					StartTime:       startTime,

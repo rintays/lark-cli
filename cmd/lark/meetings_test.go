@@ -178,13 +178,12 @@ func TestMeetingListCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("requires sdk client", func(t *testing.T) {
+	t.Run("requires credentials", func(t *testing.T) {
 		startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 		endTime := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
 		state := &appState{
 			Config: &config.Config{
 				AppID:                      "app",
-				AppSecret:                  "secret",
 				BaseURL:                    "http://example.com",
 				TenantAccessToken:          "token",
 				TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -198,7 +197,7 @@ func TestMeetingListCommand(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if err.Error() != "sdk client is required" {
+		if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

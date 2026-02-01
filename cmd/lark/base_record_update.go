@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseRecordUpdateCmd(state *appState) *cobra.Command {
@@ -51,27 +53,22 @@ Value formats (write):
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			fieldsMap, err := parseBaseRecordFields(fieldsJSON, fields)
-			if err != nil {
-				return err
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			record, err := state.SDK.UpdateBaseRecord(context.Background(), token, appToken, tableID, recordID, fieldsMap)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"record": record}
-			text := tableTextRow(
-				[]string{"record_id", "created_time", "last_modified_time"},
-				[]string{record.RecordID, record.CreatedTime.String(), record.LastModifiedTime.String()},
-			)
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				fieldsMap, err := parseBaseRecordFields(fieldsJSON, fields)
+				if err != nil {
+					return nil, "", err
+				}
+				record, err := sdk.UpdateBaseRecord(ctx, token, appToken, tableID, recordID, fieldsMap)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"record": record}
+				text := tableTextRow(
+					[]string{"record_id", "created_time", "last_modified_time"},
+					[]string{record.RecordID, record.CreatedTime, record.LastModifiedTime},
+				)
+				return payload, text, nil
+			})
 		},
 	}
 

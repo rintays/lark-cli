@@ -46,6 +46,8 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	var defaultUserAccount string
 	var appID string
 	var appSecret string
+	var storeSecretInKeyring bool
+	var storeSecretInConfig bool
 
 	cmd := &cobra.Command{
 		Use:   "set",
@@ -62,6 +64,8 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 			useDefaultUserAccount := cmd.Flags().Changed("default-user-account")
 			useAppID := cmd.Flags().Changed("app-id")
 			useAppSecret := cmd.Flags().Changed("app-secret")
+			useStoreSecretInKeyring := cmd.Flags().Changed("store-secret-in-keyring")
+			useStoreSecretInConfig := cmd.Flags().Changed("store-secret-in-config")
 
 			usedBaseURLGroup := useBaseURL || usePlatform
 			usedMailboxGroup := useDefaultMailboxID
@@ -110,8 +114,17 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 					if appSecret == "" {
 						return errors.New("app-secret must not be empty")
 					}
-					state.Config.AppSecret = appSecret
+					storeInKeyring, err := resolveAppSecretStorage(state, storeSecretInKeyring, storeSecretInConfig)
+					if err != nil {
+						return err
+					}
+					if err := persistAppSecret(state, appSecret, storeInKeyring); err != nil {
+						return err
+					}
 					payload["app_secret_set"] = true
+					payload["app_secret_in_keyring"] = storeInKeyring
+				} else if useStoreSecretInKeyring || useStoreSecretInConfig {
+					return errors.New("--store-secret-in-keyring/--store-secret-in-config requires --app-secret")
 				}
 
 				if err := state.saveConfig(); err != nil {
@@ -212,7 +225,9 @@ func newConfigSetCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&defaultTokenType, "default-token-type", "", "default token type to persist (tenant or user)")
 	cmd.Flags().StringVar(&defaultUserAccount, "default-user-account", "", "default user account label to persist")
 	cmd.Flags().StringVar(&appID, "app-id", "", "app ID to persist")
-	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret to persist (stored in plain text)")
+	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret to persist (stored in plain text unless stored in keychain)")
+	cmd.Flags().BoolVar(&storeSecretInKeyring, "store-secret-in-keyring", false, "store app secret in keychain instead of config")
+	cmd.Flags().BoolVar(&storeSecretInConfig, "store-secret-in-config", false, "store app secret in config (disables keychain storage)")
 	cmd.MarkFlagsMutuallyExclusive("base-url", "platform", "default-mailbox-id", "default-token-type", "default-user-account")
 	cmd.MarkFlagsOneRequired("base-url", "platform", "default-mailbox-id", "default-token-type", "default-user-account", "app-id", "app-secret")
 
@@ -389,6 +404,10 @@ func configKeys() []configKeyInfo {
 			Key:         "app-secret",
 			Description: "App secret to persist (config set)",
 		},
+		{
+			Key:         "app-secret-in-keyring",
+			Description: "Store app secret in keychain (config set --store-secret-in-keyring)",
+		},
 	}
 }
 
@@ -420,6 +439,7 @@ func formatConfigKeysHuman(keys []configKeyInfo) string {
 func formatConfigHuman(cfg *config.Config) string {
 	lines := []string{
 		fmt.Sprintf("app_id: %s", cfg.AppID),
+		fmt.Sprintf("app_secret_in_keyring: %t", cfg.AppSecretInKeyring),
 		fmt.Sprintf("base_url: %s", cfg.BaseURL),
 		fmt.Sprintf("default_mailbox_id: %s", cfg.DefaultMailboxID),
 		fmt.Sprintf("default_token_type: %s", cfg.DefaultTokenType),

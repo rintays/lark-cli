@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseRecordBatchDeleteCmd(state *appState) *cobra.Command {
@@ -45,28 +47,23 @@ Or pass a file path with @:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			ids, err := parseBaseRecordBatchDeleteRecordIDs(recordIDs, recordIDsJSON, recordIDsFile)
-			if err != nil {
-				return err
-			}
-			results, err := state.SDK.BatchDeleteBaseRecords(context.Background(), token, appToken, tableID, ids)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"records": results}
-			lines := make([]string, 0, len(results))
-			for _, r := range results {
-				lines = append(lines, fmt.Sprintf("%s\t%t", r.RecordID, r.Deleted))
-			}
-			text := tableText([]string{"record_id", "deleted"}, lines, "no records deleted")
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				ids, err := parseBaseRecordBatchDeleteRecordIDs(recordIDs, recordIDsJSON, recordIDsFile)
+				if err != nil {
+					return nil, "", err
+				}
+				results, err := sdk.BatchDeleteBaseRecords(ctx, token, appToken, tableID, ids)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"records": results}
+				lines := make([]string, 0, len(results))
+				for _, r := range results {
+					lines = append(lines, fmt.Sprintf("%s\t%t", r.RecordID, r.Deleted))
+				}
+				text := tableText([]string{"record_id", "deleted"}, lines, "no records deleted")
+				return payload, text, nil
+			})
 		},
 	}
 

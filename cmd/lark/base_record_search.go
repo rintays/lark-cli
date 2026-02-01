@@ -37,53 +37,59 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if cmd.Flags().Changed("filter") && cmd.Flags().Changed("filter-json") {
+				return usageError(cmd, "filter and filter-json cannot both be set", "Use only one of --filter or --filter-json.")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
+			if cmd.Flags().Changed("sort") && cmd.Flags().Changed("sort-json") {
+				return usageError(cmd, "sort and sort-json cannot both be set", "Use only one of --sort or --sort-json.")
 			}
-
-			automaticFields := true
-			req := larksdk.SearchBaseRecordsRequest{
-				ViewID:          viewID,
-				PageSize:        limit,
-				AutomaticFields: &automaticFields,
+			if filterJSON != "" && !json.Valid([]byte(filterJSON)) {
+				return usageError(cmd, "invalid filter JSON", "Provide a valid JSON object for --filter/--filter-json.")
 			}
-			fieldNames, err := parseBaseRecordSearchFieldNames(fieldsCSV)
-			if err != nil {
-				return err
+			if sortJSON != "" && !json.Valid([]byte(sortJSON)) {
+				return usageError(cmd, "invalid sort JSON", "Provide a valid JSON array/object for --sort/--sort-json.")
 			}
-			if len(fieldNames) > 0 {
-				req.FieldNames = fieldNames
-			}
-			if filterJSON != "" {
-				req.Filter = json.RawMessage(filterJSON)
-			}
-			if sortJSON != "" {
-				req.Sort = json.RawMessage(sortJSON)
-			}
-
-			result, err := state.SDK.SearchBaseRecords(context.Background(), token, appToken, tableID, req)
-			if err != nil {
-				return err
-			}
-			records := result.Items
-			payload := map[string]any{"records": records}
-			headers := buildBaseRecordSearchHeaders(fieldNames, records)
-			rows := make([][]string, 0, len(records))
-			for _, record := range records {
-				row := make([]string, 0, len(headers))
-				row = append(row, formatBaseRecordCell(record.RecordID))
-				for _, fieldName := range headers[1 : len(headers)-2] {
-					row = append(row, formatBaseRecordFieldValue(record.Fields[fieldName]))
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				automaticFields := true
+				req := larksdk.SearchBaseRecordsRequest{
+					ViewID:          viewID,
+					PageSize:        limit,
+					AutomaticFields: &automaticFields,
 				}
-				row = append(row, formatBaseRecordCell(record.CreatedTime.String()), formatBaseRecordCell(record.LastModifiedTime.String()))
-				rows = append(rows, row)
-			}
-			text := tableTextFromRows(headers, rows, "no records found")
-			return state.Printer.Print(payload, text)
+				fieldNames, err := parseBaseRecordSearchFieldNames(fieldsCSV)
+				if err != nil {
+					return nil, "", err
+				}
+				if len(fieldNames) > 0 {
+					req.FieldNames = fieldNames
+				}
+				if filterJSON != "" {
+					req.Filter = json.RawMessage(filterJSON)
+				}
+				if sortJSON != "" {
+					req.Sort = json.RawMessage(sortJSON)
+				}
+
+				result, err := sdk.SearchBaseRecords(ctx, token, appToken, tableID, req)
+				if err != nil {
+					return nil, "", err
+				}
+				records := result.Items
+				payload := map[string]any{"records": records}
+				headers := buildBaseRecordSearchHeaders(fieldNames, records)
+				rows := make([][]string, 0, len(records))
+				for _, record := range records {
+					row := make([]string, 0, len(headers))
+					row = append(row, formatBaseRecordCell(record.RecordID))
+					for _, fieldName := range headers[1 : len(headers)-2] {
+						row = append(row, formatBaseRecordFieldValue(record.Fields[fieldName]))
+					}
+					row = append(row, formatBaseRecordCell(record.CreatedTime.String()), formatBaseRecordCell(record.LastModifiedTime.String()))
+					rows = append(rows, row)
+				}
+				text := tableTextFromRows(headers, rows, "no records found")
+				return payload, text, nil
+			})
 		},
 	}
 

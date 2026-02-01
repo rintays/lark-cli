@@ -18,7 +18,6 @@ func TestMsgSendCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
-			AppSecret:                  "secret",
 			BaseURL:                    "http://example.com",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -32,7 +31,7 @@ func TestMsgSendCommandRequiresSDK(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "sdk client is required" {
+	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

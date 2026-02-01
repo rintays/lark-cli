@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -18,10 +16,10 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 		Use:   "create",
 		Short: "Create a Sheets (spreadsheet) file",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -29,14 +27,14 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 			if strings.EqualFold(normalizedFolderID, "root") {
 				normalizedFolderID = ""
 			}
-			spreadsheetToken, err := state.SDK.CreateSpreadsheet(context.Background(), token, title, normalizedFolderID)
+			spreadsheetToken, err := state.SDK.CreateSpreadsheet(cmd.Context(), token, title, normalizedFolderID)
 			if err != nil {
 				return err
 			}
 			var defaultSheetID string
 			var defaultSheetTitle string
 			if state.SDK != nil {
-				metadata, err := state.SDK.GetSpreadsheetMetadata(context.Background(), token, spreadsheetToken)
+				metadata, err := state.SDK.GetSpreadsheetMetadata(cmd.Context(), token, spreadsheetToken)
 				if err != nil {
 					if strings.TrimSpace(sheetTitle) != "" {
 						return fmt.Errorf("resolve sheet id for --sheet-title: %w", err)
@@ -50,7 +48,7 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 				if defaultSheetID == "" {
 					return errors.New("sheet id is required to set --sheet-title")
 				}
-				if err := state.SDK.UpdateSpreadsheetSheetTitle(context.Background(), token, spreadsheetToken, defaultSheetID, sheetTitle); err != nil {
+				if err := state.SDK.UpdateSpreadsheetSheetTitle(cmd.Context(), token, spreadsheetToken, defaultSheetID, sheetTitle); err != nil {
 					return err
 				}
 				defaultSheetTitle = sheetTitle

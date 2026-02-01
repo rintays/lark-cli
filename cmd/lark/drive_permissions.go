@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -59,14 +58,14 @@ func newDrivePermissionAddCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if strings.TrimSpace(fileToken) == "" {
 				return usageError(cmd, "file-token is required", `Example:
   lark drive permissions add <file-token> email fred@srv.work --type docx --perm view --member-kind user`)
 			}
-			ctx := context.Background()
+			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
@@ -141,10 +140,10 @@ func newDrivePermissionListCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			ctx := context.Background()
+			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
@@ -221,8 +220,8 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if strings.TrimSpace(fileToken) == "" {
 				return usageError(cmd, "file-token is required", `Example:
@@ -232,7 +231,7 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 				return usageError(cmd, "at least one of --perm, --perm-type, or --member-kind is required", `Example:
   lark drive permissions update <file-token> email fred@srv.work --type docx --perm edit`)
 			}
-			ctx := context.Background()
+			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
@@ -315,14 +314,14 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if strings.TrimSpace(fileToken) == "" {
 				return usageError(cmd, "file-token is required", `Example:
   lark drive permissions delete <file-token> email fred@srv.work --type docx`)
 			}
-			ctx := context.Background()
+			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
