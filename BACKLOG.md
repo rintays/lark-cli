@@ -1,7 +1,7 @@
 # lark CLI — BACKLOG (maintained by AG)
 
 **Owner:** AG  
-**Where:** `<workspace>/lark/BACKLOG.md` (single source of truth)  
+**Where:** `<workspace>/lark/BACKLOG.md` (mirror: `<workspace>/BACKLOG.md`)  
 **Repo:** `<workspace>/lark`  
 **Branch policy:** default development branch is **`main`** and changes must land on **`origin/main`** (unless Master explicitly requests a branch/PR flow).  
 **Last updated:** 2026-02-01 (Asia/Shanghai)
@@ -548,3 +548,4 @@ Deliverables:
 - 2026-02-01: Base record batch ops: added `base record batch-update` command + SDK-first + core fallback wrapper + unit tests.
 - 2026-02-01: Base field create: SDK-first + core fallback wrapper; CLI supports `--field-type <name|id>` (defaults to `text`) and prints `field_id/field_name/type`; cmd unit tests assert path/body/query + output contains `field_id`.
 - 2026-02-01: Base view create: added core fallback (POST /views) while keeping SDK-first; CLI defaults `--view-type` to `grid`.
+- 2026-02-01: Base view delete: SDK-first + core fallback; prints `deleted/view_id`; unit tests added.

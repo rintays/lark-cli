@@ -40,21 +40,39 @@ func (c *Client) DeleteBaseView(ctx context.Context, token, appToken, tableID, v
 		return BaseViewDeleteResult{}, errors.New("view id is required")
 	}
 
-	if c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.AppTableView != nil {
-		req := larkbitable.NewDeleteAppTableViewReqBuilder().AppToken(appToken).TableId(tableID).ViewId(viewID).Build()
-		resp, err := c.sdk.Bitable.V1.AppTableView.Delete(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
-		if err != nil {
-			return BaseViewDeleteResult{}, err
+	if c.bitableViewDeleteSDKAvailable() {
+		res, err := c.deleteBaseViewSDK(ctx, tenantToken, appToken, tableID, viewID)
+		if err == nil {
+			return res, nil
 		}
-		if resp == nil {
-			return BaseViewDeleteResult{}, errors.New("delete base view failed: empty response")
-		}
-		if !resp.Success() {
-			return BaseViewDeleteResult{}, formatCodeError("delete base view failed", resp.CodeError, resp.ApiResp)
-		}
-		return BaseViewDeleteResult{ViewID: viewID, Deleted: true}, nil
 	}
+	return c.deleteBaseViewCore(ctx, tenantToken, appToken, tableID, viewID)
+}
 
+func (c *Client) bitableViewDeleteSDKAvailable() bool {
+	return c != nil && c.sdk != nil && c.sdk.Bitable != nil && c.sdk.Bitable.V1 != nil && c.sdk.Bitable.V1.AppTableView != nil
+}
+
+func (c *Client) deleteBaseViewSDK(ctx context.Context, tenantToken, appToken, tableID, viewID string) (BaseViewDeleteResult, error) {
+	req := larkbitable.NewDeleteAppTableViewReqBuilder().
+		AppToken(appToken).
+		TableId(tableID).
+		ViewId(viewID).
+		Build()
+	resp, err := c.sdk.Bitable.V1.AppTableView.Delete(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return BaseViewDeleteResult{}, err
+	}
+	if resp == nil {
+		return BaseViewDeleteResult{}, errors.New("delete base view failed: empty response")
+	}
+	if !resp.Success() {
+		return BaseViewDeleteResult{}, formatCodeError("delete base view failed", resp.CodeError, resp.ApiResp)
+	}
+	return BaseViewDeleteResult{ViewID: viewID, Deleted: true}, nil
+}
+
+func (c *Client) deleteBaseViewCore(ctx context.Context, tenantToken, appToken, tableID, viewID string) (BaseViewDeleteResult, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/bitable/v1/apps/:app_token/tables/:table_id/views/:view_id",
 		HttpMethod:                http.MethodDelete,
@@ -65,6 +83,7 @@ func (c *Client) DeleteBaseView(ctx context.Context, token, appToken, tableID, v
 	apiReq.PathParams.Set("app_token", appToken)
 	apiReq.PathParams.Set("table_id", tableID)
 	apiReq.PathParams.Set("view_id", viewID)
+
 	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
 	if err != nil {
 		return BaseViewDeleteResult{}, err
@@ -79,6 +98,7 @@ func (c *Client) DeleteBaseView(ctx context.Context, token, appToken, tableID, v
 	if !resp.Success() {
 		return BaseViewDeleteResult{}, formatCodeError("delete base view failed", resp.CodeError, resp.ApiResp)
 	}
+
 	result := BaseViewDeleteResult{ViewID: viewID, Deleted: true}
 	if resp.Data != nil {
 		if resp.Data.ViewID != "" {

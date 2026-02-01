@@ -142,6 +142,11 @@ type BaseView struct {
 	ViewType string `json:"view_type"`
 }
 
+type BaseViewDeleteResult struct {
+	ViewID  string `json:"view_id"`
+	Deleted bool   `json:"deleted"`
+}
+
 type BaseRecord struct {
 	RecordID         string         `json:"record_id"`
 	Fields           map[string]any `json:"fields,omitempty"`
