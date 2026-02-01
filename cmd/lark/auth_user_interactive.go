@@ -79,7 +79,7 @@ func previousUserOAuthSelections(state *appState, account string) ([]string, []s
 		return nil, nil
 	}
 	acct, ok := loadUserAccount(state.Config, account)
-	if !ok || acct == nil {
+	if !ok {
 		return nil, nil
 	}
 	var services []string
