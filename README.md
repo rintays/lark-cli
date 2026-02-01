@@ -335,6 +335,7 @@ lark docs get <DOCUMENT_ID>
 # or blocks
 lark docs get <DOCUMENT_ID> --format blocks
 ```
+`--format md` uses blocks to render Markdown; `--format txt` uses raw content.
 
 Blocks:
 

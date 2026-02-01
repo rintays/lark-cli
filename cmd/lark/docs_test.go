@@ -85,7 +85,7 @@ func TestDocsCreateCommand(t *testing.T) {
 
 func TestDocsCreateCommandFetchesURL(t *testing.T) {
 	createCalled := 0
-	getCalled := 0
+	driveCalled := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
@@ -106,17 +106,16 @@ func TestDocsCreateCommandFetchesURL(t *testing.T) {
 				},
 			})
 			return
-		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/docx/v1/documents/doc1":
-			getCalled++
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/files/doc1":
+			driveCalled++
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code": 0,
 				"msg":  "ok",
 				"data": map[string]any{
-					"document": map[string]any{
-						"document_id": "doc1",
-						"title":       "Specs",
-						"url":         "https://example.com/doc",
+					"file": map[string]any{
+						"token": "doc1",
+						"url":   "https://example.com/doc",
 					},
 				},
 			})
@@ -150,8 +149,8 @@ func TestDocsCreateCommandFetchesURL(t *testing.T) {
 		t.Fatalf("docs create error: %v", err)
 	}
 
-	if createCalled != 1 || getCalled != 1 {
-		t.Fatalf("unexpected call counts: create=%d get=%d", createCalled, getCalled)
+	if createCalled != 1 || driveCalled != 1 {
+		t.Fatalf("unexpected call counts: create=%d drive=%d", createCalled, driveCalled)
 	}
 	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
 		t.Fatalf("unexpected output: %q", buf.String())
@@ -501,23 +500,43 @@ func TestDocsInfoCommandRequiresSDK(t *testing.T) {
 }
 
 func TestDocsGetCommand(t *testing.T) {
-	exported := []byte("Hello doc\nLine two\n")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.RawQuery != "" {
-			t.Fatalf("unexpected query: %q", r.URL.RawQuery)
-		}
-		if r.Method != http.MethodGet || r.URL.Path != "/open-apis/docx/v1/documents/doc1/raw_content" {
+		if r.Method != http.MethodGet || r.URL.Path != "/open-apis/docx/v1/documents/doc1/blocks" {
 			t.Fatalf("unexpected path: %s %s", r.Method, r.URL.Path)
+		}
+		if got := r.URL.Query().Get("page_size"); got == "" {
+			t.Fatalf("expected page_size query param")
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"content": string(exported),
+				"items": []map[string]any{
+					{
+						"block_id":   "block1",
+						"block_type": 3,
+						"heading1": map[string]any{
+							"elements": []map[string]any{
+								{"text_run": map[string]any{"content": "Title"}},
+							},
+						},
+					},
+					{
+						"block_id":   "block2",
+						"block_type": 12,
+						"bullet": map[string]any{
+							"elements": []map[string]any{
+								{"text_run": map[string]any{"content": "Item"}},
+							},
+						},
+					},
+				},
+				"has_more":   false,
+				"page_token": "",
 			},
 		})
 	})
@@ -546,7 +565,7 @@ func TestDocsGetCommand(t *testing.T) {
 		t.Fatalf("docs get error: %v", err)
 	}
 
-	if got := buf.String(); got != string(exported) {
+	if got := buf.String(); !strings.Contains(got, "# Title") || !strings.Contains(got, "- Item") {
 		t.Fatalf("unexpected output: %q", got)
 	}
 }

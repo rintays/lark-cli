@@ -109,3 +109,6 @@
 - 2026-01-31: Calendar primary lookup now respects user vs tenant access tokens when defaulting calendar_id.
 - 2026-02-01: Expanded calendar event models, added create/update/get support for extra fields (body-json/body-file + query flags), and updated README examples.
 - 2026-02-01: Removed docs get/doc create legacy flags for required args, added best-effort URL fetch after docs create, and unescaped CLI content for docs convert/overwrite.
+- 2026-02-01: Docs create/info now attempt Drive metadata URL lookup with user-token fallback when needed.
+- 2026-02-01: Docs URL lookup now always retries with user token when available.
+- 2026-02-01: Docs get --format md now renders Markdown from docx blocks instead of raw_content.

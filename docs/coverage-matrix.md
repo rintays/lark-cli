@@ -36,7 +36,8 @@ This doc is a **code-derived snapshot** of which Feishu/Lark OpenAPI surfaces in
 |---|---|---:|:---:|:---:|---|
 | Create document (`docs create`) | `POST /open-apis/docx/v1/documents` | tenant | v1 | yes |  |
 | Get document (`docs info`) | `GET /open-apis/docx/v1/documents/:document_id` | tenant | v1 | yes |  |
-| Raw content (`docs get --format md|txt`) | `GET /open-apis/docx/v1/documents/:document_id/raw_content` | tenant | v1 | yes |  |
+| Markdown content (`docs get --format md`) | `GET /open-apis/docx/v1/documents/:document_id/blocks` | tenant | v1 | yes |  |
+| Raw content (`docs get --format txt`) | `GET /open-apis/docx/v1/documents/:document_id/raw_content` | tenant | v1 | yes |  |
 | List blocks (`docs get --format blocks`, `docs blocks …`) | `GET /open-apis/docx/v1/documents/:document_id/blocks` | tenant | v1 | yes |  |
 
 ## Sheets

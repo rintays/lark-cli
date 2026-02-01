@@ -62,7 +62,7 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 				return errors.New("sdk client is required")
 			}
 			title := args[0]
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -74,17 +74,7 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if doc.URL == "" && doc.DocumentID != "" {
-				if fetched, err := state.SDK.GetDocxDocument(context.Background(), token, doc.DocumentID); err == nil && fetched.URL != "" {
-					doc.URL = fetched.URL
-				}
-				if doc.URL == "" {
-					file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
-						FileToken: doc.DocumentID,
-					})
-					if err == nil && file.URL != "" {
-						doc.URL = file.URL
-					}
-				}
+				doc.URL = docxDriveURL(context.Background(), state, tokenType, token, doc.DocumentID)
 			}
 			payload := map[string]any{"document": doc}
 			text := tableTextRow(
@@ -124,7 +114,7 @@ func newDocsInfoCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -133,12 +123,7 @@ func newDocsInfoCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if doc.URL == "" {
-				file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
-					FileToken: documentID,
-				})
-				if err == nil && file.URL != "" {
-					doc.URL = file.URL
-				}
+				doc.URL = docxDriveURL(context.Background(), state, tokenType, token, documentID)
 			}
 			payload := map[string]any{"document": doc}
 			text := formatDocxInfo(doc)
@@ -263,13 +248,23 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 			}
 			documentID := args[0]
 			switch format {
-			case "md", "markdown", "txt", "text":
-				if format == "markdown" {
-					format = "md"
+			case "md", "markdown":
+				blocks, err := listDocxBlocks(context.Background(), state.SDK, token, documentID)
+				if err != nil {
+					return err
 				}
-				if format == "text" {
-					format = "txt"
+				content := docxBlocksMarkdown(documentID, blocks)
+				if state.JSON {
+					payload := map[string]any{
+						"document_id": documentID,
+						"format":      "md",
+						"content":     content,
+					}
+					return state.Printer.Print(payload, "")
 				}
+				_, err = io.WriteString(state.Printer.Writer, content)
+				return err
+			case "txt", "text":
 				content, err := state.SDK.GetDocxRawContent(context.Background(), token, documentID)
 				if err != nil {
 					return err
@@ -277,7 +272,7 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				if state.JSON {
 					payload := map[string]any{
 						"document_id": documentID,
-						"format":      format,
+						"format":      "txt",
 						"content":     content,
 					}
 					return state.Printer.Print(payload, "")
@@ -285,26 +280,9 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				_, err = io.WriteString(state.Printer.Writer, content)
 				return err
 			case "blocks":
-				blocks := make([]*larkdocx.Block, 0)
-				pageToken := ""
-				for {
-					items, nextToken, hasMore, err := state.SDK.ListDocxBlocks(
-						context.Background(),
-						token,
-						documentID,
-						docxBlocksMaxPageSize,
-						pageToken,
-						-1,
-						"",
-					)
-					if err != nil {
-						return err
-					}
-					blocks = append(blocks, items...)
-					if !hasMore || nextToken == "" {
-						break
-					}
-					pageToken = nextToken
+				blocks, err := listDocxBlocks(context.Background(), state.SDK, token, documentID)
+				if err != nil {
+					return err
 				}
 				payload := map[string]any{
 					"document_id": documentID,
@@ -321,6 +299,34 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&format, "format", "md", "output format (md, txt, or blocks)")
 	return cmd
+}
+
+func listDocxBlocks(ctx context.Context, sdk *larksdk.Client, token, documentID string) ([]*larkdocx.Block, error) {
+	if sdk == nil {
+		return nil, errors.New("sdk client is required")
+	}
+	blocks := make([]*larkdocx.Block, 0)
+	pageToken := ""
+	for {
+		items, nextToken, hasMore, err := sdk.ListDocxBlocks(
+			ctx,
+			token,
+			documentID,
+			docxBlocksMaxPageSize,
+			pageToken,
+			-1,
+			"",
+		)
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, items...)
+		if !hasMore || nextToken == "" {
+			break
+		}
+		pageToken = nextToken
+	}
+	return blocks, nil
 }
 
 func formatDocxInfo(doc larksdk.DocxDocument) string {
@@ -361,6 +367,31 @@ func formatDocxInfo(doc larksdk.DocxDocument) string {
 		rows[len(rows)-1][1] = infoValueFloatPtr(cover.OffsetRatioY)
 	}
 	return formatInfoTable(rows, "no document found")
+}
+
+func docxDriveURL(ctx context.Context, state *appState, accessType tokenType, token, documentID string) string {
+	if state == nil || state.SDK == nil || documentID == "" {
+		return ""
+	}
+	file, err := driveFileMetadataWithToken(ctx, state.SDK, accessType, token, documentID)
+	if err == nil && file.URL != "" {
+		return file.URL
+	}
+	if accessType == tokenTypeUser {
+		return ""
+	}
+	userToken, err := resolveDriveSearchToken(ctx, state)
+	if err != nil || userToken == "" {
+		return ""
+	}
+	if state.Verbose {
+		fmt.Fprintln(state.Printer.Writer, "retrying docs url lookup with user access token")
+	}
+	fallbackFile, err := driveFileMetadataWithToken(ctx, state.SDK, tokenTypeUser, userToken, documentID)
+	if err != nil || fallbackFile.URL == "" {
+		return ""
+	}
+	return fallbackFile.URL
 }
 
 type exportTaskClient interface {
