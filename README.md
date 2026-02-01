@@ -143,7 +143,7 @@ lark auth
 ```bash
 lark whoami
 lark chats list --limit 10
-lark users search --email user@example.com
+lark users search "Ada"
 lark messages send --receive-id <CHAT_ID> --text "hello"
 ```
 
@@ -158,7 +158,7 @@ Examples:
 
 ```bash
 lark chats list --json
-lark users search --email user@example.com --json
+lark users search "Ada" --json
 ```
 
 ---

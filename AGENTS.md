@@ -120,3 +120,4 @@
 - 2026-02-01: Docs create/info now attempt Drive metadata URL lookup with user-token fallback when needed.
 - 2026-02-01: Docs URL lookup now always retries with user token when available.
 - 2026-02-01: Docs get --format md now renders Markdown from docx blocks instead of raw_content.
+- 2026-02-01: Switched users search to search/v1/user with positional query, user-token scopes, and updated output/tests/docs.
