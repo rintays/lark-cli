@@ -144,3 +144,6 @@
 - 2026-02-02: Clarified drive permissions add help text to document positional args and member-type options, and switched example to openid.
 - 2026-02-02: Added user-token support for `lark whoami` via authen user_info, with docs/tests updates.
 - 2026-02-02: Refined messages list/search display to de-emphasize IDs and highlight content/sender details.
+- 2026-02-02: Set message content/sender color to pure black/white for higher contrast.
+- 2026-02-02: Added best-effort sender name resolution for message list/search output when tenant token is available.
+- 2026-02-02: Switched messages list/search layout to a fixed prefix column with human-readable timestamps.

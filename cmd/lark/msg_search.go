@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
@@ -166,10 +167,24 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 			}
 			text := output.Notice(output.NoticeInfo, "no messages found", nil)
 			if len(messages) > 0 {
-				lines := make([]string, 0, len(messages))
+				var senderNames map[string]string
+				if !state.JSON && state.Config != nil && cachedTokenValid(state.Config, time.Now()) {
+					senderNames = resolveMessageSenderNames(cmd.Context(), state, state.Config.TenantAccessToken, messages)
+				}
 				styles := newMessageFormatStyles(state.Printer.Styled)
+				displays := make([]messageDisplay, 0, len(messages))
+				prefixWidth := 0
 				for _, message := range messages {
-					lines = append(lines, formatMessageBlock(message, styles))
+					display := buildMessageDisplay(message, styles, senderNames)
+					if w := lipgloss.Width(display.prefixPlain); w > prefixWidth {
+						prefixWidth = w
+					}
+					displays = append(displays, display)
+				}
+				lines := make([]string, 0, len(messages))
+				separator := " │ "
+				for _, display := range displays {
+					lines = append(lines, renderMessageDisplay(display, prefixWidth, separator)...)
 				}
 				text = strings.Join(lines, "\n\n")
 			}
