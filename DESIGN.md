@@ -26,8 +26,7 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 | Chats list | `/open-apis/im/v1/chats` | SDK im | tenant | v1 | `lark chats list`. |
 | Message send | `/open-apis/im/v1/messages` | SDK im | tenant | v1 | `lark messages send`. |
 | Users info | `/open-apis/contact/v3/users/:user_id` | SDK contact | tenant | v3 | `lark users info`, `lark contacts user info`. |
-| Users search (batch IDs) | `/open-apis/contact/v3/users/batch_get_id` | SDK contact | tenant | v3 | `lark users search --email/--mobile`. |
-| Users search (dept) | `/open-apis/contact/v3/users/find_by_department` | SDK contact | tenant | v3 | `lark users search --name`. |
+| Users search | `/open-apis/search/v1/user` | Core ApiReq wrapper | user | v1 | `lark users search <search_query>`. |
 | Drive list | `/open-apis/drive/v1/files` | SDK drive | tenant | v1 | `lark drive list`. |
 | Drive search | `/open-apis/drive/v1/files/search` | Core ApiReq wrapper | tenant/user | v1 | `lark drive search`. |
 | Drive metadata | `/open-apis/drive/v1/files/:file_token` | Core ApiReq wrapper | tenant/user | v1 | `lark drive info` / `lark drive urls`. |

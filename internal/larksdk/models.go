@@ -347,11 +347,20 @@ type ReserveCorrectionCheckInfo struct {
 }
 
 type User struct {
-	UserID string `json:"user_id"`
-	OpenID string `json:"open_id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
-	Mobile string `json:"mobile"`
+	UserID        string      `json:"user_id"`
+	OpenID        string      `json:"open_id"`
+	Name          string      `json:"name"`
+	Email         string      `json:"email"`
+	Mobile        string      `json:"mobile"`
+	DepartmentIDs []string    `json:"department_ids,omitempty"`
+	Avatar        *AvatarInfo `json:"avatar,omitempty"`
+}
+
+type AvatarInfo struct {
+	Avatar72     string `json:"avatar_72,omitempty"`
+	Avatar240    string `json:"avatar_240,omitempty"`
+	Avatar640    string `json:"avatar_640,omitempty"`
+	AvatarOrigin string `json:"avatar_origin,omitempty"`
 }
 
 type GetContactUserRequest struct {
