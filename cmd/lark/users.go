@@ -31,6 +31,7 @@ Tip: use search to resolve IDs before calling other APIs.`,
 
 func newUsersSearchCmd(state *appState) *cobra.Command {
 	var query string
+	var email string
 	var limit int
 	var pages int
 
@@ -38,19 +39,32 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 		Use:     "search <search_query>",
 		Aliases: []string{"list"},
 		Short:   "Search users by keyword",
-		Example: `  lark users search "Ada"`,
+		Example: `  lark users search "Ada"
+  lark users search --email "ada@example.com"`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				return usageError(cmd, "search_query is required", `Example:
-  lark users search "Ada"`)
+			email = strings.TrimSpace(email)
+			if len(args) == 0 && email == "" {
+				return usageError(cmd, "search_query is required", `Examples:
+  lark users search "Ada"
+  lark users search --email "ada@example.com"`)
 			}
-			query = strings.TrimSpace(args[0])
-			if query == "" {
-				return usageError(cmd, "search_query is required", `Example:
-  lark users search "Ada"`)
+			if len(args) > 0 && email != "" {
+				return usageError(cmd, "search_query and --email cannot be used together", `Examples:
+  lark users search "Ada"
+  lark users search --email "ada@example.com"`)
+			}
+			if len(args) > 0 {
+				query = strings.TrimSpace(args[0])
+				if query == "" {
+					return usageError(cmd, "search_query is required", `Examples:
+  lark users search "Ada"
+  lark users search --email "ada@example.com"`)
+				}
+			} else {
+				query = email
 			}
 			return nil
 		},
@@ -112,11 +126,12 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			for _, user := range users {
 				lines = append(lines, formatUserSearchLine(user))
 			}
-			text := tableText([]string{"user_id", "name", "open_id", "departments"}, lines, "no users found")
+			text := tableText([]string{"user_id", "name", "email", "departments"}, lines, "no users found")
 			return state.Printer.Print(payload, text)
 		},
 	}
 
+	cmd.Flags().StringVar(&email, "email", "", "search by exact email address")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of users to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 
@@ -129,7 +144,7 @@ func formatUserSearchLine(user larksdk.User) string {
 		id = user.OpenID
 	}
 	departments := strings.Join(user.DepartmentIDs, ",")
-	return fmt.Sprintf("%s\t%s\t%s\t%s", id, user.Name, user.OpenID, departments)
+	return fmt.Sprintf("%s\t%s\t%s\t%s", id, user.Name, user.Email, departments)
 }
 
 func formatUserLine(user larksdk.User) string {

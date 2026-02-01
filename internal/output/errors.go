@@ -52,13 +52,17 @@ func formatUsageError(err UsageError, theme Theme) string {
 	}
 	if usage := strings.TrimSpace(err.Usage); usage != "" {
 		b.WriteString("\n\n")
-		if theme.Styled {
-			b.WriteString(theme.RenderSectionTitle("Usage"))
+		if strings.HasPrefix(usage, "Usage:") {
+			b.WriteString(usage)
 		} else {
-			b.WriteString("Usage")
+			if theme.Styled {
+				b.WriteString(theme.RenderSectionTitle("Usage"))
+			} else {
+				b.WriteString("Usage")
+			}
+			b.WriteString("\n")
+			b.WriteString(indentBlock(usage, "  "))
 		}
-		b.WriteString("\n")
-		b.WriteString(indentBlock(usage, "  "))
 	}
 	if hint := strings.TrimSpace(err.Hint); hint != "" {
 		b.WriteString("\n\n")
