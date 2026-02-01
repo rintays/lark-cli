@@ -127,7 +127,7 @@ func TestRequirementsForCommandDeterministicSortedUnique(t *testing.T) {
 	if !offline1 {
 		t.Fatalf("offline=false, want true")
 	}
-	if want := []string{"drive:drive"}; !reflect.DeepEqual(scopes1, want) {
+	if want := []string{"docx:document:readonly", "drive:drive"}; !reflect.DeepEqual(scopes1, want) {
 		t.Fatalf("scopes=%v, want %v", scopes1, want)
 	}
 

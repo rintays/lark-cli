@@ -28,6 +28,7 @@ func newDocsCmd(state *appState) *cobra.Command {
 - document_id is the docx file token (use it as FILE_TOKEN for drive permissions).
 - A doc contains blocks (paragraphs, headings, lists, tables, images) that make up its structure and content.
 - Documents can live in a Drive folder (folder-id).
+- Docx is the default API surface; legacy docs scopes are deprecated.
 - Use lark drive permissions to manage collaborators for docs.
 - Use info/export/get to inspect or download content.`,
 	}
@@ -230,6 +231,7 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-export")
 
 	cmd.Flags().StringVar(&format, "format", "", "export format (pdf)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path (or - for stdout)")

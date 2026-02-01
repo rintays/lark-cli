@@ -97,8 +97,26 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				}
 			}
 			scopeSet := cmd.Flags().Changed("scopes")
+			servicesSet := cmd.Flags().Changed("services")
+			readonlySet := cmd.Flags().Changed("readonly")
+			driveScopeSet := cmd.Flags().Changed("drive-scope")
+
+			if !scopeSet && !servicesSet && !readonlySet && !driveScopeSet {
+				selection, err := promptUserOAuthSelection(state, account)
+				if err != nil {
+					return err
+				}
+				if selection.Mode == userOAuthSelectServices {
+					services = selection.Services
+					servicesSet = true
+				} else {
+					scopes = joinScopes(selection.Scopes)
+					scopeSet = true
+				}
+			}
+
 			if scopeSet {
-				if cmd.Flags().Changed("services") || cmd.Flags().Changed("readonly") || cmd.Flags().Changed("drive-scope") {
+				if servicesSet || readonlySet || driveScopeSet {
 					return errors.New("--scopes cannot be combined with --services, --readonly, or --drive-scope")
 				}
 			}
@@ -107,10 +125,10 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				Scopes:        scopes,
 				ScopesSet:     scopeSet,
 				Services:      parseServicesList(services),
-				ServicesSet:   cmd.Flags().Changed("services"),
+				ServicesSet:   servicesSet,
 				Readonly:      readonly,
 				DriveScope:    driveScope,
-				DriveScopeSet: cmd.Flags().Changed("drive-scope"),
+				DriveScopeSet: driveScopeSet,
 			}
 			scopeList, _, err := resolveUserOAuthScopes(state, scopeOpts)
 			if err != nil {

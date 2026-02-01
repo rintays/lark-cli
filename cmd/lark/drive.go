@@ -167,6 +167,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive", "search-docs")
 
 	cmd.Flags().StringSliceVar(&fileTypes, "type", nil, "filter by doc type (docx|doc|sheet|slides|bitable|mindnote|file); repeatable or comma-separated")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope the search")
@@ -487,6 +488,7 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-export")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: docx, sheet, bitable)")
 	cmd.Flags().StringVar(&format, "format", "", "export format (for example: pdf, docx, xlsx)")

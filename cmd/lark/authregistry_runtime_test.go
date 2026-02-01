@@ -36,10 +36,10 @@ func TestUserOAuthScopesForCommand(t *testing.T) {
 	if len(undeclared) != 0 {
 		t.Fatalf("expected no undeclared services, got %v", undeclared)
 	}
-	if want := []string{"drive"}; !reflect.DeepEqual(services, want) {
+	if want := []string{"drive", "search-docs"}; !reflect.DeepEqual(services, want) {
 		t.Fatalf("services=%v, want %v", services, want)
 	}
-	if want := []string{"offline_access", "drive:drive"}; !reflect.DeepEqual(scopes, want) {
+	if want := []string{"offline_access", "drive:drive", "search:docs:read"}; !reflect.DeepEqual(scopes, want) {
 		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 

@@ -39,8 +39,8 @@ func TestAuthExplainDriveSearchJSON(t *testing.T) {
 	if payload.Command != "drive search" {
 		t.Fatalf("command: expected %q, got %q", "drive search", payload.Command)
 	}
-	if strings.Join(payload.Services, ",") != "drive" {
-		t.Fatalf("services: expected [drive], got %v", payload.Services)
+	if strings.Join(payload.Services, ",") != "drive,search-docs" {
+		t.Fatalf("services: expected [drive search-docs], got %v", payload.Services)
 	}
 	if strings.Join(payload.TokenTypes, ",") != "tenant,user" {
 		t.Fatalf("token_types: expected [tenant user], got %v", payload.TokenTypes)
@@ -48,8 +48,8 @@ func TestAuthExplainDriveSearchJSON(t *testing.T) {
 	if !payload.RequiresOffline {
 		t.Fatalf("requires_offline: expected true")
 	}
-	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive" {
-		t.Fatalf("required_user_scopes: expected [drive:drive], got %v", payload.RequiredUserScopes)
+	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive,search:docs:read" {
+		t.Fatalf("required_user_scopes: expected [drive:drive search:docs:read], got %v", payload.RequiredUserScopes)
 	}
 	if payload.SuggestedUserLoginCommand == "" {
 		t.Fatalf("expected suggested_user_login_command")
@@ -81,16 +81,20 @@ func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
 		t.Fatalf("unmarshal output: %v\noutput=%s", err, buf.String())
 	}
 
-	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive" {
-		t.Fatalf("required_user_scopes: expected [drive:drive], got %v", payload.RequiredUserScopes)
+	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive,search:docs:read" {
+		t.Fatalf("required_user_scopes: expected [drive:drive search:docs:read], got %v", payload.RequiredUserScopes)
 	}
 	if len(payload.SuggestedUserLoginScopes) == 0 || payload.SuggestedUserLoginScopes[0] != defaultUserOAuthScope {
 		t.Fatalf("expected suggested scopes to include %q first, got %v", defaultUserOAuthScope, payload.SuggestedUserLoginScopes)
 	}
 	foundReadonly := false
+	foundSearchDocs := false
 	for _, scope := range payload.SuggestedUserLoginScopes {
 		if scope == "drive:drive:readonly" {
 			foundReadonly = true
+		}
+		if scope == "search:docs:read" {
+			foundSearchDocs = true
 		}
 		if scope == "drive:drive" {
 			t.Fatalf("expected suggested scopes to not include drive:drive in readonly mode, got %v", payload.SuggestedUserLoginScopes)
@@ -98,6 +102,9 @@ func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
 	}
 	if !foundReadonly {
 		t.Fatalf("expected suggested scopes to include drive:drive:readonly, got %v", payload.SuggestedUserLoginScopes)
+	}
+	if !foundSearchDocs {
+		t.Fatalf("expected suggested scopes to include search:docs:read, got %v", payload.SuggestedUserLoginScopes)
 	}
 	if !strings.Contains(payload.SuggestedUserLoginCommand, "drive:drive:readonly") {
 		t.Fatalf("expected suggested_user_login_command to include drive:drive:readonly, got %q", payload.SuggestedUserLoginCommand)

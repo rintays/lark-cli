@@ -23,7 +23,10 @@ func TestWithUserScopeHintForCommand_InferredScopes(t *testing.T) {
 	if !strings.Contains(msg, "drive:drive") {
 		t.Fatalf("expected drive scope, got: %s", msg)
 	}
-	if !strings.Contains(msg, "lark auth user login --scopes \"offline_access drive:drive\" --force-consent") {
+	if !strings.Contains(msg, "search:docs:read") {
+		t.Fatalf("expected search docs scope, got: %s", msg)
+	}
+	if !strings.Contains(msg, "lark auth user login --scopes \"offline_access drive:drive search:docs:read\" --force-consent") {
 		t.Fatalf("expected relogin command, got: %s", msg)
 	}
 }
@@ -61,7 +64,7 @@ func TestWithUserScopeHintForCommand_MessageSearchScopes(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 	msg := got.Error()
-	if !strings.Contains(msg, "im:message:get_as_user") {
+	if !strings.Contains(msg, "im:message:readonly") {
 		t.Fatalf("expected message get scope, got: %s", msg)
 	}
 	if !strings.Contains(msg, "search:message") {
