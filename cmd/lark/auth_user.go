@@ -187,12 +187,6 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				return err
 			}
 			grantedScope := canonicalScopeString(tokens.Scope)
-			warning := ""
-			var scopeNotice *scopeChangeNotice
-			if grantedScope != "" {
-				warning = scopesChangedWarning(prevScope, grantedScope)
-				scopeNotice = scopesChangedNotice(prevScope, grantedScope)
-			}
 			acct := ensureUserAccount(state.Config, account)
 			acct.UserScopes = scopeList
 			if grantedScope != "" {
@@ -236,27 +230,12 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			if grantedScope != "" {
 				payload["user_access_token_scope"] = grantedScope
 			}
-			if warning != "" {
-				payload["warning"] = warning
-			}
 
 			messageBlocks := []string{
 				output.Notice(output.NoticeSuccess, "User OAuth tokens saved", []string{
 					fmt.Sprintf("Config: %s", state.ConfigPath),
 					fmt.Sprintf("Account: %s", account),
 				}),
-			}
-			if scopeNotice != nil {
-				messageBlocks = append(messageBlocks,
-					output.Notice(output.NoticeWarning, "OAuth scopes changed since last login", []string{
-						fmt.Sprintf("Added: %s", formatScopeList(scopeNotice.Added)),
-						fmt.Sprintf("Removed: %s", formatScopeList(scopeNotice.Removed)),
-						"Review full scope list with: lark auth user scopes",
-					}),
-					output.Notice(output.NoticeHint, "If you intended to change scopes, re-grant consent to refresh the token.", []string{
-						fmt.Sprintf("Re-run: %s", userOAuthReloginCommand),
-					}),
-				)
 			}
 			message := output.JoinBlocks(messageBlocks...)
 			return state.Printer.Print(payload, message)
@@ -295,73 +274,6 @@ func canonicalScopeString(scope string) string {
 		}
 	}
 	return strings.Join(out, " ")
-}
-
-type scopeChangeNotice struct {
-	Previous string
-	Next     string
-	Added    []string
-	Removed  []string
-}
-
-func scopesChangedNotice(previousScope, newScope string) *scopeChangeNotice {
-	prev := canonicalScopeString(previousScope)
-	next := canonicalScopeString(newScope)
-	if prev == "" || next == "" || prev == next {
-		return nil
-	}
-	added, removed := diffScopes(prev, next)
-	return &scopeChangeNotice{Previous: prev, Next: next, Added: added, Removed: removed}
-}
-
-func scopesChangedWarning(previousScope, newScope string) string {
-	notice := scopesChangedNotice(previousScope, newScope)
-	if notice == nil {
-		return ""
-	}
-	added := formatScopeList(notice.Added)
-	removed := formatScopeList(notice.Removed)
-	return fmt.Sprintf(
-		"OAuth scopes changed since last login.\nAdded: %s\nRemoved: %s\nRe-run: `%s`",
-		added,
-		removed,
-		userOAuthReloginCommand,
-	)
-}
-
-func diffScopes(previousScope, newScope string) ([]string, []string) {
-	prev := strings.Fields(canonicalScopeString(previousScope))
-	next := strings.Fields(canonicalScopeString(newScope))
-	prevSet := make(map[string]struct{}, len(prev))
-	nextSet := make(map[string]struct{}, len(next))
-	for _, scope := range prev {
-		prevSet[scope] = struct{}{}
-	}
-	for _, scope := range next {
-		nextSet[scope] = struct{}{}
-	}
-	added := make([]string, 0)
-	removed := make([]string, 0)
-	for scope := range nextSet {
-		if _, ok := prevSet[scope]; !ok {
-			added = append(added, scope)
-		}
-	}
-	for scope := range prevSet {
-		if _, ok := nextSet[scope]; !ok {
-			removed = append(removed, scope)
-		}
-	}
-	sort.Strings(added)
-	sort.Strings(removed)
-	return added, removed
-}
-
-func formatScopeList(scopes []string) string {
-	if len(scopes) == 0 {
-		return "(none)"
-	}
-	return strings.Join(scopes, ", ")
 }
 
 func requireUserRefreshToken(refreshToken string) error {

@@ -230,30 +230,3 @@ func TestCanonicalScopeStringSortsAndDedupes(t *testing.T) {
 		t.Fatalf("expected canonical scope, got %q", out)
 	}
 }
-
-func TestScopesChangedWarningEmptyWhenNoPreviousScope(t *testing.T) {
-	warning := scopesChangedWarning("", "offline_access")
-	if warning != "" {
-		t.Fatalf("expected no warning, got %q", warning)
-	}
-}
-
-func TestScopesChangedWarningEmptyWhenSameScopeSet(t *testing.T) {
-	warning := scopesChangedWarning("a b", "b a")
-	if warning != "" {
-		t.Fatalf("expected no warning, got %q", warning)
-	}
-}
-
-func TestScopesChangedWarningIncludesReloginCommand(t *testing.T) {
-	warning := scopesChangedWarning("offline_access", "offline_access contact:contact.base:readonly")
-	if warning == "" {
-		t.Fatalf("expected warning")
-	}
-	if !strings.Contains(strings.ToLower(warning), "scopes changed") {
-		t.Fatalf("expected warning to mention scopes changed, got %q", warning)
-	}
-	if !strings.Contains(warning, userOAuthReloginCommand) {
-		t.Fatalf("expected warning to include relogin command, got %q", warning)
-	}
-}
