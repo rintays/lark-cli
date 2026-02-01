@@ -26,6 +26,7 @@ func newCalendarCmd(state *appState) *cobra.Command {
 
 Canonical command name: calendars (alias: calendar).`,
 	}
+	annotateAuthServices(cmd, "calendar")
 	cmd.AddCommand(newCalendarListCmd(state))
 	cmd.AddCommand(newCalendarCreateCmd(state))
 	cmd.AddCommand(newCalendarSearchCmd(state))
@@ -69,14 +70,14 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 				startTime = parsedStart
 				endTime = parsedEnd
 			}
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			resolvedCalendarID, err := resolveCalendarID(context.Background(), state, token, tokenType, calendarID)
+			resolvedCalendarID, err := resolveCalendarID(cmd.Context(), state, token, tokenType, calendarID)
 			if err != nil {
 				return err
 			}
@@ -94,7 +95,7 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 					req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
 					req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
 				}
-				result, err := state.SDK.ListCalendarEvents(context.Background(), token, req)
+				result, err := state.SDK.ListCalendarEvents(cmd.Context(), token, req)
 				if err != nil {
 					return err
 				}
@@ -196,14 +197,14 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 			if !endTime.After(startTime) {
 				return errors.New("end time must be after start time")
 			}
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			resolvedCalendarID, err := resolveCalendarID(context.Background(), state, token, tokenType, calendarID)
+			resolvedCalendarID, err := resolveCalendarID(cmd.Context(), state, token, tokenType, calendarID)
 			if err != nil {
 				return err
 			}
@@ -245,7 +246,7 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 			}
 			req.StartTime = startTime.Unix()
 			req.EndTime = endTime.Unix()
-			event, err := state.SDK.CreateCalendarEvent(context.Background(), token, req)
+			event, err := state.SDK.CreateCalendarEvent(cmd.Context(), token, req)
 			if err != nil {
 				return err
 			}
@@ -260,7 +261,7 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 				})
 			}
 			if len(attendeeRecords) > 0 {
-				if err := state.SDK.CreateCalendarEventAttendees(context.Background(), token, larksdk.CreateCalendarEventAttendeesRequest{
+				if err := state.SDK.CreateCalendarEventAttendees(cmd.Context(), token, larksdk.CreateCalendarEventAttendeesRequest{
 					CalendarID: resolvedCalendarID,
 					EventID:    event.EventID,
 					Attendees:  attendeeRecords,
@@ -379,14 +380,14 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 				endTime = parsedEnd
 			}
 
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			resolvedCalendarID, err := resolveCalendarID(context.Background(), state, token, tokenType, calendarID)
+			resolvedCalendarID, err := resolveCalendarID(cmd.Context(), state, token, tokenType, calendarID)
 			if err != nil {
 				return err
 			}
@@ -408,7 +409,7 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 					req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
 					req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
 				}
-				result, err := state.SDK.SearchCalendarEvents(context.Background(), token, req)
+				result, err := state.SDK.SearchCalendarEvents(cmd.Context(), token, req)
 				if err != nil {
 					return err
 				}
@@ -474,14 +475,14 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			resolvedCalendarID, err := resolveCalendarID(context.Background(), state, token, tokenType, calendarID)
+			resolvedCalendarID, err := resolveCalendarID(cmd.Context(), state, token, tokenType, calendarID)
 			if err != nil {
 				return err
 			}
@@ -507,7 +508,7 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 					req.MaxAttendeeNum = &valueNum
 				}
 			}
-			event, err := state.SDK.GetCalendarEvent(context.Background(), token, req)
+			event, err := state.SDK.GetCalendarEvent(cmd.Context(), token, req)
 			var extraErr error
 			if err != nil && (needAttendee || needMeetingSettings) && !attendeeFlagChanged && !meetingFlagChanged {
 				extraErr = err
@@ -516,7 +517,7 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 					EventID:    eventID,
 					UserIDType: userIDType,
 				}
-				event, err = state.SDK.GetCalendarEvent(context.Background(), token, fallbackReq)
+				event, err = state.SDK.GetCalendarEvent(cmd.Context(), token, fallbackReq)
 			}
 			if err != nil {
 				return err
@@ -650,14 +651,14 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				endTime = parsedEnd
 			}
 
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			resolvedCalendarID, err := resolveCalendarID(context.Background(), state, token, tokenType, calendarID)
+			resolvedCalendarID, err := resolveCalendarID(cmd.Context(), state, token, tokenType, calendarID)
 			if err != nil {
 				return err
 			}
@@ -703,7 +704,7 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				req.StartTime = &startUnix
 				req.EndTime = &endUnix
 			}
-			event, err := state.SDK.UpdateCalendarEvent(context.Background(), token, req)
+			event, err := state.SDK.UpdateCalendarEvent(cmd.Context(), token, req)
 			if err != nil {
 				return err
 			}
@@ -779,18 +780,18 @@ func newCalendarDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
+			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			resolvedCalendarID, err := resolveCalendarID(context.Background(), state, token, tokenType, calendarID)
+			resolvedCalendarID, err := resolveCalendarID(cmd.Context(), state, token, tokenType, calendarID)
 			if err != nil {
 				return err
 			}
-			result, err := state.SDK.DeleteCalendarEvent(context.Background(), token, larksdk.DeleteCalendarEventRequest{
+			result, err := state.SDK.DeleteCalendarEvent(cmd.Context(), token, larksdk.DeleteCalendarEventRequest{
 				CalendarID:       resolvedCalendarID,
 				EventID:          eventID,
 				NeedNotification: notify,

@@ -68,8 +68,8 @@ func newBaseDiscoverListCmd(state *appState, use, short string) *cobra.Command {
 			if state == nil {
 				return errors.New("state is required")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -77,7 +77,7 @@ func newBaseDiscoverListCmd(state *appState, use, short string) *cobra.Command {
 			if pages <= 0 {
 				return errors.New("pages must be greater than 0")
 			}
-			ctx := context.Background()
+			ctx := cmd.Context()
 			userToken, err := resolveDriveSearchToken(ctx, state)
 			if err != nil {
 				return err

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseRecordDeleteCmd(state *appState) *cobra.Command {
@@ -31,23 +33,18 @@ func newBaseRecordDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			result, err := state.SDK.DeleteBaseRecord(context.Background(), token, appToken, tableID, recordID)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"record_id": result.RecordID, "deleted": result.Deleted}
-			text := "deleted"
-			if result.RecordID != "" {
-				text = result.RecordID
-			}
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				result, err := sdk.DeleteBaseRecord(ctx, token, appToken, tableID, recordID)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"record_id": result.RecordID, "deleted": result.Deleted}
+				text := "deleted"
+				if result.RecordID != "" {
+					text = result.RecordID
+				}
+				return payload, text, nil
+			})
 		},
 	}
 

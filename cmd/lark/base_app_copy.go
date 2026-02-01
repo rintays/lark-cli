@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"lark/internal/larksdk"
@@ -22,30 +21,25 @@ func newBaseAppCopyCmd(state *appState) *cobra.Command {
 		Short: "Copy a Bitable app",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
-			if err != nil {
-				return err
-			}
-			var withoutContentPtr *bool
-			if cmd.Flags().Changed("without-content") {
-				withoutContentPtr = &withoutContent
-			}
-			opts := larksdk.BitableAppCopyOptions{
-				Name:           name,
-				FolderToken:    folderToken,
-				WithoutContent: withoutContentPtr,
-				TimeZone:       timeZone,
-			}
-			app, err := state.SDK.CopyBitableApp(context.Background(), token, appToken, opts)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"app": app}
-			text := fmt.Sprintf("%s\t%s", app.AppToken, app.Name)
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenant, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				var withoutContentPtr *bool
+				if cmd.Flags().Changed("without-content") {
+					withoutContentPtr = &withoutContent
+				}
+				opts := larksdk.BitableAppCopyOptions{
+					Name:           name,
+					FolderToken:    folderToken,
+					WithoutContent: withoutContentPtr,
+					TimeZone:       timeZone,
+				}
+				app, err := sdk.CopyBitableApp(ctx, token, appToken, opts)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"app": app}
+				text := fmt.Sprintf("%s\t%s", app.AppToken, app.Name)
+				return payload, text, nil
+			})
 		},
 	}
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,13 +33,13 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 			if pages <= 0 {
 				return errors.New("pages must be greater than 0")
 			}
-			ctx := context.Background()
+			ctx := cmd.Context()
 			token, err := resolveDriveSearchToken(ctx, state)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			files, err := docsSearchDriveFiles(ctx, state, token, "docs", query, []string{"doc"}, limit, pages)
 			if err != nil {

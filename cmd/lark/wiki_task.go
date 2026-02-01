@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -36,16 +35,16 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			taskID := strings.TrimSpace(args[0])
-			tenantToken, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			tenantToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 
-			result, err := state.SDK.GetWikiTaskV2(context.Background(), tenantToken, larksdk.GetWikiTaskRequest{
+			result, err := state.SDK.GetWikiTaskV2(cmd.Context(), tenantToken, larksdk.GetWikiTaskRequest{
 				TaskID:   strings.TrimSpace(taskID),
 				TaskType: strings.TrimSpace(taskType),
 			})

@@ -438,7 +438,6 @@ func TestMailFoldersCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
-			AppSecret:                  "secret",
 			BaseURL:                    "http://example.com",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -452,7 +451,7 @@ func TestMailFoldersCommandRequiresSDK(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "sdk client is required" {
+	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1202,7 +1201,6 @@ func TestMailListCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
-			AppSecret:                  "secret",
 			BaseURL:                    "http://example.com",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -1216,7 +1214,7 @@ func TestMailListCommandRequiresSDK(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "sdk client is required" {
+	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1225,7 +1223,6 @@ func TestMailInfoCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
-			AppSecret:                  "secret",
 			BaseURL:                    "http://example.com",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -1239,7 +1236,7 @@ func TestMailInfoCommandRequiresSDK(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "sdk client is required" {
+	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1248,7 +1245,6 @@ func TestMailGetCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
-			AppSecret:                  "secret",
 			BaseURL:                    "http://example.com",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -1262,7 +1258,7 @@ func TestMailGetCommandRequiresSDK(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "sdk client is required" {
+	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1271,7 +1267,6 @@ func TestMailSendCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{
 			AppID:                      "app",
-			AppSecret:                  "secret",
 			BaseURL:                    "http://example.com",
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
@@ -1292,7 +1287,7 @@ func TestMailSendCommandRequiresSDK(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "sdk client is required" {
+	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

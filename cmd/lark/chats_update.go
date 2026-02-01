@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"strings"
 
@@ -51,13 +50,13 @@ func newChatsUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if !hasChatUpdateFields(name, description, avatar, ownerID, addMemberPermission, shareCardPermission, atAllPermission, editPermission, joinMessageVisibility, leaveMessageVisibility, membershipApproval, chatType, groupMessageType, urgentSetting, videoConferenceSetting, hideMemberCountSetting, pinManageSetting, nameZh, nameEn, nameJa) {
 				return errors.New("at least one field is required to update")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -87,7 +86,7 @@ func newChatsUpdateCmd(state *appState) *cobra.Command {
 				PinManageSetting:       pinManageSetting,
 				I18nNames:              i18nNames,
 			}
-			if err := state.SDK.UpdateChatInfo(context.Background(), token, req); err != nil {
+			if err := state.SDK.UpdateChatInfo(cmd.Context(), token, req); err != nil {
 				return err
 			}
 			payload := map[string]any{"chat_id": chatID, "updated": true}

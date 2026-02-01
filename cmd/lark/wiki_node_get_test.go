@@ -18,24 +18,24 @@ func TestWikiNodeInfoCommandRegistered(t *testing.T) {
 
 func TestWikiNodeInfoCommandRequiresNodeToken(t *testing.T) {
 	cmd := newWikiCmd(&appState{})
-	cmd.SetArgs([]string{"node", "info", "--obj-type", "docx"})
+	cmd.SetArgs([]string{"node", "info", "", "docx"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"node-token\" not set" {
+	if err.Error() != "node-token is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestWikiNodeInfoCommandRequiresObjType(t *testing.T) {
 	cmd := newWikiCmd(&appState{})
-	cmd.SetArgs([]string{"node", "info", "--node-token", "node_1"})
+	cmd.SetArgs([]string{"node", "info", "node_1", ""})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"obj-type\" not set" {
+	if err.Error() != "obj-type is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

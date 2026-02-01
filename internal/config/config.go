@@ -12,6 +12,7 @@ import (
 type Config struct {
 	AppID              string `json:"app_id"`
 	AppSecret          string `json:"app_secret"`
+	AppSecretInKeyring bool   `json:"app_secret_in_keyring,omitempty"`
 	BaseURL            string `json:"base_url"`
 	DefaultMailboxID   string `json:"default_mailbox_id"`
 	DefaultTokenType   string `json:"default_token_type"`
@@ -93,14 +94,42 @@ func Load(path string) (*Config, error) {
 }
 
 func Save(path string, cfg *Config) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	tmpFile, err := os.CreateTemp(dir, "config.*.json")
+	if err != nil {
+		return err
+	}
+	tmpName := tmpFile.Name()
+	defer func() {
+		_ = tmpFile.Close()
+		if tmpName != "" {
+			_ = os.Remove(tmpName)
+		}
+	}()
+	if err := tmpFile.Chmod(0o600); err != nil {
+		return err
+	}
+	if _, err := tmpFile.Write(data); err != nil {
+		return err
+	}
+	if err := tmpFile.Sync(); err != nil {
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return err
+	}
+	tmpName = ""
+	return nil
 }
 
 func DefaultPath() (string, error) {

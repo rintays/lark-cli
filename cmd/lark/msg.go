@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,6 +21,7 @@ func newMsgCmd(state *appState) *cobra.Command {
 - Send uses receive_id + receive_id_type to target a chat or user.
 - Reply/reactions/pin operate on an existing message.`,
 	}
+	annotateAuthServices(cmd, "im")
 	cmd.AddCommand(newMsgSendCmd(state))
 	cmd.AddCommand(newMsgReplyCmd(state))
 	cmd.AddCommand(newMsgListCmd(state))
@@ -55,14 +55,14 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			messageID, err := state.SDK.SendMessage(context.Background(), token, larksdk.MessageRequest{
+			messageID, err := state.SDK.SendMessage(cmd.Context(), token, larksdk.MessageRequest{
 				ReceiveID:     receiveID,
 				ReceiveIDType: receiveIDType,
 				MsgType:       msgType,

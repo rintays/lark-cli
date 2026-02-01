@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseRecordBatchCreateCmd(state *appState) *cobra.Command {
@@ -43,28 +45,23 @@ You can also pass a file path with @:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			records, err := parseBaseRecordBatchCreateRecords(recordsRaw, recordsFile)
-			if err != nil {
-				return err
-			}
-			created, err := state.SDK.BatchCreateBaseRecords(context.Background(), token, appToken, tableID, records, clientToken, ignoreConsistencyCheck)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"records": created}
-			lines := make([]string, 0, len(created))
-			for _, record := range created {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime.String(), record.LastModifiedTime.String()))
-			}
-			text := tableText([]string{"record_id", "created_time", "last_modified_time"}, lines, "no records created")
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				records, err := parseBaseRecordBatchCreateRecords(recordsRaw, recordsFile)
+				if err != nil {
+					return nil, "", err
+				}
+				created, err := sdk.BatchCreateBaseRecords(ctx, token, appToken, tableID, records, clientToken, ignoreConsistencyCheck)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"records": created}
+				lines := make([]string, 0, len(created))
+				for _, record := range created {
+					lines = append(lines, fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime, record.LastModifiedTime))
+				}
+				text := tableText([]string{"record_id", "created_time", "last_modified_time"}, lines, "no records created")
+				return payload, text, nil
+			})
 		},
 	}
 

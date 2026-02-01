@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -12,7 +11,7 @@ func newAuthCmd(state *appState) *cobra.Command {
 		Use:   "auth",
 		Short: "Fetch and cache a tenant access token",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := ensureTenantToken(context.Background(), state)
+			token, err := ensureTenantToken(cmd.Context(), state)
 			if err != nil {
 				return err
 			}
@@ -37,6 +36,8 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 	var appID string
 	var appSecret string
 	var baseURL string
+	var storeSecretInKeyring bool
+	var storeSecretInConfig bool
 
 	cmd := &cobra.Command{
 		Use:   "login",
@@ -54,20 +55,27 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("missing credentials: provide --app-id/--app-secret or set LARK_APP_ID/LARK_APP_SECRET")
 			}
 
-			state.Config.AppID = appID
-			state.Config.AppSecret = appSecret
 			if baseURL != "" {
 				normalized := normalizeBaseURL(baseURL)
 				state.Config.BaseURL = normalized
 				state.baseURLPersist = normalized
 			}
+			state.Config.AppID = appID
+			storeInKeyring, err := resolveAppSecretStorage(state, storeSecretInKeyring, storeSecretInConfig)
+			if err != nil {
+				return err
+			}
+			if err := persistAppSecret(state, appSecret, storeInKeyring); err != nil {
+				return err
+			}
 			if err := state.saveConfig(); err != nil {
 				return err
 			}
 			payload := map[string]any{
-				"config_path": state.ConfigPath,
-				"app_id":      state.Config.AppID,
-				"base_url":    state.Config.BaseURL,
+				"config_path":           state.ConfigPath,
+				"app_id":                state.Config.AppID,
+				"base_url":              state.Config.BaseURL,
+				"app_secret_in_keyring": storeInKeyring,
 			}
 			return state.Printer.Print(payload, fmt.Sprintf("saved config to %s", state.ConfigPath))
 		},
@@ -76,6 +84,8 @@ func newAuthLoginCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&appID, "app-id", "", "app ID (fallback: LARK_APP_ID)")
 	cmd.Flags().StringVar(&appSecret, "app-secret", "", "app secret (fallback: LARK_APP_SECRET)")
 	cmd.Flags().StringVar(&baseURL, "base-url", "", "base URL (default: https://open.feishu.cn)")
+	cmd.Flags().BoolVar(&storeSecretInKeyring, "store-secret-in-keyring", false, "store app secret in keychain instead of config")
+	cmd.Flags().BoolVar(&storeSecretInConfig, "store-secret-in-config", false, "store app secret in config (disables keychain storage)")
 
 	return cmd
 }

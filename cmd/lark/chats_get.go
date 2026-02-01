@@ -33,21 +33,21 @@ func newChatsGetCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			chat, err := state.SDK.GetChatInfo(context.Background(), token, larksdk.GetChatRequest{
+			chat, err := state.SDK.GetChatInfo(cmd.Context(), token, larksdk.GetChatRequest{
 				ChatID:     chatID,
 				UserIDType: userIDType,
 			})
 			if err != nil {
 				return err
 			}
-			members, membersTotal, membersTruncated, membersErr := listChatMembers(context.Background(), state, token, chatID, userIDType, membersLimit, membersPageSize)
+			members, membersTotal, membersTruncated, membersErr := listChatMembers(cmd.Context(), state, token, chatID, userIDType, membersLimit, membersPageSize)
 			payload := map[string]any{"chat": chat}
 			if membersLimit > 0 {
 				if membersErr != nil {

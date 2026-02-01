@@ -222,7 +222,7 @@ func TestDriveSearchCommandRequiresQuery(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"query\" not set" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -665,7 +665,7 @@ func TestDriveInfoMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "file-token is required" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -820,7 +820,7 @@ func TestDriveShareMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "file-token is required" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -989,7 +989,7 @@ func TestDriveDownloadRequiresFileToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"file-token\" not set" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1232,7 +1232,7 @@ func TestDriveExportMissingFileTokenDoesNotCallHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "file-token is required" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

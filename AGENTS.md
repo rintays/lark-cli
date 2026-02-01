@@ -127,3 +127,9 @@
 - 2026-02-01: Standardized required identifiers to positional args across chats/messages/calendar/drive/docs/sheets/wiki/base/meetings/minutes/mail, made search queries positional, and refreshed tests/README/examples.
 - 2026-02-01: Wrapped positional args validation errors with detailed usage output and hints for consistent CLI error messaging.
 - 2026-02-02: Added tasks/tasklists CLI support with SDK wrappers (create/info/update/delete/list), updated auth registry mappings, tests, and docs.
+- 2026-02-01: Separated data vs. log output (stdout/stderr), added usage error exit code, propagated cancelable contexts, and made config saves atomic.
+- 2026-02-01: Added pagination metadata for drive/users JSON, URL token parsing for drive/docs/sheets, human-friendly time parsing for message search, stdin/stdout support for content/raw/exports, completion command, and stricter JSON validation.
+- 2026-02-01: Base app info accepts positional app token; tests aligned with positional-arg usage errors and authregistry service list.
+- 2026-02-02: Added runWithToken helper and migrated base commands to unified token/SDK/print flow with user-scope hints.
+- 2026-02-02: Added auth service annotations and runtime authregistry override map sourced from Cobra metadata.
+- 2026-02-02: Added app secret keychain storage with config/auth flags, config output updates, and README docs.

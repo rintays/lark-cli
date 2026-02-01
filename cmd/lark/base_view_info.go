@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseViewInfoCmd(state *appState) *cobra.Command {
@@ -31,20 +33,15 @@ func newBaseViewInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			view, err := state.SDK.GetBaseView(context.Background(), token, appToken, tableID, viewID)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"view": view}
-			text := tableTextRow([]string{"view_id", "name", "type"}, []string{view.ViewID, view.Name, view.ViewType})
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				view, err := sdk.GetBaseView(ctx, token, appToken, tableID, viewID)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"view": view}
+				text := tableTextRow([]string{"view_id", "name", "type"}, []string{view.ViewID, view.Name, view.ViewType})
+				return payload, text, nil
+			})
 		},
 	}
 

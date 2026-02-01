@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -69,8 +68,8 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
@@ -78,13 +77,16 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			if pages <= 0 {
 				return errors.New("pages must be greater than 0")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			ctx := cmd.Context()
+			token, err := tokenFor(ctx, state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
 
 			users := make([]larksdk.User, 0, limit)
 			pageToken := ""
+			nextPageToken := ""
+			hasMore := false
 			pageCount := 0
 			remaining := limit
 			for {
@@ -99,7 +101,7 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 				if pageSize <= 0 {
 					break
 				}
-				result, err := state.SDK.SearchUsers(context.Background(), token, larksdk.SearchUsersRequest{
+				result, err := state.SDK.SearchUsers(ctx, token, larksdk.SearchUsersRequest{
 					Query:     query,
 					PageSize:  pageSize,
 					PageToken: pageToken,
@@ -107,6 +109,8 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 				if err != nil {
 					return withUserScopeHintForCommand(state, err)
 				}
+				nextPageToken = result.PageToken
+				hasMore = result.HasMore
 				users = append(users, result.Users...)
 				if len(users) >= limit || !result.HasMore {
 					break
@@ -121,7 +125,11 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 				users = users[:limit]
 			}
 
-			payload := map[string]any{"users": users}
+			payload := map[string]any{
+				"users":           users,
+				"has_more":        hasMore,
+				"next_page_token": nextPageToken,
+			}
 			lines := make([]string, 0, len(users))
 			for _, user := range users {
 				lines = append(lines, formatUserSearchLine(user))
@@ -130,6 +138,7 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "search-user")
 
 	cmd.Flags().StringVar(&email, "email", "", "search by exact email address")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of users to return")

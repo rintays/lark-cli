@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"strings"
 
@@ -36,14 +35,14 @@ func newWikiSpaceCreateCmd(state *appState) *cobra.Command {
 			return cmd.Flags().Set("name", args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			space, err := state.SDK.CreateWikiSpaceV2(context.Background(), token, larksdk.CreateWikiSpaceRequest{
+			space, err := state.SDK.CreateWikiSpaceV2(cmd.Context(), token, larksdk.CreateWikiSpaceRequest{
 				Name:        strings.TrimSpace(name),
 				Description: strings.TrimSpace(description),
 				SpaceType:   strings.TrimSpace(spaceType),

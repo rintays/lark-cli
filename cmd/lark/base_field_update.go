@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseFieldUpdateCmd(state *appState) *cobra.Command {
@@ -42,28 +44,23 @@ func newBaseFieldUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			property, err := parseOptionalJSONObject("property-json", propertyJSON)
-			if err != nil {
-				return err
-			}
-			description, err := parseOptionalJSONObject("description-json", descriptionJSON)
-			if err != nil {
-				return err
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			field, err := state.SDK.UpdateBaseField(context.Background(), token, appToken, tableID, fieldID, strings.TrimSpace(fieldName), property, description)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"field": field}
-			text := tableTextRow([]string{"field_id", "field_name", "type"}, []string{field.FieldID, field.FieldName, fmt.Sprintf("%d", field.Type)})
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				property, err := parseOptionalJSONObject("property-json", propertyJSON)
+				if err != nil {
+					return nil, "", err
+				}
+				description, err := parseOptionalJSONObject("description-json", descriptionJSON)
+				if err != nil {
+					return nil, "", err
+				}
+				field, err := sdk.UpdateBaseField(ctx, token, appToken, tableID, fieldID, strings.TrimSpace(fieldName), property, description)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"field": field}
+				text := tableTextRow([]string{"field_id", "field_name", "type"}, []string{field.FieldID, field.FieldName, fmt.Sprintf("%d", field.Type)})
+				return payload, text, nil
+			})
 		},
 	}
 

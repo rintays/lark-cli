@@ -1,9 +1,6 @@
 package main
 
 import (
-	"context"
-	"errors"
-
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
@@ -17,10 +14,10 @@ func newUserInfoCmd(state *appState) *cobra.Command {
 		Use:   "info",
 		Short: "Show a contact user by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -32,7 +29,7 @@ func newUserInfoCmd(state *appState) *cobra.Command {
 				request.UserID = userID
 				request.UserIDType = "user_id"
 			}
-			user, err := state.SDK.GetContactUser(context.Background(), token, request)
+			user, err := state.SDK.GetContactUser(cmd.Context(), token, request)
 			if err != nil {
 				return err
 			}

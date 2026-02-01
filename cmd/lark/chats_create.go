@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -40,10 +38,10 @@ func newChatsCreateCmd(state *appState) *cobra.Command {
 		Use:   "create",
 		Short: "Create a chat",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -82,7 +80,7 @@ func newChatsCreateCmd(state *appState) *cobra.Command {
 				External:               externalPtr,
 			}
 
-			chat, err := state.SDK.CreateChatDetail(context.Background(), token, req)
+			chat, err := state.SDK.CreateChatDetail(cmd.Context(), token, req)
 			if err != nil {
 				return err
 			}

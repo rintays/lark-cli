@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -45,14 +44,14 @@ func newMinutesInfoCmd(state *appState) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			minuteToken := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			minute, err := state.SDK.GetMinute(context.Background(), token, minuteToken, userIDType)
+			minute, err := state.SDK.GetMinute(cmd.Context(), token, minuteToken, userIDType)
 			if err != nil {
 				return err
 			}
@@ -83,10 +82,10 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -104,7 +103,7 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 				if pageSize > remaining {
 					pageSize = remaining
 				}
-				result, err := state.SDK.ListDriveFiles(context.Background(), token, larksdk.ListDriveFilesRequest{
+				result, err := state.SDK.ListDriveFiles(cmd.Context(), token, larksdk.ListDriveFilesRequest{
 					FolderToken: folderID,
 					PageSize:    pageSize,
 					PageToken:   pageToken,
@@ -169,17 +168,17 @@ func newMinutesDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			minuteToken := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
 			resolvedType := strings.TrimSpace(fileType)
 			if resolvedType == "" {
-				file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
+				file, err := state.SDK.GetDriveFileMetadata(cmd.Context(), token, larksdk.GetDriveFileRequest{
 					FileToken: minuteToken,
 				})
 				if err != nil {
@@ -190,7 +189,7 @@ func newMinutesDeleteCmd(state *appState) *cobra.Command {
 			if resolvedType == "" {
 				return errors.New("file type is required")
 			}
-			result, err := state.SDK.DeleteDriveFile(context.Background(), token, minuteToken, resolvedType)
+			result, err := state.SDK.DeleteDriveFile(cmd.Context(), token, minuteToken, resolvedType)
 			if err != nil {
 				return err
 			}
@@ -232,11 +231,11 @@ func newMinutesUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			minuteToken := strings.TrimSpace(args[0])
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -252,7 +251,7 @@ func newMinutesUpdateCmd(state *appState) *cobra.Command {
 			if cmd.Flags().Changed("invite-external") {
 				req.InviteExternal = &inviteExternal
 			}
-			permission, err := state.SDK.UpdateDrivePermissionPublic(context.Background(), token, minuteToken, "minutes", req)
+			permission, err := state.SDK.UpdateDrivePermissionPublic(cmd.Context(), token, minuteToken, "minutes", req)
 			if err != nil {
 				return err
 			}

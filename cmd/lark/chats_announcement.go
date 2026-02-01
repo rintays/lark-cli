@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -37,14 +36,14 @@ func newChatsAnnouncementGetCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			announcement, err := state.SDK.GetChatAnnouncement(context.Background(), token, chatID, userIDType)
+			announcement, err := state.SDK.GetChatAnnouncement(cmd.Context(), token, chatID, userIDType)
 			if err != nil {
 				return err
 			}
@@ -99,14 +98,14 @@ func newChatsAnnouncementUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if err := state.SDK.UpdateChatAnnouncement(context.Background(), token, chatID, revision, requests); err != nil {
+			if err := state.SDK.UpdateChatAnnouncement(cmd.Context(), token, chatID, revision, requests); err != nil {
 				return err
 			}
 			payload := map[string]any{"chat_id": chatID, "updated": true}

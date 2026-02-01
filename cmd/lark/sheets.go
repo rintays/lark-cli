@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -30,6 +29,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 - Ranges use A1 notation: <sheet_id>!A1:B2; rows/cols act on a sheet.
 - Single cell ranges are allowed (A1 or <sheet_id>!A1) and normalized to A1:A1.`,
 	}
+	annotateAuthServices(cmd, "sheets")
 	cmd.AddCommand(newSheetsReadCmd(state))
 	cmd.AddCommand(newSheetsCreateCmd(state))
 	cmd.AddCommand(newSheetsUpdateCmd(state))
@@ -56,7 +56,11 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			sheetRange = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
@@ -67,18 +71,18 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
 			if err != nil {
 				return err
 			}
-			valueRange, err := state.SDK.ReadSheetRange(context.Background(), token, spreadsheetID, resolvedRange)
+			valueRange, err := state.SDK.ReadSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange)
 			if err != nil {
 				return err
 			}
@@ -105,21 +109,25 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			metadata, err := state.SDK.GetSpreadsheetMetadata(context.Background(), token, spreadsheetID)
+			metadata, err := state.SDK.GetSpreadsheetMetadata(cmd.Context(), token, spreadsheetID)
 			if err != nil {
 				return err
 			}
@@ -142,21 +150,25 @@ func newSheetsDeleteCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenant)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenant)
 			if err != nil {
 				return err
 			}
-			result, err := state.SDK.DeleteDriveFile(context.Background(), token, spreadsheetID, "sheet")
+			result, err := state.SDK.DeleteDriveFile(cmd.Context(), token, spreadsheetID, "sheet")
 			if err != nil {
 				return err
 			}
@@ -191,7 +203,11 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			sheetRange = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
@@ -206,12 +222,12 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
 			if err != nil {
@@ -220,7 +236,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err := validateSheetRangeForValues(resolvedRange, values); err != nil {
 				return err
 			}
-			update, err := state.SDK.UpdateSheetRange(context.Background(), token, spreadsheetID, resolvedRange, values)
+			update, err := state.SDK.UpdateSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange, values)
 			if err != nil {
 				return err
 			}
@@ -253,7 +269,11 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			sheetRange = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
@@ -268,18 +288,18 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
 			if err != nil {
 				return err
 			}
-			appendResult, err := state.SDK.AppendSheetRange(context.Background(), token, spreadsheetID, resolvedRange, values, insertDataOption)
+			appendResult, err := state.SDK.AppendSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange, values, insertDataOption)
 			if err != nil {
 				return err
 			}
@@ -309,7 +329,11 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			sheetRange = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
@@ -320,18 +344,18 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			resolvedRange, err := resolveSheetRange(sheetRange, sheetID)
 			if err != nil {
 				return err
 			}
-			result, err := state.SDK.ClearSheetRange(context.Background(), token, spreadsheetID, resolvedRange)
+			result, err := state.SDK.ClearSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange)
 			if err != nil {
 				return err
 			}

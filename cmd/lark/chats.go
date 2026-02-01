@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -22,6 +21,7 @@ func newChatsCmd(state *appState) *cobra.Command {
 - Create/update manage chat metadata; announcements are chat-wide notices.
 - List shows chats the bot/app can access.`,
 	}
+	annotateAuthServices(cmd, "im")
 	cmd.AddCommand(newChatsListCmd(state))
 	cmd.AddCommand(newChatsCreateCmd(state))
 	cmd.AddCommand(newChatsGetCmd(state))
@@ -41,13 +41,13 @@ func newChatsListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				return errors.New("limit must be greater than 0")
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
@@ -60,7 +60,7 @@ func newChatsListCmd(state *appState) *cobra.Command {
 				if pageSize > maxChatsPageSize {
 					pageSize = maxChatsPageSize
 				}
-				result, err := listChats(context.Background(), token, larksdk.ListChatsRequest{
+				result, err := listChats(cmd.Context(), token, larksdk.ListChatsRequest{
 					PageSize:  pageSize,
 					PageToken: pageToken,
 				})

@@ -134,7 +134,7 @@ func TestBaseAppGetCommandRequiresAppToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"app-token\" not set" {
+	if err.Error() != "app-token is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

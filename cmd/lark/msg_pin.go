@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -29,14 +28,14 @@ func newMsgPinCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			pin, err := state.SDK.PinMessage(context.Background(), token, messageID)
+			pin, err := state.SDK.PinMessage(cmd.Context(), token, messageID)
 			if err != nil {
 				return err
 			}
@@ -72,14 +71,14 @@ func newMsgUnpinCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if err := state.SDK.UnpinMessage(context.Background(), token, messageID); err != nil {
+			if err := state.SDK.UnpinMessage(cmd.Context(), token, messageID); err != nil {
 				return err
 			}
 			payload := map[string]any{"message_id": messageID, "unpinned": true}

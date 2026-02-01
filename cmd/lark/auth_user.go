@@ -75,7 +75,7 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 		Use:   "login",
 		Short: "Log in with user OAuth and store tokens",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := requireCredentials(state.Config); err != nil {
+			if err := requireCredentials(state); err != nil {
 				return err
 			}
 			account := resolveUserAccountName(state)
@@ -146,14 +146,14 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("listen on %s: %w", userOAuthListenAddr, err)
 			}
 			defer func() {
-				_ = server.Shutdown(context.Background())
+				_ = server.Shutdown(cmd.Context())
 			}()
 			go func() {
 				_ = server.Serve(listener)
 			}()
 
 			if err := openBrowser(authorizeURL); err != nil {
-				fmt.Fprintf(state.Printer.Writer, "Open this URL in your browser:\n%s\n", authorizeURL)
+				fmt.Fprintf(errWriter(state), "Open this URL in your browser:\n%s\n", authorizeURL)
 			}
 
 			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)

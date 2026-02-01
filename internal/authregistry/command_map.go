@@ -38,6 +38,22 @@ var commandServiceMap = map[string][]string{
 	"im": {"im"},
 }
 
+var defaultCommandServiceMap = copyCommandServiceMap(commandServiceMap)
+
+// SetCommandServiceMap merges command service overrides into the default map.
+// This lets the CLI attach metadata close to command definitions without
+// rewriting the entire registry at once.
+func SetCommandServiceMap(overrides map[string][]string) {
+	if len(overrides) == 0 {
+		return
+	}
+	merged := copyCommandServiceMap(defaultCommandServiceMap)
+	for key, services := range overrides {
+		merged[key] = append([]string(nil), services...)
+	}
+	commandServiceMap = merged
+}
+
 // ServicesForCommandPath returns the service names for a canonical command path.
 //
 // Matching is longest-prefix, so e.g. ["drive", "list"] maps via the "drive"
@@ -83,4 +99,15 @@ func normalizeCommandParts(path []string) []string {
 		return nil
 	}
 	return parts
+}
+
+func copyCommandServiceMap(in map[string][]string) map[string][]string {
+	if in == nil {
+		return nil
+	}
+	out := make(map[string][]string, len(in))
+	for key, values := range in {
+		out[key] = append([]string(nil), values...)
+	}
+	return out
 }

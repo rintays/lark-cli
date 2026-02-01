@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newBaseCmd(state *appState) *cobra.Command {
@@ -25,6 +27,7 @@ A base (also called an app) is the top-level container. Each base contains one o
 Relationships: app -> tables -> fields + records; views belong to a table.
 Most subcommands require the Bitable app token to identify the base.`,
 	}
+	annotateAuthServices(cmd, "base")
 	cmd.AddCommand(newBaseListCmd(state))
 	cmd.AddCommand(newBaseAppCmd(state))
 	cmd.AddCommand(newBaseTableCmd(state))
@@ -106,25 +109,20 @@ func newBaseTableListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List Bitable tables",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			result, err := state.SDK.ListBaseTables(context.Background(), token, appToken)
-			if err != nil {
-				return err
-			}
-			tables := result.Items
-			payload := map[string]any{"tables": tables}
-			lines := make([]string, 0, len(tables))
-			for _, table := range tables {
-				lines = append(lines, fmt.Sprintf("%s\t%s", table.TableID, table.Name))
-			}
-			text := tableText([]string{"table_id", "name"}, lines, "no tables found")
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				result, err := sdk.ListBaseTables(ctx, token, appToken)
+				if err != nil {
+					return nil, "", err
+				}
+				tables := result.Items
+				payload := map[string]any{"tables": tables}
+				lines := make([]string, 0, len(tables))
+				for _, table := range tables {
+					lines = append(lines, fmt.Sprintf("%s\t%s", table.TableID, table.Name))
+				}
+				text := tableText([]string{"table_id", "name"}, lines, "no tables found")
+				return payload, text, nil
+			})
 		},
 	}
 
@@ -151,25 +149,20 @@ func newBaseFieldListCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			result, err := state.SDK.ListBaseFields(context.Background(), token, appToken, tableID)
-			if err != nil {
-				return err
-			}
-			fields := result.Items
-			payload := map[string]any{"fields": fields}
-			lines := make([]string, 0, len(fields))
-			for _, field := range fields {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%d", field.FieldID, field.FieldName, field.Type))
-			}
-			text := tableText([]string{"field_id", "name", "type"}, lines, "no fields found")
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				result, err := sdk.ListBaseFields(ctx, token, appToken, tableID)
+				if err != nil {
+					return nil, "", err
+				}
+				fields := result.Items
+				payload := map[string]any{"fields": fields}
+				lines := make([]string, 0, len(fields))
+				for _, field := range fields {
+					lines = append(lines, fmt.Sprintf("%s\t%s\t%d", field.FieldID, field.FieldName, field.Type))
+				}
+				text := tableText([]string{"field_id", "name", "type"}, lines, "no fields found")
+				return payload, text, nil
+			})
 		},
 	}
 
@@ -196,25 +189,20 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			result, err := state.SDK.ListBaseViews(context.Background(), token, appToken, tableID)
-			if err != nil {
-				return err
-			}
-			views := result.Items
-			payload := map[string]any{"views": views}
-			lines := make([]string, 0, len(views))
-			for _, view := range views {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", view.ViewID, view.Name, view.ViewType))
-			}
-			text := tableText([]string{"view_id", "name", "type"}, lines, "no views found")
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				result, err := sdk.ListBaseViews(ctx, token, appToken, tableID)
+				if err != nil {
+					return nil, "", err
+				}
+				views := result.Items
+				payload := map[string]any{"views": views}
+				lines := make([]string, 0, len(views))
+				for _, view := range views {
+					lines = append(lines, fmt.Sprintf("%s\t%s\t%s", view.ViewID, view.Name, view.ViewType))
+				}
+				text := tableText([]string{"view_id", "name", "type"}, lines, "no views found")
+				return payload, text, nil
+			})
 		},
 	}
 
@@ -246,23 +234,18 @@ func newBaseRecordInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
-			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-			record, err := state.SDK.GetBaseRecord(context.Background(), token, appToken, tableID, recordID)
-			if err != nil {
-				return err
-			}
-			payload := map[string]any{"record": record}
-			text := tableTextRow(
-				[]string{"record_id", "created_time", "last_modified_time"},
-				[]string{record.RecordID, record.CreatedTime.String(), record.LastModifiedTime.String()},
-			)
-			return state.Printer.Print(payload, text)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				record, err := sdk.GetBaseRecord(ctx, token, appToken, tableID, recordID)
+				if err != nil {
+					return nil, "", err
+				}
+				payload := map[string]any{"record": record}
+				text := tableTextRow(
+					[]string{"record_id", "created_time", "last_modified_time"},
+					[]string{record.RecordID, record.CreatedTime, record.LastModifiedTime},
+				)
+				return payload, text, nil
+			})
 		},
 	}
 

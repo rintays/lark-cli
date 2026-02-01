@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -32,7 +31,11 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(4)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			sheetID = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
@@ -65,14 +68,14 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 			if count <= 0 {
 				return errors.New("count must be greater than 0")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			result, err := state.SDK.InsertSheetCols(context.Background(), token, spreadsheetID, sheetID, startIndex, count)
+			result, err := state.SDK.InsertSheetCols(cmd.Context(), token, spreadsheetID, sheetID, startIndex, count)
 			if err != nil {
 				return err
 			}
@@ -102,7 +105,11 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(4)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			spreadsheetID = strings.TrimSpace(args[0])
+			token, _, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			spreadsheetID = strings.TrimSpace(token)
 			sheetID = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
 				return errors.New("spreadsheet-token is required")
@@ -135,14 +142,14 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 			if count <= 0 {
 				return errors.New("count must be greater than 0")
 			}
-			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
+			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
 			}
-			if state.SDK == nil {
-				return errors.New("sdk client is required")
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
-			result, err := state.SDK.DeleteSheetCols(context.Background(), token, spreadsheetID, sheetID, startIndex, count)
+			result, err := state.SDK.DeleteSheetCols(cmd.Context(), token, spreadsheetID, sheetID, startIndex, count)
 			if err != nil {
 				return err
 			}

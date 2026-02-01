@@ -86,7 +86,7 @@ func TestBaseTableCreateCommandRequiresName(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "accepts 1 arg(s), received 0" {
+	if err.Error() != "name is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
