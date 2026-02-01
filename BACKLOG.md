@@ -388,7 +388,7 @@ Additional consistency work:
   - [x] `mail mailbox set` now uses required flag validation for `--mailbox-id` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `messages send` now uses required flag validation for `--receive-id` + unit test asserts stable required-flag error
   - [ ] TODO: audit remaining commands that still rely on manual required-input checks and decide whether to convert them to Cobra required-flag validation.
-    - `wiki task info` (`task-id is required` check is still manual)
+    - [x] `wiki task info` uses required flag validation for `--task-id` (positional arg sets the flag)
     - `bases field list/view list/record info/field update` (`table-id`/`record-id`/`field-id` required checks are still manual)
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
