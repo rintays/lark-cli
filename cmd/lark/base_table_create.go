@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -20,9 +19,6 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(tableName) == "" {
-					return errors.New("name is required")
-				}
 				return nil
 			}
 			if tableName != "" && tableName != args[0] {
@@ -51,5 +47,6 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableName, "name", "", "Table name (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
+	_ = cmd.MarkFlagRequired("name")
 	return cmd
 }

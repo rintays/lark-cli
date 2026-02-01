@@ -15,6 +15,7 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 	var tableID string
 	var fieldName string
 	var fieldType int
+	var fieldTypeName string
 	var propertyJSON string
 	var descriptionJSON string
 
@@ -41,14 +42,23 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 					return err
 				}
 			}
-			if strings.TrimSpace(tableID) == "" {
-				return errors.New("table-id is required")
+			fieldTypeNameSet := cmd.Flags().Changed("field-type")
+			fieldTypeIDSet := cmd.Flags().Changed("type")
+			if fieldTypeNameSet && fieldTypeIDSet {
+				return errors.New("--field-type and --type are mutually exclusive")
 			}
-			if strings.TrimSpace(fieldName) == "" {
-				return errors.New("name is required")
+			if fieldTypeNameSet {
+				v, err := parseBaseFieldType(fieldTypeName)
+				if err != nil {
+					return err
+				}
+				fieldType = v
 			}
-			if fieldType == 0 {
-				return errors.New("type is required")
+			if !fieldTypeNameSet && !fieldTypeIDSet {
+				fieldType = 1 // default to text
+			}
+			if fieldType <= 0 {
+				return fmt.Errorf("invalid field type: %d", fieldType)
 			}
 			return nil
 		},
@@ -73,7 +83,7 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			payload := map[string]any{"field": field}
-			text := tableTextRow([]string{"field_id", "name", "type"}, []string{field.FieldID, field.FieldName, fmt.Sprintf("%d", field.Type)})
+			text := tableTextRow([]string{"field_id", "field_name", "type"}, []string{field.FieldID, field.FieldName, fmt.Sprintf("%d", field.Type)})
 			return state.Printer.Print(payload, text)
 		},
 	}
@@ -81,11 +91,45 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&fieldName, "name", "", "Field name (or provide as positional argument)")
-	cmd.Flags().IntVar(&fieldType, "type", 0, "Field type (required; see `bases field types` for mappings)")
+	cmd.Flags().StringVar(&fieldTypeName, "field-type", "", "Field type name or id (e.g. text, number, 1). Prefer this over --type")
+	cmd.Flags().IntVar(&fieldType, "type", 0, "Field type id (deprecated; use --field-type)")
 	cmd.Flags().StringVar(&propertyJSON, "property-json", "", "Field property JSON (object; see `bases field types` for hints)")
 	cmd.Flags().StringVar(&descriptionJSON, "description-json", "", "Field description JSON (object)")
 	_ = cmd.MarkFlagRequired("app-token")
+	_ = cmd.MarkFlagRequired("table-id")
+	_ = cmd.MarkFlagRequired("name")
 	return cmd
+}
+
+func parseBaseFieldType(raw string) (int, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, errors.New("field type is required")
+	}
+	// numeric form
+	if n, err := parseInt(raw); err == nil {
+		if n <= 0 {
+			return 0, fmt.Errorf("invalid field type: %s", raw)
+		}
+		return n, nil
+	}
+	// name form
+	normalized := strings.ToLower(raw)
+	for _, info := range baseFieldTypeInfos() {
+		if info.Name == normalized {
+			return info.ID, nil
+		}
+	}
+	return 0, fmt.Errorf("unknown field type: %s (see `bases field types`)", raw)
+}
+
+func parseInt(raw string) (int, error) {
+	var n int
+	_, err := fmt.Sscanf(raw, "%d", &n)
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
 }
 
 func parseOptionalJSONObject(flagName, raw string) (map[string]any, error) {

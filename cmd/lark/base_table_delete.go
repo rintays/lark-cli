@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -21,9 +20,6 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(tableID) == "" {
-					return errors.New("table-id is required")
-				}
 				return nil
 			}
 			if tableID != "" && tableID != args[0] {
@@ -52,5 +48,6 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
+	_ = cmd.MarkFlagRequired("table-id")
 	return cmd
 }

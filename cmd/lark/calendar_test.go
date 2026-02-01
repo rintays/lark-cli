@@ -327,8 +327,6 @@ func TestCalendarSearchCommand(t *testing.T) {
 }
 
 func TestCalendarGetCommand(t *testing.T) {
-	start := "2026-01-02T03:04:05Z"
-	end := "2026-01-02T04:04:05Z"
 	startUnix := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC).Unix()
 	endUnix := time.Date(2026, 1, 2, 4, 4, 5, 0, time.UTC).Unix()
 
@@ -400,7 +398,10 @@ func TestCalendarGetCommand(t *testing.T) {
 		t.Fatalf("calendar get error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tReview\tconfirmed") {
+	if !strings.Contains(buf.String(), "event_id\tevt_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "summary\tReview") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

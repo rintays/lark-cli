@@ -90,7 +90,7 @@ func TestDocsConvertCommand(t *testing.T) {
 		if payload["content_type"] != "markdown" {
 			t.Fatalf("unexpected payload: %+v", payload)
 		}
-		if payload["content"] != "# Title" {
+		if payload["content"] != "# Title\n\nBody" {
 			t.Fatalf("unexpected payload: %+v", payload)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -133,7 +133,7 @@ func TestDocsConvertCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"convert", "--content", "# Title"})
+	cmd.SetArgs([]string{"convert", "--content", "# Title\\n\\nBody"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs convert error: %v", err)
 	}
@@ -154,6 +154,9 @@ func TestDocsOverwriteCommand(t *testing.T) {
 			var payload map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				t.Fatalf("decode payload: %v", err)
+			}
+			if payload["content"] != "hello\nworld" {
+				t.Fatalf("unexpected payload: %+v", payload)
 			}
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
@@ -247,7 +250,7 @@ func TestDocsOverwriteCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newDocsCmd(state)
-	cmd.SetArgs([]string{"overwrite", "doc1", "--content", "hello"})
+	cmd.SetArgs([]string{"overwrite", "doc1", "--content", "hello\\nworld"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("docs overwrite error: %v", err)
 	}

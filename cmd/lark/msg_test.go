@@ -154,7 +154,7 @@ func TestMsgSendRequiresFlags(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if !strings.Contains(err.Error(), "receive-id") {
+		if err.Error() != "required flag(s) \"receive-id\" not set" {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

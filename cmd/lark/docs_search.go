@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,9 +21,6 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(query) == "" {
-					return errors.New("query is required")
-				}
 				return nil
 			}
 			if query != "" && query != args[0] {
@@ -64,6 +60,7 @@ func newDocsSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&query, "query", "", "search text (or provide as positional argument)")
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
+	_ = cmd.MarkFlagRequired("query")
 
 	return cmd
 }

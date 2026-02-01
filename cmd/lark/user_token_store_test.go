@@ -10,6 +10,7 @@ import (
 func TestUserTokenBucketID_StableAndDependsOnAppBaseURLAndProfile(t *testing.T) {
 	baseState := func() *appState {
 		return &appState{
+			Profile:    "p1",
 			ConfigPath: "/tmp/lark/profiles/p1/config.json",
 			Config: &config.Config{
 				AppID:   "cli-app-1",
@@ -48,16 +49,17 @@ func TestUserTokenBucketID_StableAndDependsOnAppBaseURLAndProfile(t *testing.T) 
 		t.Fatalf("expected different bucket id for different base_url")
 	}
 
-	// profile (config path) differences must isolate tokens.
+	// profile differences must isolate tokens.
 	f := baseState()
-	f.ConfigPath = "/tmp/lark/profiles/p2/config.json"
+	f.Profile = "p2"
 	if userTokenBucketID(a) == userTokenBucketID(f) {
-		t.Fatalf("expected different bucket id for different profile/config path")
+		t.Fatalf("expected different bucket id for different profile")
 	}
 }
 
 func TestKeyringUsername_IncludesBucketAndAccount(t *testing.T) {
 	state := &appState{
+		Profile:    "p1",
 		ConfigPath: "/tmp/lark/profiles/p1/config.json",
 		Config: &config.Config{
 			AppID:   "cli-app-1",

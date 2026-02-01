@@ -78,3 +78,15 @@ func TestBaseTableCreateCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestBaseTableCreateCommandRequiresName(t *testing.T) {
+	cmd := newBaseCmd(&appState{})
+	cmd.SetArgs([]string{"table", "create", "--app-token", "app_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"name\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

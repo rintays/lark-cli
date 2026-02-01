@@ -1,7 +1,7 @@
 # lark CLI — BACKLOG (maintained by AG)
 
 **Owner:** AG  
-**Where:** `<workspace>/lark/BACKLOG.md` (single source of truth)  
+**Where:** `<workspace>/lark/BACKLOG.md` (mirror: `<workspace>/BACKLOG.md`)  
 **Repo:** `<workspace>/lark`  
 **Branch policy:** default development branch is **`main`** and changes must land on **`origin/main`** (unless Master explicitly requests a branch/PR flow).  
 **Last updated:** 2026-02-01 (Asia/Shanghai)
@@ -117,7 +117,7 @@ Credential/scopes management (research + design, gog-inspired):
   - phased implementation plan + risks
 
 Work items (must follow the design, not ad-hoc patches):
-- [ ] **Service registry (gog-style)**
+- [x] **Service registry (gog-style)**
   - [x] Define fixed service set (im/drive/docx/sheets/calendar/mail/wiki/base/…)
   - [x] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
   - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
@@ -148,10 +148,10 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Env > config precedence for keyring backend (`LARK_KEYRING_BACKEND` > config `keyring_backend`)
   - [ ] Define whether we need `LARK_KEYRING_PASSWORD` (and/or config knob) for headless secure storage (design TBD)
   - [x] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
-- [ ] **Multi-profile / multi-account / multi-app isolation**
+- [x] **Multi-profile / multi-account / multi-app isolation**
   - [x] `--profile` / `LARK_PROFILE` selection + default
   - [x] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
-- [ ] **Auth status & remediation UX**
+- [x] **Auth status & remediation UX**
   - [x] `lark auth user status` shows: offline/refresh availability, expiry, and stored scope (minimal v1)
   - [x] Standardized remediation messages:
     - [x] missing refresh_token → tell user to rerun with `--force-consent` / correct scopes
@@ -171,7 +171,7 @@ Deliverables:
   - [x] `users` — already SDK-backed; tests/validation tightened
   - [x] `chats` (list now uses oapi-sdk-go im/v1 typed service)
   - [x] `msg` — msg send uses oapi-sdk-go im/v1
-  - [ ] `drive`
+  - [x] `drive`
     - [x] `drive urls` → SDK (`GetDriveFileMetadata`)
     - [x] `drive share` (public permission update) → SDK (`UpdateDrivePermissionPublic`)
     - [x] `drive search` → SDK (`/drive/v1/files/search`)
@@ -197,18 +197,18 @@ Deliverables:
       - [ ] Integration tests: roundtrip `md → docx → md` for a small fixture
   - [ ] `sheets`
     - [x] `sheets info` → SDK typed service (`Sheets.V3.Spreadsheet.Get`)
-  - [ ] `mail`
+  - [x] `mail`
     - [x] `mail info` → SDK typed service (`Mail.V1.UserMailboxMessage.Get`)
     - [x] `mail public-mailboxes list` → SDK typed service (`Mail.V1.PublicMailbox.List`)
     - [x] `mail send` → SDK typed service (`Mail.V1.UserMailboxMessage.Send`)
     - [x] `mail list` → SDK-first: List IDs (`Mail.V1.UserMailboxMessage.List`) + Get details (`Mail.V1.UserMailboxMessage.Get`)
-- [ ] Remove legacy HTTP client code paths for endpoints covered by SDK.
+- [x] Remove legacy HTTP client code paths for endpoints covered by SDK.
   - [x] Drop `coreConfig` availability gating for SDK-only `ListMailMessages` in `internal/larksdk`.
 - [ ] Delete transitional “fallback” tests after migration.
-- [ ] Maintain a **Coverage Matrix** section in this backlog (or a sibling doc later):
+- [x] Maintain a **Coverage Matrix** doc: `docs/coverage-matrix.md`
   - desired API → SDK support? (yes/no)
   - token type: tenant/user
-  - version: v1/v2
+  - version: v1/v2/v3 (or `docs-api`)
   - if not supported: wrapper name in `internal/larksdk` using `core.ApiReq`
 
 Acceptance criteria:
@@ -275,16 +275,25 @@ P0 deliverables:
 P1:
 - [x] `base table create`
 - [x] `base table delete`
-- [ ] record batch operations
-- [ ] schema/view management
-  - [ ] `base field create/update/delete`
-  - [ ] `base view create/update/delete`
-  - [ ] `base record batch-create/batch-update/batch-delete`
+- [x] record batch operations
+  - [x] `base record batch-create`
+  - [x] `base record batch-update`
+  - [x] `base record batch-delete`
+- [x] schema/view management
+  - [x] `base field create/update/delete`
+    - [x] `base field create`
+      - Supports `--field-type <name|id>` (default: `text`); output includes `field_id/field_name/type`.
+    - [x] `base field update`
+    - [x] `base field delete`
+  - [x] `base view create/update/delete`
+    - [x] `base view create`
+    - [x] `base view delete`
+    - [x] `base view info`
 
 P2:
-- [ ] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
-- [ ] `base list` / `base app list` (discover app_token via Drive/Wiki)
-  - [ ] implement via `drive search --type bitable --query ...` and parse `file.url` to extract app_token
+- [x] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
+- [x] `base list` / `base app list` (discover app_token via Drive/Wiki)
+  - [x] implement via Drive search (`file_types=[bitable]`) and parse `file.url` to extract app_token
 - [ ] attachments workflows across Drive
 
 Acceptance criteria:
@@ -311,7 +320,7 @@ Discovery coverage (list/search) gaps to close for “CLI-only” workflows:
 - [x] Meetings: add `meetings list` (so users can find meeting_id without leaving CLI)
   - [x] Research API availability and required token type
   - [x] Implement `meetings list` + `--limit/--page-token` (or equivalent) + unit tests
-- [ ] Drive: `drive list/search` exist, but add better discoverability flags if needed:
+- [x] Drive: `drive list/search` exist, but add better discoverability flags if needed:
   - [x] `drive search --type <docx|sheet|bitable|file|doc>` (implemented; request uses file_types + README example)
   - [x] `drive search --folder-id <token>` (implemented; request uses folder_token)
   - [x] `drive search --pages <N>` caps pagination (prevents unbounded API calls); unit-tested
@@ -323,25 +332,25 @@ Mail CLI-only usability gaps:
   - [x] `mail info` (message-id only; mailbox defaults via resolveMailboxID + tests cover)
   - [x] `mail send` (defaults mailbox-id via resolveMailboxID + tests cover)
   - [x] Update help text + README examples
-- [ ] Config CRUD to support “CLI-only” setup (no manual editing config.json):
+- [x] Config CRUD to support “CLI-only” setup (no manual editing config.json):
   - [x] `lark config info`
   - [x] `lark config set --base-url ...`
   - [x] `lark config set --platform feishu|lark`
   - [x] `lark config unset --base-url`
   - [x] `lark config unset --default-mailbox-id`
   - [x] `lark config unset --user-tokens`
-  - [ ] Fill remaining config knobs for true CLI-only workflows:
+  - [x] Fill remaining config knobs for true CLI-only workflows:
     - [x] `lark config set --default-mailbox-id <id|me>` (parity with unset)
     - [x] `lark config set --app-id ... --app-secret ...` (optional; alternative to `lark auth login`)
     - [x] `lark config list-keys` (or document all supported keys in `lark config set --help`)
-    - [ ] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile info/set
-  - [ ] (Alternative) keep domain-specific where it’s clearer: `auth platform set/info`, `mail mailbox info-default/unset-default`, `auth user status/logout`
+    - [x] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile info/set
+  - (Alternative / future) keep domain-specific where it’s clearer: `auth platform set/info`, `mail mailbox info-default/unset-default`, `auth user status/logout`
 
 
 **Why:** users build muscle memory; consistency beats features.
 
 Deliverables:
-- [ ] Audit naming: singular vs plural
+- [x] Audit naming: singular vs plural
   - [x] `contacts users` renamed to `contacts user` (avoid overlap with top-level `users`)
   - `meeting` → `meetings` already done
   - [x] Policy: top-level resource collections use plural canonical names; abbreviations are aliases; keep backward-compatible aliases when renaming. Rationale: consistent help discovery and stable scripts.
@@ -349,7 +358,7 @@ Deliverables:
   - [x] `base` → `bases` (keep `base` as alias)
   - [x] `msg` → `messages` (keep `msg` as alias)
   - [x] `msg` short help clarified to "Send chat messages"
-- [ ] Align help text and examples.
+- [x] Align help text and examples.
   - [x] `users` top-level Short changed to "Manage users"
   - [x] `mail mailbox info` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
@@ -364,11 +373,37 @@ Additional consistency work:
   - [x] `drive info` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `drive download` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `drive search` now uses required flag validation for `--query` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `sheets rows/cols insert/delete` now use required flag validation for `--spreadsheet-id`, `--sheet-id`, `--start-index`, `--count` + unit tests assert stable required-flag errors
+  - [x] `bases table create` now uses required flag validation for `--name` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `bases field create` now uses required flag validation for `--table-id` and `--name` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases field delete` now uses required flag validation for `--table-id` and `--field-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases view info` now uses required flag validation for `--table-id` and `--view-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases view create` now uses required flag validation for `--table-id` and `--name` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases view delete` now uses required flag validation for `--table-id` and `--view-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `wiki node info` now uses required flag validation for `--node-token` and `--obj-type` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases record delete` now uses required flag validation for `--table-id` and `--record-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `wiki member add/delete` now use required flag validation for `--member-type` and `--member-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `mail mailbox set` now uses required flag validation for `--mailbox-id` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `messages send` now uses required flag validation for `--receive-id` + unit test asserts stable required-flag error
+  - [ ] TODO: audit remaining commands that still rely on manual required-input checks and decide whether to convert them to Cobra required-flag validation.
+    - [x] `wiki task info` uses required flag validation for `--task-id` (positional arg sets the flag)
+    - `bases field list/view list/record info/field update` (`table-id`/`record-id`/`field-id` required checks are still manual)
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
   - Add/adjust tests to ensure required-flag errors are stable.
+  - [ ] TODO: remaining manual required checks in key commands (Args/RunE still returning "... is required"):
+    - `messages` reply/list/search/reactions/pin/unpin (message-id/container-id/query/emoji/reaction-id)
+    - `chats update` (chat-id)
+    - `drive` info/download/export/share/upload (file-token/file)
+    - `docs` create/info/export/get/blocks/markdown convert/overwrite (title/doc-id/block-id)
+    - `sheets` read/update/append/clear/search (spreadsheet-id/range/query)
+    - `bases` list/fields/views/records + record create/update/search/batch (table-id/record-id/field-id)
+    - `meetings` info/update/delete + reserves update/delete (meeting-id/reserve-id)
+    - `minutes` info/update/delete (minute-token)
+    - `wiki` space create/node list/task info (name/space-id/task-id)
 
 ---
 
@@ -382,13 +417,13 @@ Known facts from prior research (must be reflected in code decisions):
 - Wiki search: **v1** `POST /wiki/v1/nodes/search` and user token only; SDK service/wiki/v2 doesn’t include this.
 
 Deliverables:
-- [ ] P0 (v2 SDK-backed):
+- [x] P0 (v2 SDK-backed):
   - [x] `wiki space list/info` implemented (v2)
   - [x] `wiki node info/list`
     - [x] `wiki node info` implemented (v2)
     - [x] `wiki node list` implemented (v2)
   - [x] `wiki member list` implemented (v2)
-  - [ ] `wiki member` management (v2)
+  - [x] `wiki member` management (v2)
     - [x] `wiki member delete`
     - [x] `wiki member add` (SpaceMember.Create)
     - [x] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
@@ -400,7 +435,7 @@ Deliverables:
         - Command:
           - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
   - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
-- [ ] P1 (gap fill):
+- [x] P1 (gap fill):
   - [x] implement `internal/larksdk/wiki_search_v1.go` using `core.ApiReq`
   - [x] expose `wiki node search`
 
@@ -537,3 +572,14 @@ Deliverables:
 - 2026-02-01: Verified Wiki `SpaceMember.Create` role-update behavior (not an upsert; repeated adds return already-exists); updated integration test to assert/log behavior and restore initial state without privilege downgrades.
 - 2026-02-01: Auth registry: made `SuggestedUserOAuthScopesFromServices` variant selection fall back consistently (readonly/full/required) + added unit tests.
 - 2026-02-01: Documented `keyring_backend=auto` resolution (keychain on macOS/Windows) + aligned README token storage docs.
+- 2026-02-01: Base record batch ops: added `base record batch-delete` command + SDK wrapper + unit tests.
+- 2026-02-01: Base record batch ops: added `base record batch-update` command + SDK-first + core fallback wrapper + unit tests.
+- 2026-02-01: Base field create: SDK-first + core fallback wrapper; CLI supports `--field-type <name|id>` (defaults to `text`) and prints `field_id/field_name/type`; cmd unit tests assert path/body/query + output contains `field_id`.
+- 2026-02-01: Base field update: SDK-first for rename-only; core fallback for advanced payloads (`--property-json`/`--description-json`); cmd unit tests added.
+- 2026-02-01: Base view create: added core fallback (POST /views) while keeping SDK-first; CLI defaults `--view-type` to `grid`.
+- 2026-02-01: Base view delete: SDK-first + core fallback; prints `deleted/view_id`; unit tests added.
+- 2026-02-01: Base list/app list: added `bases list` (and `bases app list`) via Drive search (bitable) + app_token extraction from file URL + unit test.
+- 2026-02-01: Config multi-profile: treat `--profile default` as alias of legacy config path; keychain token bucket uses (profile, base_url, app_id) with migration; unit tests added.
+- 2026-02-01: Documented SDK-first coverage matrix (`docs/coverage-matrix.md`) and marked backlog item complete.
+- 2026-02-01: Wiki backlog checkbox alignment (marked Wiki P0/P1 and member-management items complete).
+- 2026-02-01: Bases list/app list: improved app_token extraction for common Feishu/Lark URL shapes + added unit tests for URL parsing and `bases app list` + README examples.

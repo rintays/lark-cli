@@ -93,16 +93,15 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(mailboxID) == "" {
-					return errors.New("mailbox-id is required")
+			if len(args) > 0 {
+				if mailboxID != "" && mailboxID != args[0] {
+					return errors.New("mailbox-id provided twice")
 				}
-				return nil
+				if err := cmd.Flags().Set("mailbox-id", args[0]); err != nil {
+					return err
+				}
 			}
-			if mailboxID != "" && mailboxID != args[0] {
-				return errors.New("mailbox-id provided twice")
-			}
-			return cmd.Flags().Set("mailbox-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.Config == nil {
@@ -121,6 +120,7 @@ func newMailMailboxSetCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mailboxID, "mailbox-id", "", "user mailbox ID (defaults to config default_mailbox_id or 'me'; or provide as positional argument)")
+	_ = cmd.MarkFlagRequired("mailbox-id")
 	return cmd
 }
 

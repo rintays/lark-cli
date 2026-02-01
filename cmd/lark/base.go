@@ -25,6 +25,7 @@ A base (also called an app) is the top-level container. Each base contains one o
 Relationships: app -> tables -> fields + records; views belong to a table.
 Most subcommands require the Bitable app token to identify the base.`,
 	}
+	cmd.AddCommand(newBaseListCmd(state))
 	cmd.AddCommand(newBaseAppCmd(state))
 	cmd.AddCommand(newBaseTableCmd(state))
 	cmd.AddCommand(newBaseFieldCmd(state))
@@ -38,6 +39,7 @@ func newBaseAppCmd(state *appState) *cobra.Command {
 		Use:   "app",
 		Short: "Manage Bitable apps",
 	}
+	cmd.AddCommand(newBaseAppListCmd(state))
 	cmd.AddCommand(newBaseAppCreateCmd(state))
 	cmd.AddCommand(newBaseAppCopyCmd(state))
 	cmd.AddCommand(newBaseAppGetCmd(state))
@@ -62,6 +64,8 @@ func newBaseFieldCmd(state *appState) *cobra.Command {
 		Short: "Manage Bitable fields",
 	}
 	cmd.AddCommand(newBaseFieldCreateCmd(state))
+	cmd.AddCommand(newBaseFieldUpdateCmd(state))
+	cmd.AddCommand(newBaseFieldDeleteCmd(state))
 	cmd.AddCommand(newBaseFieldListCmd(state))
 	cmd.AddCommand(newBaseFieldTypesCmd(state))
 	return cmd
@@ -73,6 +77,8 @@ func newBaseViewCmd(state *appState) *cobra.Command {
 		Short: "Manage Bitable views",
 	}
 	cmd.AddCommand(newBaseViewCreateCmd(state))
+	cmd.AddCommand(newBaseViewDeleteCmd(state))
+	cmd.AddCommand(newBaseViewInfoCmd(state))
 	cmd.AddCommand(newBaseViewListCmd(state))
 	return cmd
 }
@@ -83,6 +89,9 @@ func newBaseRecordCmd(state *appState) *cobra.Command {
 		Short: "Manage Bitable records",
 	}
 	cmd.AddCommand(newBaseRecordCreateCmd(state))
+	cmd.AddCommand(newBaseRecordBatchCreateCmd(state))
+	cmd.AddCommand(newBaseRecordBatchUpdateCmd(state))
+	cmd.AddCommand(newBaseRecordBatchDeleteCmd(state))
 	cmd.AddCommand(newBaseRecordSearchCmd(state))
 	cmd.AddCommand(newBaseRecordInfoCmd(state))
 	cmd.AddCommand(newBaseRecordUpdateCmd(state))

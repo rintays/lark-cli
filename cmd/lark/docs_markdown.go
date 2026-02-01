@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -27,11 +28,10 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			raw, err := readInput(content, contentFile, "content")
+			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
 				return err
 			}
-			raw = normalizeDocxContentEscapes(raw)
 			normalized, err := normalizeDocxContentType(contentType)
 			if err != nil {
 				return err
@@ -91,11 +91,10 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			raw, err := readInput(content, contentFile, "content")
+			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
 				return err
 			}
-			raw = normalizeDocxContentEscapes(raw)
 			normalized, err := normalizeDocxContentType(contentType)
 			if err != nil {
 				return err
@@ -171,6 +170,23 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&content, "content", "", "raw markdown/html content")
 	cmd.Flags().StringVar(&contentFile, "content-file", "", "path to file containing markdown/html content")
 	return cmd
+}
+
+func readDocxContent(raw, path string) (string, error) {
+	if path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("read content file: %w", err)
+		}
+		raw = string(data)
+	} else {
+		raw = normalizeDocxContentEscapes(raw)
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("content is required")
+	}
+	return raw, nil
 }
 
 func normalizeDocxContentType(raw string) (string, error) {

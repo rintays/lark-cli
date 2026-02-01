@@ -27,9 +27,6 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(query) == "" {
-					return errors.New("query is required")
-				}
 				return nil
 			}
 			if query != "" && query != args[0] {
@@ -120,6 +117,7 @@ func newWikiNodeSearchCmd(state *appState) *cobra.Command {
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of nodes to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 	cmd.Flags().StringVar(&userAccessToken, "user-access-token", "", "user access token (OAuth)")
+	_ = cmd.MarkFlagRequired("query")
 
 	return cmd
 }

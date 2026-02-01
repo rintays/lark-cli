@@ -13,7 +13,7 @@ func UserAccountBucketKey(appID, baseURL, profile string) string {
 	appID = strings.TrimSpace(appID)
 	baseURL = normalizeBucketBaseURL(baseURL)
 	profile = strings.TrimSpace(profile)
-	if profile == "" {
+	if profile == "" || strings.EqualFold(profile, defaultProfileKey) {
 		profile = defaultProfileKey
 	}
 	return fmt.Sprintf("%s|%s|%s", appID, baseURL, profile)

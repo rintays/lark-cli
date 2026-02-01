@@ -42,9 +42,6 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 		Short: "Send a message to a chat or user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			receiveID = strings.TrimSpace(receiveID)
-			if receiveID == "" {
-				return errors.New("receive-id is required")
-			}
 			msgType, content, err := resolveMessageContent(contentOpts)
 			if err != nil {
 				return err

@@ -119,6 +119,11 @@ func DefaultPathForProfile(profile string) (string, error) {
 	if strings.Contains(name, "..") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return "", fmt.Errorf("invalid profile %q", profile)
 	}
+	// Backward-compatible default profile alias: keep using the legacy
+	// ~/.config/lark/config.json path for the "default" profile.
+	if strings.EqualFold(name, "default") {
+		return DefaultPath()
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
