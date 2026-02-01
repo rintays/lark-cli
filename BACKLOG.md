@@ -373,6 +373,7 @@ Additional consistency work:
   - [x] `drive info` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive export` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive share` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
+  - [x] `drive download` now uses required flag validation for `--file-token` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `drive search` now uses required flag validation for `--query` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `sheets rows/cols insert/delete` now use required flag validation for `--spreadsheet-id`, `--sheet-id`, `--start-index`, `--count` + unit tests assert stable required-flag errors
   - [x] `bases table create` now uses required flag validation for `--name` (positional arg sets the flag) + unit test asserts stable required-flag error
@@ -387,7 +388,6 @@ Additional consistency work:
   - [x] `mail mailbox set` now uses required flag validation for `--mailbox-id` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [ ] TODO: audit remaining commands that still rely on manual required-input checks and decide whether to convert them to Cobra required-flag validation.
     - `messages send` (`--receive-id` is still checked manually in `RunE` even though it’s marked required)
-    - `drive download` (`file-token is required` check is still manual)
     - `wiki task info` (`task-id is required` check is still manual)
     - `bases field list/view list/record info/field update` (`table-id`/`record-id`/`field-id` required checks are still manual)
   - Goal: missing required flags should fail *before* making API calls.

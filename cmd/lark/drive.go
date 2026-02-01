@@ -319,9 +319,6 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(fileToken) == "" {
-					return errors.New("file-token is required")
-				}
 				return nil
 			}
 			if fileToken != "" && fileToken != args[0] {
@@ -369,6 +366,7 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (or provide as positional argument)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
+	_ = cmd.MarkFlagRequired("file-token")
 	_ = cmd.MarkFlagRequired("out")
 	return cmd
 }
