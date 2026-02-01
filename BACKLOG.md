@@ -117,7 +117,7 @@ Credential/scopes management (research + design, gog-inspired):
   - phased implementation plan + risks
 
 Work items (must follow the design, not ad-hoc patches):
-- [ ] **Service registry (gog-style)**
+- [x] **Service registry (gog-style)**
   - [x] Define fixed service set (im/drive/docx/sheets/calendar/mail/wiki/base/…)
   - [x] Each service declares: token type(s) (tenant/user), user scopes, offline requirement
   - [x] Compute **stable sorted union** of required scopes (deterministic + testable)
@@ -148,10 +148,10 @@ Work items (must follow the design, not ad-hoc patches):
   - [x] Env > config precedence for keyring backend (`LARK_KEYRING_BACKEND` > config `keyring_backend`)
   - [ ] Define whether we need `LARK_KEYRING_PASSWORD` (and/or config knob) for headless secure storage (design TBD)
   - [x] Store refresh token as JSON payload including metadata (`services`, `scopes`, `created_at`) to power `auth status`
-- [ ] **Multi-profile / multi-account / multi-app isolation**
+- [x] **Multi-profile / multi-account / multi-app isolation**
   - [x] `--profile` / `LARK_PROFILE` selection + default
   - [x] “client bucket” analogue (gog `--client`): isolate refresh tokens by app_id/base_url/profile to avoid mixing credentials
-- [ ] **Auth status & remediation UX**
+- [x] **Auth status & remediation UX**
   - [x] `lark auth user status` shows: offline/refresh availability, expiry, and stored scope (minimal v1)
   - [x] Standardized remediation messages:
     - [x] missing refresh_token → tell user to rerun with `--force-consent` / correct scopes
@@ -171,7 +171,7 @@ Deliverables:
   - [x] `users` — already SDK-backed; tests/validation tightened
   - [x] `chats` (list now uses oapi-sdk-go im/v1 typed service)
   - [x] `msg` — msg send uses oapi-sdk-go im/v1
-  - [ ] `drive`
+  - [x] `drive`
     - [x] `drive urls` → SDK (`GetDriveFileMetadata`)
     - [x] `drive share` (public permission update) → SDK (`UpdateDrivePermissionPublic`)
     - [x] `drive search` → SDK (`/drive/v1/files/search`)
@@ -197,12 +197,12 @@ Deliverables:
       - [ ] Integration tests: roundtrip `md → docx → md` for a small fixture
   - [ ] `sheets`
     - [x] `sheets info` → SDK typed service (`Sheets.V3.Spreadsheet.Get`)
-  - [ ] `mail`
+  - [x] `mail`
     - [x] `mail info` → SDK typed service (`Mail.V1.UserMailboxMessage.Get`)
     - [x] `mail public-mailboxes list` → SDK typed service (`Mail.V1.PublicMailbox.List`)
     - [x] `mail send` → SDK typed service (`Mail.V1.UserMailboxMessage.Send`)
     - [x] `mail list` → SDK-first: List IDs (`Mail.V1.UserMailboxMessage.List`) + Get details (`Mail.V1.UserMailboxMessage.Get`)
-- [ ] Remove legacy HTTP client code paths for endpoints covered by SDK.
+- [x] Remove legacy HTTP client code paths for endpoints covered by SDK.
   - [x] Drop `coreConfig` availability gating for SDK-only `ListMailMessages` in `internal/larksdk`.
 - [ ] Delete transitional “fallback” tests after migration.
 - [x] Maintain a **Coverage Matrix** doc: `docs/coverage-matrix.md`
@@ -320,7 +320,7 @@ Discovery coverage (list/search) gaps to close for “CLI-only” workflows:
 - [x] Meetings: add `meetings list` (so users can find meeting_id without leaving CLI)
   - [x] Research API availability and required token type
   - [x] Implement `meetings list` + `--limit/--page-token` (or equivalent) + unit tests
-- [ ] Drive: `drive list/search` exist, but add better discoverability flags if needed:
+- [x] Drive: `drive list/search` exist, but add better discoverability flags if needed:
   - [x] `drive search --type <docx|sheet|bitable|file|doc>` (implemented; request uses file_types + README example)
   - [x] `drive search --folder-id <token>` (implemented; request uses folder_token)
   - [x] `drive search --pages <N>` caps pagination (prevents unbounded API calls); unit-tested
@@ -332,25 +332,25 @@ Mail CLI-only usability gaps:
   - [x] `mail info` (message-id only; mailbox defaults via resolveMailboxID + tests cover)
   - [x] `mail send` (defaults mailbox-id via resolveMailboxID + tests cover)
   - [x] Update help text + README examples
-- [ ] Config CRUD to support “CLI-only” setup (no manual editing config.json):
+- [x] Config CRUD to support “CLI-only” setup (no manual editing config.json):
   - [x] `lark config info`
   - [x] `lark config set --base-url ...`
   - [x] `lark config set --platform feishu|lark`
   - [x] `lark config unset --base-url`
   - [x] `lark config unset --default-mailbox-id`
   - [x] `lark config unset --user-tokens`
-  - [ ] Fill remaining config knobs for true CLI-only workflows:
+  - [x] Fill remaining config knobs for true CLI-only workflows:
     - [x] `lark config set --default-mailbox-id <id|me>` (parity with unset)
     - [x] `lark config set --app-id ... --app-secret ...` (optional; alternative to `lark auth login`)
     - [x] `lark config list-keys` (or document all supported keys in `lark config set --help`)
     - [x] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile info/set
-  - [ ] (Alternative) keep domain-specific where it’s clearer: `auth platform set/info`, `mail mailbox info-default/unset-default`, `auth user status/logout`
+  - (Alternative / future) keep domain-specific where it’s clearer: `auth platform set/info`, `mail mailbox info-default/unset-default`, `auth user status/logout`
 
 
 **Why:** users build muscle memory; consistency beats features.
 
 Deliverables:
-- [ ] Audit naming: singular vs plural
+- [x] Audit naming: singular vs plural
   - [x] `contacts users` renamed to `contacts user` (avoid overlap with top-level `users`)
   - `meeting` → `meetings` already done
   - [x] Policy: top-level resource collections use plural canonical names; abbreviations are aliases; keep backward-compatible aliases when renaming. Rationale: consistent help discovery and stable scripts.
@@ -358,7 +358,7 @@ Deliverables:
   - [x] `base` → `bases` (keep `base` as alias)
   - [x] `msg` → `messages` (keep `msg` as alias)
   - [x] `msg` short help clarified to "Send chat messages"
-- [ ] Align help text and examples.
+- [x] Align help text and examples.
   - [x] `users` top-level Short changed to "Manage users"
   - [x] `mail mailbox info` defaults mailbox-id (flag > config default_mailbox_id > `me`) + unit test
   - [x] `mail folders/list` help now documents mailbox-id defaulting (commit 23c634c)
