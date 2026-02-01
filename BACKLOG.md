@@ -379,6 +379,8 @@ Additional consistency work:
   - [x] `bases field delete` now uses required flag validation for `--table-id` and `--field-id` (positional args set the flags) + unit tests assert stable required-flag errors
   - [x] `bases view info` now uses required flag validation for `--table-id` and `--view-id` (positional args set the flags) + unit tests assert stable required-flag errors
   - [x] `wiki node info` now uses required flag validation for `--node-token` and `--obj-type` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases record delete` now uses required flag validation for `--table-id` and `--record-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `wiki member add/delete` now use required flag validation for `--member-type` and `--member-id` (positional args set the flags) + unit tests assert stable required-flag errors
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
