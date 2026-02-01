@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 )
@@ -137,7 +138,21 @@ func (c *Client) PrimaryCalendar(ctx context.Context, token string) (Calendar, e
 	if tenantToken == "" {
 		return Calendar{}, errors.New("tenant access token is required")
 	}
+	return c.primaryCalendar(ctx, larkcore.WithTenantAccessToken(tenantToken))
+}
 
+func (c *Client) PrimaryCalendarWithUserToken(ctx context.Context, userAccessToken string) (Calendar, error) {
+	if !c.available() || c.coreConfig == nil {
+		return Calendar{}, ErrUnavailable
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return Calendar{}, errors.New("user access token is required")
+	}
+	return c.primaryCalendar(ctx, larkcore.WithUserAccessToken(userAccessToken))
+}
+
+func (c *Client) primaryCalendar(ctx context.Context, option larkcore.RequestOptionFunc) (Calendar, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/calendar/v4/calendars/primary",
 		HttpMethod:                http.MethodPost,
@@ -146,7 +161,7 @@ func (c *Client) PrimaryCalendar(ctx context.Context, token string) (Calendar, e
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return Calendar{}, err
 	}
