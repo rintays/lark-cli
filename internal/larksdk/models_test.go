@@ -35,6 +35,36 @@ func TestRevisionID_UnmarshalJSON_Null(t *testing.T) {
 	}
 }
 
+func TestTimestampString_UnmarshalJSON_String(t *testing.T) {
+	var ts TimestampString
+	if err := json.Unmarshal([]byte(`"1700000000"`), &ts); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if ts.String() != "1700000000" {
+		t.Fatalf("expected %q, got %q", "1700000000", ts.String())
+	}
+}
+
+func TestTimestampString_UnmarshalJSON_Number(t *testing.T) {
+	var ts TimestampString
+	if err := json.Unmarshal([]byte(`1700000000`), &ts); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if ts.String() != "1700000000" {
+		t.Fatalf("expected %q, got %q", "1700000000", ts.String())
+	}
+}
+
+func TestTimestampString_UnmarshalJSON_Null(t *testing.T) {
+	var ts TimestampString = "existing"
+	if err := json.Unmarshal([]byte(`null`), &ts); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if ts.String() != "" {
+		t.Fatalf("expected empty, got %q", ts.String())
+	}
+}
+
 func TestMailFolderType_UnmarshalJSON_String(t *testing.T) {
 	var ft MailFolderType
 	if err := json.Unmarshal([]byte(`"INBOX"`), &ft); err != nil {

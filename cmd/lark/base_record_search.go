@@ -79,7 +79,7 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 				for _, fieldName := range headers[1 : len(headers)-2] {
 					row = append(row, formatBaseRecordFieldValue(record.Fields[fieldName]))
 				}
-				row = append(row, formatBaseRecordCell(record.CreatedTime), formatBaseRecordCell(record.LastModifiedTime))
+				row = append(row, formatBaseRecordCell(record.CreatedTime.String()), formatBaseRecordCell(record.LastModifiedTime.String()))
 				rows = append(rows, row)
 			}
 			text := tableTextFromRows(headers, rows, "no records found")

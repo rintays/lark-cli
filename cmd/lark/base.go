@@ -260,7 +260,7 @@ func newBaseRecordInfoCmd(state *appState) *cobra.Command {
 			payload := map[string]any{"record": record}
 			text := tableTextRow(
 				[]string{"record_id", "created_time", "last_modified_time"},
-				[]string{record.RecordID, record.CreatedTime, record.LastModifiedTime},
+				[]string{record.RecordID, record.CreatedTime.String(), record.LastModifiedTime.String()},
 			)
 			return state.Printer.Print(payload, text)
 		},

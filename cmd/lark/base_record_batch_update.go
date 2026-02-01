@@ -63,7 +63,7 @@ You can also pass a file path with @:
 			payload := map[string]any{"records": updated}
 			lines := make([]string, 0, len(updated))
 			for _, record := range updated {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime, record.LastModifiedTime))
+				lines = append(lines, fmt.Sprintf("%s\t%s\t%s", record.RecordID, record.CreatedTime.String(), record.LastModifiedTime.String()))
 			}
 			text := tableText([]string{"record_id", "created_time", "last_modified_time"}, lines, "no records updated")
 			return state.Printer.Print(payload, text)
