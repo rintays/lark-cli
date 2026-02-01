@@ -286,6 +286,7 @@ P1:
     - [x] `base field delete`
   - [ ] `base view create/update/delete`
     - [x] `base view create`
+    - [x] `base view delete`
 
 P2:
 - [ ] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
