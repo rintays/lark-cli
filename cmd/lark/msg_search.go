@@ -188,7 +188,7 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 				for _, display := range displays {
 					lines = append(lines, renderMessageDisplay(display, prefixWidth, separator)...)
 				}
-				text = strings.Join(lines, "\n\n")
+				text = strings.Join(lines, "\n")
 			}
 			return state.Printer.Print(payload, text)
 		},
