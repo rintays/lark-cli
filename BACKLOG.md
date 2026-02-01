@@ -279,13 +279,13 @@ P1:
   - [x] `base record batch-create`
   - [x] `base record batch-update`
   - [x] `base record batch-delete`
-- [ ] schema/view management
+- [x] schema/view management
   - [x] `base field create/update/delete`
     - [x] `base field create`
       - Supports `--field-type <name|id>` (default: `text`); output includes `field_id/field_name/type`.
     - [x] `base field update`
     - [x] `base field delete`
-  - [ ] `base view create/update/delete`
+  - [x] `base view create/update/delete`
     - [x] `base view create`
     - [x] `base view delete`
     - [x] `base view info`
