@@ -396,7 +396,6 @@ Additional consistency work:
   - Add/adjust tests to ensure required-flag errors are stable.
   - [ ] TODO: remaining manual required checks in key commands (Args/RunE still returning "... is required"):
     - `messages` reply/list/search/reactions/pin/unpin (message-id/container-id/query/emoji/reaction-id)
-    - `messages send` (still needs cleanup for other required inputs, but `--receive-id` is now handled by required flag validation)
     - `chats update` (chat-id)
     - `drive` info/download/export/share/upload (file-token/file)
     - `docs` create/info/export/get/blocks/markdown convert/overwrite (title/doc-id/block-id)
