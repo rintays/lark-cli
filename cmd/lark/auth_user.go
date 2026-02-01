@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lark/internal/config"
+	"lark/internal/output"
 )
 
 const (
@@ -176,8 +177,10 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 			}
 			grantedScope := canonicalScopeString(tokens.Scope)
 			warning := ""
+			var scopeNotice *scopeChangeNotice
 			if grantedScope != "" {
 				warning = scopesChangedWarning(prevScope, grantedScope)
+				scopeNotice = scopesChangedNotice(prevScope, grantedScope)
 			}
 			acct := ensureUserAccount(state.Config, account)
 			acct.UserScopes = scopeList
@@ -226,10 +229,24 @@ func newAuthUserLoginCmd(state *appState) *cobra.Command {
 				payload["warning"] = warning
 			}
 
-			message := fmt.Sprintf("saved user OAuth tokens to %s (account: %s)", state.ConfigPath, account)
-			if warning != "" {
-				message = fmt.Sprintf("%s\n\nWARNING: %s", message, warning)
+			messageBlocks := []string{
+				output.Notice(output.NoticeSuccess, "User OAuth tokens saved", []string{
+					fmt.Sprintf("Config: %s", state.ConfigPath),
+					fmt.Sprintf("Account: %s", account),
+				}),
 			}
+			if scopeNotice != nil {
+				messageBlocks = append(messageBlocks,
+					output.Notice(output.NoticeWarning, "OAuth scopes changed since last login", []string{
+						fmt.Sprintf("Previous scopes: %s", scopeNotice.Previous),
+						fmt.Sprintf("New scopes: %s", scopeNotice.Next),
+					}),
+					output.Notice(output.NoticeHint, "If you intended to change scopes, re-grant consent to refresh the token.", []string{
+						fmt.Sprintf("Re-run: %s", userOAuthReloginCommand),
+					}),
+				)
+			}
+			message := output.JoinBlocks(messageBlocks...)
 			return state.Printer.Print(payload, message)
 		},
 	}
@@ -267,6 +284,20 @@ func canonicalScopeString(scope string) string {
 		}
 	}
 	return strings.Join(out, " ")
+}
+
+type scopeChangeNotice struct {
+	Previous string
+	Next     string
+}
+
+func scopesChangedNotice(previousScope, newScope string) *scopeChangeNotice {
+	prev := canonicalScopeString(previousScope)
+	next := canonicalScopeString(newScope)
+	if prev == "" || next == "" || prev == next {
+		return nil
+	}
+	return &scopeChangeNotice{Previous: prev, Next: next}
 }
 
 func scopesChangedWarning(previousScope, newScope string) string {

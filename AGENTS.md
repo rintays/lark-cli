@@ -121,3 +121,4 @@
 - 2026-02-01: Docs URL lookup now always retries with user token when available.
 - 2026-02-01: Docs get --format md now renders Markdown from docx blocks instead of raw_content.
 - 2026-02-01: Switched users search to search/v1/user with positional query, user-token scopes, and updated output/tests/docs.
+- 2026-02-01: Refined terminal output system (styled notices/table headers, usage error formatting), refreshed auth user login messaging, and improved users help/usage hints.

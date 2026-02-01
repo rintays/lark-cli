@@ -16,11 +16,13 @@ const maxUserSearchPageSize = 200
 func newUsersCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "users",
-		Short: "Manage users",
+		Short: "Search and inspect directory users",
 		Long: `Users are people in your tenant directory.
 
-- User IDs: user_id (tenant-scoped), open_id (app-scoped), union_id (cross-app).
-- Use search to resolve IDs before calling other APIs.`,
+IDs: user_id (tenant-scoped), open_id (app-scoped), union_id (cross-app).
+Tip: use search to resolve IDs before calling other APIs.`,
+		Example: `  lark users search "Ada"
+  lark users info <user_id>`,
 	}
 	cmd.AddCommand(newUserInfoCmd(state))
 	cmd.AddCommand(newUsersSearchCmd(state))
@@ -36,16 +38,19 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 		Use:     "search <search_query>",
 		Aliases: []string{"list"},
 		Short:   "Search users by keyword",
+		Example: `  lark users search "Ada"`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
 			if len(args) == 0 {
-				return errors.New("search_query is required")
+				return usageError(cmd, "search_query is required", `Example:
+  lark users search "Ada"`)
 			}
 			query = strings.TrimSpace(args[0])
 			if query == "" {
-				return errors.New("search_query is required")
+				return usageError(cmd, "search_query is required", `Example:
+  lark users search "Ada"`)
 			}
 			return nil
 		},

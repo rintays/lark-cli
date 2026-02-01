@@ -365,7 +365,7 @@ func expireUserToken(state *appState, account string, cause error) error {
 func execute() int {
 	cmd := newRootCmd()
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, output.FormatError(err, output.AutoStyle(os.Stderr)))
 		return 1
 	}
 	return 0
