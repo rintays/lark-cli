@@ -127,3 +127,4 @@
 - 2026-02-01: Standardized required identifiers to positional args across chats/messages/calendar/drive/docs/sheets/wiki/base/meetings/minutes/mail, made search queries positional, and refreshed tests/README/examples.
 - 2026-02-01: Wrapped positional args validation errors with detailed usage output and hints for consistent CLI error messaging.
 - 2026-02-01: Base record search now always requests automatic fields, supports field selection, and renders fields in table output; base table create is positional-only.
+- 2026-02-01: Sheets update/append now normalize single-cell ranges, validate range size vs values, and support inline CSV/TSV via --values-format (plus TSV files); sheets create gains --sheet-title via sheets_batch_update, with README/tests updated.

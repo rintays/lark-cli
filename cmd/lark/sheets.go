@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -25,7 +27,8 @@ func newSheetsCmd(state *appState) *cobra.Command {
 - spreadsheet_token identifies the file (use it as FILE_TOKEN for drive permissions).
 - Each spreadsheet contains sheets (tabs) with sheet_id.
 - Use lark drive permissions to manage collaborators for sheets.
-- Ranges use A1 notation: <sheet_id>!A1:B2; rows/cols act on a sheet.`,
+- Ranges use A1 notation: <sheet_id>!A1:B2; rows/cols act on a sheet.
+- Single cell ranges are allowed (A1 or <sheet_id>!A1) and normalized to A1:A1.`,
 	}
 	cmd.AddCommand(newSheetsReadCmd(state))
 	cmd.AddCommand(newSheetsCreateCmd(state))
@@ -88,7 +91,7 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2 or single cell A1)")
 	return cmd
 }
 
@@ -179,6 +182,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	var sheetID string
 	var valuesRaw string
 	var valuesFile string
+	var valuesFormat string
 
 	cmd := &cobra.Command{
 		Use:   "update <spreadsheet-token> <range>",
@@ -198,7 +202,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			values, err := parseSheetValues(valuesRaw, valuesFile)
+			values, err := parseSheetValues(valuesRaw, valuesFile, valuesFormat)
 			if err != nil {
 				return err
 			}
@@ -213,6 +217,9 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := validateSheetRangeForValues(resolvedRange, values); err != nil {
+				return err
+			}
 			update, err := state.SDK.UpdateSheetRange(context.Background(), token, spreadsheetID, resolvedRange, values)
 			if err != nil {
 				return err
@@ -223,9 +230,10 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
-	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
-	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV file")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2 or single cell A1)")
+	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'; use --values-format for inline CSV/TSV")
+	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV/TSV file")
+	cmd.Flags().StringVar(&valuesFormat, "values-format", "json", "values format for --values (json, csv, tsv)")
 	return cmd
 }
 
@@ -235,6 +243,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 	var sheetID string
 	var valuesRaw string
 	var valuesFile string
+	var valuesFormat string
 	var insertDataOption string
 
 	cmd := &cobra.Command{
@@ -255,7 +264,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			values, err := parseSheetValues(valuesRaw, valuesFile)
+			values, err := parseSheetValues(valuesRaw, valuesFile, valuesFormat)
 			if err != nil {
 				return err
 			}
@@ -280,9 +289,10 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
-	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
-	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV file")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2 or single cell A1)")
+	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'; use --values-format for inline CSV/TSV")
+	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV/TSV file")
+	cmd.Flags().StringVar(&valuesFormat, "values-format", "json", "values format for --values (json, csv, tsv)")
 	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
 	return cmd
 }
@@ -329,7 +339,7 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2 or single cell A1)")
 	return cmd
 }
 
@@ -416,15 +426,165 @@ func resolveSheetRange(sheetRange string, sheetID string) (string, error) {
 		if trimmedSheetID != "" {
 			return "", errors.New("range already includes sheet reference; omit --sheet-id")
 		}
-		return trimmedRange, nil
+		normalized, _ := normalizeSheetRange(trimmedRange)
+		return normalized, nil
 	}
 	if trimmedSheetID == "" {
-		return "", errors.New("range must include sheet reference (e.g. <sheet_id>!A1:B2) or set --sheet-id")
+		return "", errors.New("range must include sheet reference (e.g. <sheet_id>!A1:B2 or <sheet_id>!A1) or set --sheet-id")
 	}
-	return fmt.Sprintf("%s!%s", trimmedSheetID, trimmedRange), nil
+	resolved := fmt.Sprintf("%s!%s", trimmedSheetID, trimmedRange)
+	normalized, _ := normalizeSheetRange(resolved)
+	return normalized, nil
 }
 
-func parseSheetValues(valuesRaw string, valuesFile string) ([][]any, error) {
+var a1CellRe = regexp.MustCompile(`^([A-Za-z]+)([0-9]+)$`)
+
+func normalizeSheetRange(sheetRange string) (string, bool) {
+	trimmed := strings.TrimSpace(sheetRange)
+	if trimmed == "" {
+		return "", false
+	}
+	prefix, cellRange := splitSheetRange(trimmed)
+	if strings.Contains(cellRange, ":") {
+		return trimmed, false
+	}
+	if !isA1Cell(cellRange) {
+		return trimmed, false
+	}
+	return fmt.Sprintf("%s%s:%s", prefix, cellRange, cellRange), true
+}
+
+func splitSheetRange(sheetRange string) (string, string) {
+	if idx := strings.LastIndex(sheetRange, "!"); idx >= 0 {
+		return sheetRange[:idx+1], sheetRange[idx+1:]
+	}
+	return "", sheetRange
+}
+
+func isA1Cell(cell string) bool {
+	return a1CellRe.MatchString(strings.TrimSpace(cell))
+}
+
+func a1ColToNumber(col string) int {
+	col = strings.ToUpper(strings.TrimSpace(col))
+	if col == "" {
+		return 0
+	}
+	n := 0
+	for i := 0; i < len(col); i++ {
+		c := col[i]
+		if c < 'A' || c > 'Z' {
+			return 0
+		}
+		n = n*26 + int(c-'A'+1)
+	}
+	return n
+}
+
+func a1NumberToCol(num int) string {
+	if num <= 0 {
+		return ""
+	}
+	var out []byte
+	for num > 0 {
+		num--
+		out = append([]byte{byte('A' + (num % 26))}, out...)
+		num /= 26
+	}
+	return string(out)
+}
+
+func parseA1Cell(cell string) (col int, row int) {
+	cell = strings.TrimSpace(cell)
+	m := a1CellRe.FindStringSubmatch(cell)
+	if len(m) != 3 {
+		return 0, 0
+	}
+	col = a1ColToNumber(m[1])
+	row, err := strconv.Atoi(m[2])
+	if err != nil || row <= 0 {
+		return 0, 0
+	}
+	return col, row
+}
+
+func a1RangeShape(a1 string) (rows int, cols int) {
+	a1 = strings.TrimSpace(a1)
+	if a1 == "" {
+		return 0, 0
+	}
+	_, cellRange := splitSheetRange(a1)
+	parts := strings.Split(cellRange, ":")
+	start := parts[0]
+	end := start
+	if len(parts) == 2 {
+		end = parts[1]
+	}
+	sc, sr := parseA1Cell(start)
+	ec, er := parseA1Cell(end)
+	if sc <= 0 || sr <= 0 || ec <= 0 || er <= 0 {
+		return 0, 0
+	}
+	if ec < sc {
+		sc, ec = ec, sc
+	}
+	if er < sr {
+		sr, er = er, sr
+	}
+	return er - sr + 1, ec - sc + 1
+}
+
+func valuesShape(values [][]any) (rows int, cols int) {
+	rows = len(values)
+	for _, row := range values {
+		if len(row) > cols {
+			cols = len(row)
+		}
+	}
+	return rows, cols
+}
+
+func suggestRangeForValues(sheetRange string, rows int, cols int) string {
+	if rows <= 0 || cols <= 0 {
+		return ""
+	}
+	prefix, cellRange := splitSheetRange(sheetRange)
+	start := cellRange
+	if idx := strings.Index(start, ":"); idx >= 0 {
+		start = start[:idx]
+	}
+	sc, sr := parseA1Cell(start)
+	if sc <= 0 || sr <= 0 {
+		return ""
+	}
+	endCol := a1NumberToCol(sc + cols - 1)
+	endRow := sr + rows - 1
+	if endCol == "" || endRow <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s%s:%s%d", prefix, start, endCol, endRow)
+}
+
+func validateSheetRangeForValues(sheetRange string, values [][]any) error {
+	rows, cols := valuesShape(values)
+	if rows <= 0 || cols <= 0 {
+		return nil
+	}
+	rangeRows, rangeCols := a1RangeShape(sheetRange)
+	if rangeRows <= 0 || rangeCols <= 0 {
+		return nil
+	}
+	if rows <= rangeRows && cols <= rangeCols {
+		return nil
+	}
+	suggested := suggestRangeForValues(sheetRange, rows, cols)
+	if suggested != "" && suggested != sheetRange {
+		return fmt.Errorf("range too small for values: range=%s values=%dx%d; try %s", sheetRange, rows, cols, suggested)
+	}
+	return fmt.Errorf("range too small for values: range=%s values=%dx%d", sheetRange, rows, cols)
+}
+
+func parseSheetValues(valuesRaw string, valuesFile string, valuesFormat string) ([][]any, error) {
 	raw := strings.TrimSpace(valuesRaw)
 	filePath := strings.TrimSpace(valuesFile)
 	if raw == "" && filePath == "" {
@@ -443,7 +603,7 @@ func parseSheetValues(valuesRaw string, valuesFile string) ([][]any, error) {
 		}
 		return parseSheetValuesFile(path)
 	}
-	return parseSheetValuesJSON([]byte(valuesRaw))
+	return parseSheetValuesInline(raw, valuesFormat)
 }
 
 func parseSheetValuesFile(path string) ([][]any, error) {
@@ -455,7 +615,27 @@ func parseSheetValuesFile(path string) ([][]any, error) {
 	if ext == ".csv" {
 		return parseSheetValuesCSV(data)
 	}
+	if ext == ".tsv" || ext == ".tab" {
+		return parseSheetValuesTSV(data)
+	}
 	return parseSheetValuesJSON(data)
+}
+
+func parseSheetValuesInline(raw string, valuesFormat string) ([][]any, error) {
+	format := strings.ToLower(strings.TrimSpace(valuesFormat))
+	if format == "" {
+		format = "json"
+	}
+	switch format {
+	case "json":
+		return parseSheetValuesJSON([]byte(raw))
+	case "csv":
+		return parseSheetValuesCSV([]byte(raw))
+	case "tsv":
+		return parseSheetValuesTSV([]byte(raw))
+	default:
+		return nil, fmt.Errorf("values-format must be one of json, csv, tsv")
+	}
 }
 
 func parseSheetValuesJSON(data []byte) ([][]any, error) {
@@ -470,11 +650,20 @@ func parseSheetValuesJSON(data []byte) ([][]any, error) {
 }
 
 func parseSheetValuesCSV(data []byte) ([][]any, error) {
+	return parseSheetValuesDelimited(data, ',')
+}
+
+func parseSheetValuesTSV(data []byte) ([][]any, error) {
+	return parseSheetValuesDelimited(data, '\t')
+}
+
+func parseSheetValuesDelimited(data []byte, comma rune) ([][]any, error) {
 	reader := csv.NewReader(bytes.NewReader(data))
 	reader.TrimLeadingSpace = true
+	reader.Comma = comma
 	records, err := reader.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("values CSV must be valid: %w", err)
+		return nil, fmt.Errorf("values must be valid delimited data: %w", err)
 	}
 	if len(records) == 0 {
 		return nil, errors.New("values must include at least one row")

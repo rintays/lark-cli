@@ -240,6 +240,135 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 	}
 }
 
+func TestSheetsUpdateCommandNormalizesSingleCellRange(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPut {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!C4:C4" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"updatedRange":     "Sheet1!C4:C4",
+				"updatedRows":      1,
+				"updatedColumns":   1,
+				"updatedCells":     1,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"update",
+		"spreadsheet",
+		"Sheet1!C4",
+		"--values", `[[1]]`,
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets update error: %v", err)
+	}
+}
+
+func TestSheetsUpdateCommandInlineCSV(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/open-apis/sheets/v2/spreadsheets/spreadsheet/values" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		valueRange, ok := payload["valueRange"].(map[string]any)
+		if !ok {
+			t.Fatalf("missing valueRange")
+		}
+		if valueRange["range"] != "Sheet1!A1:B2" {
+			t.Fatalf("unexpected range: %v", valueRange["range"])
+		}
+		values, ok := valueRange["values"].([]any)
+		if !ok || len(values) != 2 {
+			t.Fatalf("unexpected values: %#v", valueRange["values"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]any{
+				"revision":         12,
+				"spreadsheetToken": "spreadsheet",
+				"updatedRange":     "Sheet1!A1:B2",
+				"updatedRows":      2,
+				"updatedColumns":   2,
+				"updatedCells":     4,
+			},
+		})
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{
+		"update",
+		"spreadsheet",
+		"Sheet1!A1:B2",
+		"--values", "Name,Amount\nAda,42",
+		"--values-format", "csv",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets update error: %v", err)
+	}
+}
+
 func TestSheetsCreateCommandWithSDK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer token" {
@@ -334,6 +463,116 @@ func TestSheetsCreateCommandWithSDK(t *testing.T) {
 	}
 	if !strings.Contains(output, "sheet_1") {
 		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestSheetsCreateCommandWithSheetTitle(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		switch r.URL.Path {
+		case "/open-apis/sheets/v3/spreadsheets":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"spreadsheet_token": "spreadsheet",
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"title":    "Budget Q1",
+						"token":    "spreadsheet",
+						"owner_id": "ou_1",
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/query":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"sheets": []map[string]any{
+						{
+							"sheet_id": "sheet_1",
+							"title":    "Sheet1",
+							"index":    0,
+							"hidden":   false,
+						},
+					},
+				},
+			})
+		case "/open-apis/sheets/v2/spreadsheets/spreadsheet/sheets_batch_update":
+			var payload map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+			requestsAny, ok := payload["requests"].([]any)
+			if !ok || len(requestsAny) != 1 {
+				t.Fatalf("unexpected requests: %#v", payload["requests"])
+			}
+			request, ok := requestsAny[0].(map[string]any)
+			if !ok {
+				t.Fatalf("unexpected request: %#v", requestsAny[0])
+			}
+			updateSheet, ok := request["updateSheet"].(map[string]any)
+			if !ok {
+				t.Fatalf("missing updateSheet: %#v", request)
+			}
+			props, ok := updateSheet["properties"].(map[string]any)
+			if !ok {
+				t.Fatalf("missing properties: %#v", updateSheet)
+			}
+			if props["sheetId"] != "sheet_1" {
+				t.Fatalf("unexpected sheetId: %#v", props["sheetId"])
+			}
+			if props["title"] != "Weather" {
+				t.Fatalf("unexpected title: %#v", props["title"])
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"replies": []map[string]any{},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"create", "--title", "Budget Q1", "--sheet-title", "Weather"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets create error: %v", err)
 	}
 }
 
