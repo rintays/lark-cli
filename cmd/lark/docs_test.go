@@ -83,6 +83,81 @@ func TestDocsCreateCommand(t *testing.T) {
 	}
 }
 
+func TestDocsCreateCommandFetchesURL(t *testing.T) {
+	createCalled := 0
+	getCalled := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/docx/v1/documents":
+			createCalled++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"document": map[string]any{
+						"document_id": "doc1",
+						"title":       "Specs",
+						"url":         "",
+					},
+				},
+			})
+			return
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/docx/v1/documents/doc1":
+			getCalled++
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"document": map[string]any{
+						"document_id": "doc1",
+						"title":       "Specs",
+						"url":         "https://example.com/doc",
+					},
+				},
+			})
+			return
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"create", "Specs"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs create error: %v", err)
+	}
+
+	if createCalled != 1 || getCalled != 1 {
+		t.Fatalf("unexpected call counts: create=%d get=%d", createCalled, getCalled)
+	}
+	if !strings.Contains(buf.String(), "doc1\tSpecs\thttps://example.com/doc") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
 func TestDocsCreateCommandMissingTitleDoesNotCallHTTP(t *testing.T) {
 	called := false
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

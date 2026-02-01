@@ -43,7 +43,6 @@ func newDocsCmd(state *appState) *cobra.Command {
 }
 
 func newDocsCreateCmd(state *appState) *cobra.Command {
-	var title string
 	var folderID string
 
 	cmd := &cobra.Command{
@@ -54,20 +53,15 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(title) == "" {
-					return errors.New("title is required")
-				}
-				return nil
+				return errors.New("title is required")
 			}
-			if title != "" && title != args[0] {
-				return errors.New("title provided twice")
-			}
-			return cmd.Flags().Set("title", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			title := args[0]
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -79,6 +73,19 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if doc.URL == "" && doc.DocumentID != "" {
+				if fetched, err := state.SDK.GetDocxDocument(context.Background(), token, doc.DocumentID); err == nil && fetched.URL != "" {
+					doc.URL = fetched.URL
+				}
+				if doc.URL == "" {
+					file, err := state.SDK.GetDriveFileMetadata(context.Background(), token, larksdk.GetDriveFileRequest{
+						FileToken: doc.DocumentID,
+					})
+					if err == nil && file.URL != "" {
+						doc.URL = file.URL
+					}
+				}
+			}
 			payload := map[string]any{"document": doc}
 			text := tableTextRow(
 				[]string{"document_id", "title", "url"},
@@ -88,7 +95,6 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&title, "title", "", "document title (or provide as positional argument)")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root)")
 	return cmd
 }
@@ -229,7 +235,6 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 }
 
 func newDocsGetCmd(state *appState) *cobra.Command {
-	var documentID string
 	var format string
 
 	cmd := &cobra.Command{
@@ -240,15 +245,9 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-				return nil
+				return errors.New("doc-id is required")
 			}
-			if documentID != "" && documentID != args[0] {
-				return errors.New("doc-id provided twice")
-			}
-			return cmd.Flags().Set("doc-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
@@ -262,6 +261,7 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 			if format == "" {
 				format = "md"
 			}
+			documentID := args[0]
 			switch format {
 			case "md", "markdown", "txt", "text":
 				if format == "markdown" {
@@ -319,7 +319,6 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&format, "format", "md", "output format (md, txt, or blocks)")
 	return cmd
 }
