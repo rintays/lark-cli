@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,57 +32,62 @@ func newWikiMemberListCmd(state *appState) *cobra.Command {
 		Short: "List Wiki space members (v2)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
-				return err
-			}
 			if limit <= 0 {
 				limit = 50
 			}
-			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-
-			items := make([]larksdk.WikiSpaceMember, 0, limit)
-			pageToken := ""
-			remaining := limit
-			for {
-				ps := pageSize
-				if ps <= 0 {
-					ps = remaining
-					if ps > 200 {
-						ps = 200
+			spaceID = strings.TrimSpace(spaceID)
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				items := make([]larksdk.WikiSpaceMember, 0, limit)
+				pageToken := ""
+				remaining := limit
+				for {
+					ps := pageSize
+					if ps <= 0 {
+						ps = remaining
+						if ps > 200 {
+							ps = 200
+						}
+					}
+					req := larksdk.ListWikiSpaceMembersRequest{
+						SpaceID:   spaceID,
+						PageSize:  ps,
+						PageToken: pageToken,
+					}
+					var result larksdk.ListWikiSpaceMembersResult
+					var err error
+					switch tokenType {
+					case tokenTypeTenant:
+						result, err = sdk.ListWikiSpaceMembersV2(ctx, token, req)
+					case tokenTypeUser:
+						result, err = sdk.ListWikiSpaceMembersV2WithUserToken(ctx, token, req)
+					default:
+						return nil, "", fmt.Errorf("unsupported token type %s", tokenType)
+					}
+					if err != nil {
+						return nil, "", err
+					}
+					items = append(items, result.Members...)
+					if len(items) >= limit || !result.HasMore {
+						break
+					}
+					remaining = limit - len(items)
+					pageToken = result.PageToken
+					if pageToken == "" {
+						break
 					}
 				}
-				result, err := state.SDK.ListWikiSpaceMembersV2(cmd.Context(), accessToken, larksdk.ListWikiSpaceMembersRequest{
-					SpaceID:   strings.TrimSpace(spaceID),
-					PageSize:  ps,
-					PageToken: pageToken,
-				})
-				if err != nil {
-					return err
+				if len(items) > limit {
+					items = items[:limit]
 				}
-				items = append(items, result.Members...)
-				if len(items) >= limit || !result.HasMore {
-					break
-				}
-				remaining = limit - len(items)
-				pageToken = result.PageToken
-				if pageToken == "" {
-					break
-				}
-			}
-			if len(items) > limit {
-				items = items[:limit]
-			}
 
-			payload := map[string]any{"members": items}
-			lines := make([]string, 0, len(items))
-			for _, m := range items {
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", m.MemberType, m.MemberID, m.MemberRole, m.Type))
-			}
-			text := tableText([]string{"member_type", "member_id", "member_role", "type"}, lines, "no members found")
-			return state.Printer.Print(payload, text)
+				payload := map[string]any{"members": items}
+				lines := make([]string, 0, len(items))
+				for _, m := range items {
+					lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s", m.MemberType, m.MemberID, m.MemberRole, m.Type))
+				}
+				text := tableText([]string{"member_type", "member_id", "member_role", "type"}, lines, "no members found")
+				return payload, text, nil
+			})
 		},
 	}
 
@@ -117,33 +123,41 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
-				return err
-			}
-			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
-
+			spaceID = strings.TrimSpace(spaceID)
+			memberType = strings.TrimSpace(memberType)
+			memberID = strings.TrimSpace(memberID)
+			memberRole = strings.TrimSpace(memberRole)
 			needNotificationSet := cmd.Flags().Changed("need-notification")
-			member, err := state.SDK.CreateWikiSpaceMemberV2(cmd.Context(), accessToken, larksdk.CreateWikiSpaceMemberRequest{
-				SpaceID:             strings.TrimSpace(spaceID),
-				MemberType:          strings.TrimSpace(memberType),
-				MemberID:            strings.TrimSpace(memberID),
-				MemberRole:          strings.TrimSpace(memberRole),
+			req := larksdk.CreateWikiSpaceMemberRequest{
+				SpaceID:             spaceID,
+				MemberType:          memberType,
+				MemberID:            memberID,
+				MemberRole:          memberRole,
 				NeedNotification:    needNotification,
 				NeedNotificationSet: needNotificationSet,
-			})
-			if err != nil {
-				return err
 			}
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				var member larksdk.WikiSpaceMember
+				var err error
+				switch tokenType {
+				case tokenTypeTenant:
+					member, err = sdk.CreateWikiSpaceMemberV2(ctx, token, req)
+				case tokenTypeUser:
+					member, err = sdk.CreateWikiSpaceMemberV2WithUserToken(ctx, token, req)
+				default:
+					return nil, "", fmt.Errorf("unsupported token type %s", tokenType)
+				}
+				if err != nil {
+					return nil, "", err
+				}
 
-			payload := map[string]any{"member": member}
-			text := tableTextRow(
-				[]string{"member_type", "member_id", "member_role", "type"},
-				[]string{member.MemberType, member.MemberID, member.MemberRole, member.Type},
-			)
-			return state.Printer.Print(payload, text)
+				payload := map[string]any{"member": member}
+				text := tableTextRow(
+					[]string{"member_type", "member_id", "member_role", "type"},
+					[]string{member.MemberType, member.MemberID, member.MemberRole, member.Type},
+				)
+				return payload, text, nil
+			})
 		},
 	}
 
@@ -177,29 +191,36 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
-				return err
+			spaceID = strings.TrimSpace(spaceID)
+			memberType = strings.TrimSpace(memberType)
+			memberID = strings.TrimSpace(memberID)
+			req := larksdk.DeleteWikiSpaceMemberRequest{
+				SpaceID:    spaceID,
+				MemberType: memberType,
+				MemberID:   memberID,
 			}
-			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
-			if err != nil {
-				return err
-			}
+			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+				var member larksdk.WikiSpaceMember
+				var err error
+				switch tokenType {
+				case tokenTypeTenant:
+					member, err = sdk.DeleteWikiSpaceMemberV2(ctx, token, req)
+				case tokenTypeUser:
+					member, err = sdk.DeleteWikiSpaceMemberV2WithUserToken(ctx, token, req)
+				default:
+					return nil, "", fmt.Errorf("unsupported token type %s", tokenType)
+				}
+				if err != nil {
+					return nil, "", err
+				}
 
-			member, err := state.SDK.DeleteWikiSpaceMemberV2(cmd.Context(), accessToken, larksdk.DeleteWikiSpaceMemberRequest{
-				SpaceID:    strings.TrimSpace(spaceID),
-				MemberType: strings.TrimSpace(memberType),
-				MemberID:   strings.TrimSpace(memberID),
+				payload := map[string]any{"deleted": true, "member": member}
+				text := "deleted"
+				if member.MemberID != "" {
+					text = member.MemberID
+				}
+				return payload, text, nil
 			})
-			if err != nil {
-				return err
-			}
-
-			payload := map[string]any{"deleted": true, "member": member}
-			text := "deleted"
-			if member.MemberID != "" {
-				text = member.MemberID
-			}
-			return state.Printer.Print(payload, text)
 		},
 	}
 
