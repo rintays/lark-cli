@@ -7,7 +7,7 @@ import (
 
 func TestListUserOAuthServicesStableSorted(t *testing.T) {
 	got := ListUserOAuthServices()
-	want := []string{"calendar", "docs", "docx", "drive", "mail", "mail-send", "search-message", "search-user", "sheets", "task", "task-write", "tasklist", "tasklist-write", "wiki"}
+	want := []string{"calendar", "docs", "docx", "drive", "drive-export", "mail", "mail-send", "search-docs", "search-message", "search-user", "sheets", "task", "task-write", "tasklist", "tasklist-write", "wiki"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ListUserOAuthServices()=%v, want %v", got, want)
 	}
@@ -15,7 +15,7 @@ func TestListUserOAuthServicesStableSorted(t *testing.T) {
 
 func TestExpandUserOAuthServiceAliases(t *testing.T) {
 	got := ExpandUserOAuthServiceAliases([]string{"all"})
-	want := []string{"drive", "docs", "docx", "sheets"}
+	want := []string{"drive", "docx", "sheets"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ExpandUserOAuthServiceAliases(all)=%v, want %v", got, want)
 	}
@@ -30,7 +30,14 @@ func TestUserOAuthScopesFromServicesStableUnion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("scopes(docs,drive): %v", err)
 	}
-	want := []string{"drive:drive"}
+	want := []string{
+		"docx:document",
+		"docx:document.block:convert",
+		"docx:document:create",
+		"docx:document:readonly",
+		"docx:document:write_only",
+		"drive:drive",
+	}
 	if !reflect.DeepEqual(got1, want) {
 		t.Fatalf("scopes(drive,docs)=%v, want %v", got1, want)
 	}

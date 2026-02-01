@@ -54,6 +54,7 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "search-docs")
 
 	cmd.Flags().IntVar(&limit, "limit", 50, "max number of files to return")
 	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")

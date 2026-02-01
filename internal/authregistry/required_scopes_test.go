@@ -10,7 +10,7 @@ func TestRequiredUserScopesFromServicesStableSortedUnique(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RequiredUserScopesFromServices() err=%v", err)
 	}
-	want := []string{"drive:drive"}
+	want := []string{"docx:document:readonly", "drive:drive", "sheets:spreadsheet:read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("RequiredUserScopesFromServices()=%v, want %v", got, want)
 	}

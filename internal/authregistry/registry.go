@@ -53,15 +53,43 @@ type ServiceDef struct {
 // Keep this list stable and append-only where possible.
 var Registry = map[string]ServiceDef{
 	"im":             {Name: "im", TokenTypes: []TokenType{TokenTenant}},
-	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"im:message:get_as_user", "search:message"}, RequiresOffline: true},
-	"search-user":    {Name: "search-user", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"contact:user:search", "contact:user:read", "contact:department:read"}, RequiresOffline: true},
+	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"im:message:readonly", "search:message"}, RequiresOffline: true},
+	"search-user":    {Name: "search-user", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"contact:contact.base:readonly", "contact:user:search"}, RequiresOffline: true},
+	"search-docs":    {Name: "search-docs", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"search:docs:read"}, RequiresOffline: true},
 
 	// NOTE: "docs" is a legacy name used by existing commands; "docx" is the
-	// user-facing/API surface name for the same capability.
-	"drive":  {Name: "drive", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
-	"docs":   {Name: "docs", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
-	"docx":   {Name: "docx", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
-	"sheets": {Name: "sheets", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	// user-facing/API surface name for the same capability. Keep them aligned.
+	"drive": {Name: "drive", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	"docs": {
+		Name:               "docs",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"docx:document:readonly"},
+		UserScopes: ServiceScopeSet{
+			Full:     []string{"docx:document", "docx:document.block:convert", "docx:document:create", "docx:document:readonly", "docx:document:write_only"},
+			Readonly: []string{"docx:document:readonly"},
+		},
+		RequiresOffline: true,
+	},
+	"docx": {
+		Name:               "docx",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"docx:document:readonly"},
+		UserScopes: ServiceScopeSet{
+			Full:     []string{"docx:document", "docx:document.block:convert", "docx:document:create", "docx:document:readonly", "docx:document:write_only"},
+			Readonly: []string{"docx:document:readonly"},
+		},
+		RequiresOffline: true,
+	},
+	"sheets": {
+		Name:               "sheets",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"sheets:spreadsheet:read"},
+		UserScopes: ServiceScopeSet{
+			Full:     []string{"sheets:spreadsheet:create", "sheets:spreadsheet:read", "sheets:spreadsheet:write_only", "sheets:spreadsheet.meta:read"},
+			Readonly: []string{"sheets:spreadsheet:readonly"},
+		},
+		RequiresOffline: true,
+	},
 
 	"calendar": {Name: "calendar", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"calendar:calendar"}, UserScopes: ServiceScopeSet{Full: []string{"calendar:calendar"}, Readonly: []string{"calendar:calendar:readonly"}}},
 	"task": {
@@ -130,6 +158,7 @@ var Registry = map[string]ServiceDef{
 	},
 	"mail-send":   {Name: "mail send", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"mail:user_mailbox.message:send"}, RequiresOffline: true},
 	"mail-public": {Name: "mail public", TokenTypes: []TokenType{TokenTenant}},
+	"drive-export": {Name: "drive export", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:export:readonly"}, RequiresOffline: true},
 	"wiki":        {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
 	"base":        {Name: "base", TokenTypes: []TokenType{TokenTenant}},
 }
