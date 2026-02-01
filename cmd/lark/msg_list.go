@@ -234,7 +234,8 @@ func renderMessageTable(displays []messageDisplay, styles messageFormatStyles) s
 		right := strings.Join(display.rightLines, "\n")
 		rows = append(rows, []string{left, right})
 	}
-	cell := lipgloss.NewStyle().Padding(0, 1).Align(lipgloss.Left)
+	leftCell := lipgloss.NewStyle().Padding(0, 1, 0, 0).Align(lipgloss.Left)
+	rightCell := lipgloss.NewStyle().Padding(0, 0, 0, 1).Align(lipgloss.Left)
 	table := liptable.New().
 		Rows(rows...).
 		Border(lipgloss.NormalBorder()).
@@ -247,7 +248,10 @@ func renderMessageTable(displays []messageDisplay, styles messageFormatStyles) s
 		BorderRow(true).
 		BorderStyle(styles.border).
 		StyleFunc(func(row, col int) lipgloss.Style {
-			return cell
+			if col == 0 {
+				return leftCell
+			}
+			return rightCell
 		})
 	return table.Render()
 }
