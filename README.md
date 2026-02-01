@@ -151,6 +151,7 @@ lark auth tenant
 
 ```bash
 lark whoami
+lark --token-type user whoami
 lark chats list --limit 10
 lark users search "Ada"
 lark users search --email "ada@example.com"

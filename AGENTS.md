@@ -140,3 +140,4 @@
 - 2026-02-02: Merged docs/docx service scopes to docx OAuth scopes, added search-docs/drive-export services, and updated command scope mappings/tests (message search uses `im:message:readonly`).
 - 2026-02-02: Fixed interactive OAuth selection build error by removing invalid nil check on user account value.
 - 2026-02-02: Clarified drive permissions add help text to document positional args and member-type options, and switched example to openid.
+- 2026-02-02: Added user-token support for `lark whoami` via authen user_info, with docs/tests updates.

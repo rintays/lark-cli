@@ -71,7 +71,8 @@ Exceptions:
 | --- | --- | --- | --- | --- | --- |
 | Auth tenant token | `/open-apis/auth/v3/tenant_access_token/internal` | SDK core | tenant | v3 | Used by `lark auth tenant` + token caching. |
 | Auth user token refresh | `/open-apis/authen/v1/refresh_access_token` | SDK authen | app+user | v1 | Uses app access token + refresh token. |
-| Whoami | `/open-apis/tenant/v2/tenant/query` | Core ApiReq wrapper | tenant | v2 | `lark whoami`. |
+| Whoami (tenant) | `/open-apis/tenant/v2/tenant/query` | Core ApiReq wrapper | tenant | v2 | `lark whoami`. |
+| Whoami (user) | `/open-apis/authen/v1/user_info` | SDK authen | user | v1 | `lark --token-type user whoami`. |
 | Chats list | `/open-apis/im/v1/chats` | SDK im | tenant | v1 | `lark chats list`. |
 | Message send | `/open-apis/im/v1/messages` | SDK im | tenant | v1 | `lark messages send`. |
 | Users info | `/open-apis/contact/v3/users/:user_id` | SDK contact | tenant | v3 | `lark users info`, `lark contacts user info`. |

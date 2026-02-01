@@ -351,6 +351,23 @@ type DepartmentInfo struct {
 	Name string `json:"name,omitempty"`
 }
 
+type UserInfo struct {
+	Name            string `json:"name"`
+	EnName          string `json:"en_name,omitempty"`
+	AvatarURL       string `json:"avatar_url,omitempty"`
+	AvatarThumb     string `json:"avatar_thumb,omitempty"`
+	AvatarMiddle    string `json:"avatar_middle,omitempty"`
+	AvatarBig       string `json:"avatar_big,omitempty"`
+	OpenID          string `json:"open_id"`
+	UnionID         string `json:"union_id,omitempty"`
+	Email           string `json:"email"`
+	EnterpriseEmail string `json:"enterprise_email,omitempty"`
+	UserID          string `json:"user_id"`
+	Mobile          string `json:"mobile"`
+	TenantKey       string `json:"tenant_key"`
+	EmployeeNo      string `json:"employee_no,omitempty"`
+}
+
 type User struct {
 	UserID          string           `json:"user_id"`
 	OpenID          string           `json:"open_id"`
