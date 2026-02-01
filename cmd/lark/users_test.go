@@ -70,81 +70,33 @@ func TestUsersInfoCommand(t *testing.T) {
 	}
 }
 
-func TestUsersSearchByEmail(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/contact/v3/users/batch_get_id" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if r.Header.Get("Authorization") != "Bearer token" {
-			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
-		}
-		var payload map[string][]string
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Fatalf("decode payload: %v", err)
-		}
-		if payload["emails"][0] != "dev@example.com" {
-			t.Fatalf("unexpected emails: %+v", payload["emails"])
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0,
-			"msg":  "ok",
-			"data": map[string]any{
-				"user_list": []map[string]any{{"user_id": "u1", "email": "dev@example.com"}},
-			},
-		})
-	})
-	httpClient, baseURL := testutil.NewTestClient(handler)
-
-	var buf bytes.Buffer
-	state := &appState{
-		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
-			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
-		},
-		Printer: output.Printer{Writer: &buf},
-	}
-	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
-	if err != nil {
-		t.Fatalf("sdk client error: %v", err)
-	}
-	state.SDK = sdkClient
-
-	cmd := newUsersCmd(state)
-	cmd.SetArgs([]string{"search", "--email", "dev@example.com"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("users search error: %v", err)
-	}
-
-	if !strings.Contains(buf.String(), "u1") {
-		t.Fatalf("unexpected output: %q", buf.String())
-	}
-}
-
-func TestUsersSearchByName(t *testing.T) {
+func TestUsersSearch(t *testing.T) {
 	var calls int
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/contact/v3/users/find_by_department" {
+		if r.URL.Path != "/open-apis/search/v1/user" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.URL.Query().Get("department_id") != "0" {
-			t.Fatalf("unexpected department_id: %s", r.URL.Query().Get("department_id"))
+		if r.Method != http.MethodGet {
+			t.Fatalf("unexpected method: %s", r.Method)
 		}
-		if r.URL.Query().Get("page_size") != "50" {
-			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+		if r.URL.Query().Get("query") != "Ada" {
+			t.Fatalf("unexpected query: %s", r.URL.Query().Get("query"))
 		}
-		if r.Header.Get("Authorization") != "Bearer token" {
+		if r.Header.Get("Authorization") != "Bearer user-token" {
 			t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
 		}
 		switch calls {
 		case 0:
+			if r.URL.Query().Get("page_size") != "2" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
 			if r.URL.Query().Get("page_token") != "" {
 				t.Fatalf("unexpected page_token: %s", r.URL.Query().Get("page_token"))
 			}
 		case 1:
+			if r.URL.Query().Get("page_size") != "1" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
 			if r.URL.Query().Get("page_token") != "next" {
 				t.Fatalf("unexpected page_token: %s", r.URL.Query().Get("page_token"))
 			}
@@ -157,8 +109,8 @@ func TestUsersSearchByName(t *testing.T) {
 				"code": 0,
 				"msg":  "ok",
 				"data": map[string]any{
-					"items": []map[string]any{
-						{"user_id": "u1", "name": "Ada Lovelace"},
+					"users": []map[string]any{
+						{"user_id": "u1", "open_id": "ou1", "name": "Ada Lovelace", "department_ids": []string{"d1"}},
 					},
 					"has_more":   true,
 					"page_token": "next",
@@ -171,8 +123,8 @@ func TestUsersSearchByName(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"items": []map[string]any{
-					{"user_id": "u2", "name": "Grace Hopper"},
+				"users": []map[string]any{
+					{"user_id": "u2", "open_id": "ou2", "name": "Grace Hopper", "department_ids": []string{"d2", "d3"}},
 				},
 				"has_more": false,
 			},
@@ -184,14 +136,13 @@ func TestUsersSearchByName(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
-			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
 		},
 		Printer: output.Printer{Writer: &buf},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -199,7 +150,7 @@ func TestUsersSearchByName(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newUsersCmd(state)
-	cmd.SetArgs([]string{"search", "--name", "Ada"})
+	cmd.SetArgs([]string{"search", "--limit", "2", "--pages", "2", "Ada"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("users search error: %v", err)
 	}
@@ -207,7 +158,7 @@ func TestUsersSearchByName(t *testing.T) {
 	if !strings.Contains(buf.String(), "Ada Lovelace") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
-	if strings.Contains(buf.String(), "Grace Hopper") {
+	if !strings.Contains(buf.String(), "Grace Hopper") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -231,7 +182,7 @@ func TestUsersSearchRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newUsersCmd(state)
-	cmd.SetArgs([]string{"list", "--email", "dev@example.com"})
+	cmd.SetArgs([]string{"search", "Ada"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatalf("expected error")
@@ -249,13 +200,12 @@ func TestUsersSearchRequiresCriteria(t *testing.T) {
 
 	state := &appState{
 		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
-			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
 		},
 	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -268,19 +218,7 @@ func TestUsersSearchRequiresCriteria(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "email") && !strings.Contains(err.Error(), "mobile") && !strings.Contains(err.Error(), "name") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestUsersSearchRejectsMultipleCriteria(t *testing.T) {
-	cmd := newUsersCmd(&appState{})
-	cmd.SetArgs([]string{"search", "--email", "dev@example.com", "--name", "Ada"})
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if !strings.Contains(err.Error(), "group") && !strings.Contains(err.Error(), "were all set") {
+	if !strings.Contains(err.Error(), "search_query") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

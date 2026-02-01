@@ -11,7 +11,7 @@ import (
 	"lark/internal/larksdk"
 )
 
-const maxUsersPageSize = 50
+const maxUserSearchPageSize = 200
 
 func newUsersCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
@@ -20,7 +20,6 @@ func newUsersCmd(state *appState) *cobra.Command {
 		Long: `Users are people in your tenant directory.
 
 - User IDs: user_id (tenant-scoped), open_id (app-scoped), union_id (cross-app).
-- Departments group users; name search can be scoped by department_id.
 - Use search to resolve IDs before calling other APIs.`,
 	}
 	cmd.AddCommand(newUserInfoCmd(state))
@@ -29,97 +28,103 @@ func newUsersCmd(state *appState) *cobra.Command {
 }
 
 func newUsersSearchCmd(state *appState) *cobra.Command {
-	var email string
-	var mobile string
-	var name string
-	var departmentID string
+	var query string
+	var limit int
+	var pages int
 
 	cmd := &cobra.Command{
-		Use:     "search",
+		Use:     "search <search_query>",
 		Aliases: []string{"list"},
-		Short:   "Search users by email, mobile, or name",
+		Short:   "Search users by keyword",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			if len(args) == 0 {
+				return errors.New("search_query is required")
+			}
+			query = strings.TrimSpace(args[0])
+			if query == "" {
+				return errors.New("search_query is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			var users []larksdk.User
-			switch {
-			case email != "" || mobile != "":
-				token, err := tokenFor(context.Background(), state, tokenTypesTenant)
-				if err != nil {
-					return err
+			if limit <= 0 {
+				return errors.New("limit must be greater than 0")
+			}
+			if pages <= 0 {
+				return errors.New("pages must be greater than 0")
+			}
+			token, err := tokenFor(context.Background(), state, tokenTypesUser)
+			if err != nil {
+				return err
+			}
+
+			users := make([]larksdk.User, 0, limit)
+			pageToken := ""
+			pageCount := 0
+			remaining := limit
+			for {
+				if pageCount >= pages {
+					break
 				}
-				result, err := state.SDK.BatchGetUserIDs(context.Background(), token, larksdk.BatchGetUserIDRequest{
-					Emails:  nonEmptyList(email),
-					Mobiles: nonEmptyList(mobile),
+				pageCount++
+				pageSize := remaining
+				if pageSize > maxUserSearchPageSize {
+					pageSize = maxUserSearchPageSize
+				}
+				if pageSize <= 0 {
+					break
+				}
+				result, err := state.SDK.SearchUsers(context.Background(), token, larksdk.SearchUsersRequest{
+					Query:     query,
+					PageSize:  pageSize,
+					PageToken: pageToken,
 				})
 				if err != nil {
-					return err
+					return withUserScopeHintForCommand(state, err)
 				}
-				users = result
-			case name != "":
-				token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
-				if err != nil {
-					return err
+				users = append(users, result.Users...)
+				if len(users) >= limit || !result.HasMore {
+					break
 				}
-				matches, err := searchUsersByName(context.Background(), state.SDK.ListUsersByDepartment, token, departmentID, name)
-				if err != nil {
-					return err
+				remaining = limit - len(users)
+				pageToken = result.PageToken
+				if strings.TrimSpace(pageToken) == "" {
+					break
 				}
-				users = matches
+			}
+			if len(users) > limit {
+				users = users[:limit]
 			}
 
 			payload := map[string]any{"users": users}
 			lines := make([]string, 0, len(users))
 			for _, user := range users {
-				lines = append(lines, formatUserLine(user))
+				lines = append(lines, formatUserSearchLine(user))
 			}
-			text := tableText([]string{"user_id", "name", "email", "mobile"}, lines, "no users found")
+			text := tableText([]string{"user_id", "name", "open_id", "departments"}, lines, "no users found")
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&email, "email", "", "search by email")
-	cmd.Flags().StringVar(&mobile, "mobile", "", "search by mobile")
-	cmd.Flags().StringVar(&name, "name", "", "search by name")
-	cmd.Flags().StringVar(&departmentID, "department-id", "0", "department ID for name search")
-	cmd.MarkFlagsOneRequired("email", "mobile", "name")
-	cmd.MarkFlagsMutuallyExclusive("email", "mobile", "name")
+	cmd.Flags().IntVar(&limit, "limit", 50, "max number of users to return")
+	cmd.Flags().IntVar(&pages, "pages", 1, "max number of pages to fetch")
 
 	return cmd
 }
 
-func nonEmptyList(value string) []string {
-	if value == "" {
-		return nil
+func formatUserSearchLine(user larksdk.User) string {
+	id := user.UserID
+	if id == "" {
+		id = user.OpenID
 	}
-	return []string{value}
-}
-
-func searchUsersByName(ctx context.Context, listUsersByDepartment func(context.Context, string, larksdk.ListUsersByDepartmentRequest) (larksdk.ListUsersByDepartmentResult, error), token, departmentID, name string) ([]larksdk.User, error) {
-	pageToken := ""
-	matches := []larksdk.User{}
-	needle := strings.ToLower(name)
-	for {
-		result, err := listUsersByDepartment(ctx, token, larksdk.ListUsersByDepartmentRequest{
-			DepartmentID: departmentID,
-			PageSize:     maxUsersPageSize,
-			PageToken:    pageToken,
-		})
-		if err != nil {
-			return nil, err
-		}
-		for _, user := range result.Items {
-			if strings.Contains(strings.ToLower(user.Name), needle) {
-				matches = append(matches, user)
-			}
-		}
-		if !result.HasMore || result.PageToken == "" {
-			break
-		}
-		pageToken = result.PageToken
-	}
-	return matches, nil
+	departments := strings.Join(user.DepartmentIDs, ",")
+	return fmt.Sprintf("%s\t%s\t%s\t%s", id, user.Name, user.OpenID, departments)
 }
 
 func formatUserLine(user larksdk.User) string {

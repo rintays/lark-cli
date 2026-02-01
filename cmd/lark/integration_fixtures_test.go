@@ -189,6 +189,9 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 	if baseURL := os.Getenv("LARK_BASE_URL"); baseURL != "" {
 		cfg.BaseURL = baseURL
 	}
+	if userToken := strings.TrimSpace(os.Getenv("LARK_USER_ACCESS_TOKEN")); userToken != "" {
+		withUserAccount(cfg, defaultUserAccountName, userToken, "", time.Now().Add(2*time.Hour).Unix(), "")
+	}
 
 	// Write an ephemeral config file so integration tests don't depend on any local config state.
 	cfgDir := t.TempDir()

@@ -24,6 +24,7 @@ var commandServiceMap = map[string][]string{
 	"msg":                   {"im"},
 	"msg search":            {"search-message"},
 	"messages search":       {"search-message"},
+	"users search":          {"search-user"},
 
 	// Internal aliases (not currently exposed as CLI roots).
 	"im": {"im"},
