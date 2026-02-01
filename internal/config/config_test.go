@@ -73,13 +73,27 @@ func TestDefaultPathForProfile(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 
-	path, err := DefaultPathForProfile("dev")
-	if err != nil {
-		t.Fatalf("DefaultPathForProfile returned error: %v", err)
+	{
+		path, err := DefaultPathForProfile("dev")
+		if err != nil {
+			t.Fatalf("DefaultPathForProfile returned error: %v", err)
+		}
+		expected := filepath.Join(home, ".config", "lark", "profiles", "dev", "config.json")
+		if path != expected {
+			t.Fatalf("expected %q, got %q", expected, path)
+		}
 	}
-	expected := filepath.Join(home, ".config", "lark", "profiles", "dev", "config.json")
-	if path != expected {
-		t.Fatalf("expected %q, got %q", expected, path)
+
+	// The "default" profile is an alias to the legacy config path.
+	{
+		path, err := DefaultPathForProfile("default")
+		if err != nil {
+			t.Fatalf("DefaultPathForProfile(default) returned error: %v", err)
+		}
+		expected := filepath.Join(home, ".config", "lark", "config.json")
+		if path != expected {
+			t.Fatalf("expected %q, got %q", expected, path)
+		}
 	}
 
 	invalid := []string{"", "   ", "dev/one", "dev\\one", "..", "dev..", "../dev"}

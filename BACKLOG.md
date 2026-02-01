@@ -343,7 +343,7 @@ Mail CLI-only usability gaps:
     - [x] `lark config set --default-mailbox-id <id|me>` (parity with unset)
     - [x] `lark config set --app-id ... --app-secret ...` (optional; alternative to `lark auth login`)
     - [x] `lark config list-keys` (or document all supported keys in `lark config set --help`)
-    - [ ] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile info/set
+    - [x] Multi-profile config selection (after profiles land): `--profile` / `LARK_PROFILE` + per-profile info/set
   - [ ] (Alternative) keep domain-specific where it’s clearer: `auth platform set/info`, `mail mailbox info-default/unset-default`, `auth user status/logout`
 
 
@@ -553,3 +553,4 @@ Deliverables:
 - 2026-02-01: Base view create: added core fallback (POST /views) while keeping SDK-first; CLI defaults `--view-type` to `grid`.
 - 2026-02-01: Base view delete: SDK-first + core fallback; prints `deleted/view_id`; unit tests added.
 - 2026-02-01: Base list/app list: added `bases list` (and `bases app list`) via Drive search (bitable) + app_token extraction from file URL + unit test.
+- 2026-02-01: Config multi-profile: treat `--profile default` as alias of legacy config path; keychain token bucket uses (profile, base_url, app_id) with migration; unit tests added.
