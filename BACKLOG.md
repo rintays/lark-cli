@@ -376,6 +376,8 @@ Additional consistency work:
   - [x] `sheets rows/cols insert/delete` now use required flag validation for `--spreadsheet-id`, `--sheet-id`, `--start-index`, `--count` + unit tests assert stable required-flag errors
   - [x] `bases table create` now uses required flag validation for `--name` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [x] `bases field create` now uses required flag validation for `--table-id` and `--name` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases field delete` now uses required flag validation for `--table-id` and `--field-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `bases view info` now uses required flag validation for `--table-id` and `--view-id` (positional args set the flags) + unit tests assert stable required-flag errors
   - [x] `wiki node info` now uses required flag validation for `--node-token` and `--obj-type` (positional args set the flags) + unit tests assert stable required-flag errors
   - Goal: missing required flags should fail *before* making API calls.
   - Commands should not rely on scattered `if x == ""` checks.
