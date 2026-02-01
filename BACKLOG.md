@@ -391,13 +391,13 @@ Known facts from prior research (must be reflected in code decisions):
 - Wiki search: **v1** `POST /wiki/v1/nodes/search` and user token only; SDK service/wiki/v2 doesn’t include this.
 
 Deliverables:
-- [ ] P0 (v2 SDK-backed):
+- [x] P0 (v2 SDK-backed):
   - [x] `wiki space list/info` implemented (v2)
   - [x] `wiki node info/list`
     - [x] `wiki node info` implemented (v2)
     - [x] `wiki node list` implemented (v2)
   - [x] `wiki member list` implemented (v2)
-  - [ ] `wiki member` management (v2)
+  - [x] `wiki member` management (v2)
     - [x] `wiki member delete`
     - [x] `wiki member add` (SpaceMember.Create)
     - [x] Verify whether SpaceMember.Create is an upsert that can change roles for existing members ("update role")
@@ -409,7 +409,7 @@ Deliverables:
         - Command:
           - `LARK_INTEGRATION=1 LARK_TEST_WIKI_SPACE_ID=<space_id> LARK_TEST_USER_EMAIL=<member_email> go test ./cmd/lark -run '^TestWikiMemberRoleUpdateIntegration$' -count=1 -v`
   - [x] `wiki task` query (`GET /open-apis/wiki/v2/tasks/:task_id`)
-- [ ] P1 (gap fill):
+- [x] P1 (gap fill):
   - [x] implement `internal/larksdk/wiki_search_v1.go` using `core.ApiReq`
   - [x] expose `wiki node search`
 
@@ -555,3 +555,4 @@ Deliverables:
 - 2026-02-01: Base list/app list: added `bases list` (and `bases app list`) via Drive search (bitable) + app_token extraction from file URL + unit test.
 - 2026-02-01: Config multi-profile: treat `--profile default` as alias of legacy config path; keychain token bucket uses (profile, base_url, app_id) with migration; unit tests added.
 - 2026-02-01: Documented SDK-first coverage matrix (`docs/coverage-matrix.md`) and marked backlog item complete.
+- 2026-02-01: Wiki backlog checkbox alignment (marked Wiki P0/P1 and member-management items complete).
