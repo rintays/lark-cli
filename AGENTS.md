@@ -107,3 +107,4 @@
 - 2026-01-31: Clarified docs help text to describe document blocks.
 - 2026-01-31: Added wiki space create command (v2) with name/visibility/type settings.
 - 2026-01-31: Calendar primary lookup now respects user vs tenant access tokens when defaulting calendar_id.
+- 2026-02-01: Expanded calendars get output to key/value detail rows (vchat/location/organizer/attendees/etc), added get flags for attendee/meeting details, and updated SDK models/README/tests.

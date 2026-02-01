@@ -327,8 +327,6 @@ func TestCalendarSearchCommand(t *testing.T) {
 }
 
 func TestCalendarGetCommand(t *testing.T) {
-	start := "2026-01-02T03:04:05Z"
-	end := "2026-01-02T04:04:05Z"
 	startUnix := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC).Unix()
 	endUnix := time.Date(2026, 1, 2, 4, 4, 5, 0, time.UTC).Unix()
 
@@ -359,9 +357,35 @@ func TestCalendarGetCommand(t *testing.T) {
 				"msg":  "ok",
 				"data": map[string]any{
 					"event": map[string]any{
-						"event_id": "evt_1",
-						"summary":  "Review",
-						"status":   "confirmed",
+						"event_id":         "evt_1",
+						"summary":          "Review",
+						"description":      "Review details",
+						"status":           "confirmed",
+						"free_busy_status": "busy",
+						"vchat": map[string]any{
+							"vc_type":     "vc",
+							"meeting_url": "https://example.com",
+						},
+						"location": map[string]any{
+							"name":    "HQ",
+							"address": "Main Road",
+						},
+						"event_organizer": map[string]any{
+							"user_id":      "ou_123",
+							"display_name": "Alice",
+						},
+						"attendees": []map[string]any{
+							{
+								"type":         "user",
+								"attendee_id":  "att_1",
+								"rsvp_status":  "accept",
+								"is_optional":  false,
+								"is_organizer": true,
+								"is_external":  false,
+								"display_name": "Alice",
+								"user_id":      "ou_123",
+							},
+						},
 						"start_time": map[string]any{
 							"timestamp": strconv.FormatInt(startUnix, 10),
 						},
@@ -400,7 +424,26 @@ func TestCalendarGetCommand(t *testing.T) {
 		t.Fatalf("calendar get error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tReview\tconfirmed") {
+	output := buf.String()
+	if !strings.Contains(output, "event_id\tevt_1") {
+		t.Fatalf("missing event_id output: %q", output)
+	}
+	if !strings.Contains(output, "description\tReview details") {
+		t.Fatalf("missing description output: %q", output)
+	}
+	if !strings.Contains(output, "vchat.vc_type\tvc") {
+		t.Fatalf("missing vchat output: %q", output)
+	}
+	if !strings.Contains(output, "location.name\tHQ") {
+		t.Fatalf("missing location output: %q", output)
+	}
+	if !strings.Contains(output, "free_busy_status\tbusy") {
+		t.Fatalf("missing free/busy output: %q", output)
+	}
+	if !strings.Contains(output, "event_organizer.display_name\tAlice") {
+		t.Fatalf("missing organizer output: %q", output)
+	}
+	if !strings.Contains(output, "attendees.count\t1") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

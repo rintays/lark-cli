@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -339,6 +340,10 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 func newCalendarGetCmd(state *appState) *cobra.Command {
 	var calendarID string
 	var eventID string
+	var needAttendee bool
+	var needMeetingSettings bool
+	var maxAttendeeNum int
+	var userIDType string
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -356,10 +361,33 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			event, err := state.SDK.GetCalendarEvent(context.Background(), token, larksdk.GetCalendarEventRequest{
+			attendeeFlagChanged := cmd.Flags().Changed("need-attendee")
+			meetingFlagChanged := cmd.Flags().Changed("need-meeting-settings")
+			req := larksdk.GetCalendarEventRequest{
 				CalendarID: resolvedCalendarID,
 				EventID:    eventID,
-			})
+				UserIDType: userIDType,
+			}
+			if needAttendee {
+				req.NeedAttendee = &needAttendee
+				if maxAttendeeNum > 0 {
+					req.MaxAttendeeNum = &maxAttendeeNum
+				}
+			}
+			if needMeetingSettings {
+				req.NeedMeetingSettings = &needMeetingSettings
+			}
+			event, err := state.SDK.GetCalendarEvent(context.Background(), token, req)
+			var extraErr error
+			if err != nil && (needAttendee || needMeetingSettings) && !attendeeFlagChanged && !meetingFlagChanged {
+				extraErr = err
+				fallbackReq := larksdk.GetCalendarEventRequest{
+					CalendarID: resolvedCalendarID,
+					EventID:    eventID,
+					UserIDType: userIDType,
+				}
+				event, err = state.SDK.GetCalendarEvent(context.Background(), token, fallbackReq)
+			}
 			if err != nil {
 				return err
 			}
@@ -367,16 +395,20 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 				"calendar_id": resolvedCalendarID,
 				"event":       event,
 			}
-			text := tableTextRow(
-				[]string{"event_id", "start_time", "end_time", "summary", "status"},
-				[]string{event.EventID, formatEventTime(event.StartTime), formatEventTime(event.EndTime), event.Summary, event.Status},
-			)
+			if extraErr != nil {
+				payload["extra_error"] = extraErr.Error()
+			}
+			text := formatCalendarEventInfo(event, extraErr)
 			return state.Printer.Print(payload, text)
 		},
 	}
 
 	cmd.Flags().StringVar(&calendarID, "calendar-id", "", "calendar ID (default: primary)")
 	cmd.Flags().StringVar(&eventID, "event-id", "", "event ID")
+	cmd.Flags().BoolVar(&needAttendee, "need-attendee", true, "include attendee info (requires permission)")
+	cmd.Flags().BoolVar(&needMeetingSettings, "need-meeting-settings", true, "include meeting settings for VC events")
+	cmd.Flags().IntVar(&maxAttendeeNum, "max-attendee-num", 100, "max number of attendees to return (only when --need-attendee)")
+	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user ID type (open_id, union_id, user_id)")
 	_ = cmd.MarkFlagRequired("event-id")
 
 	return cmd
@@ -557,4 +589,205 @@ func formatEventTime(eventTime larksdk.CalendarEventTime) string {
 		return eventTime.Date
 	}
 	return ""
+}
+
+func formatCalendarEventInfo(event larksdk.CalendarEvent, extraErr error) string {
+	rows := [][]string{
+		{"event_id", infoValue(event.EventID)},
+		{"organizer_calendar_id", infoValue(event.OrganizerCalendarID)},
+		{"summary", infoValue(event.Summary)},
+		{"description", infoValue(event.Description)},
+		{"start_time", infoValue(formatEventTime(event.StartTime))},
+		{"start_time.timestamp", infoValue(event.StartTime.Timestamp)},
+		{"start_time.timezone", infoValue(event.StartTime.Timezone)},
+		{"start_time.date", infoValue(event.StartTime.Date)},
+		{"end_time", infoValue(formatEventTime(event.EndTime))},
+		{"end_time.timestamp", infoValue(event.EndTime.Timestamp)},
+		{"end_time.timezone", infoValue(event.EndTime.Timezone)},
+		{"end_time.date", infoValue(event.EndTime.Date)},
+		{"status", infoValue(event.Status)},
+		{"visibility", infoValue(event.Visibility)},
+		{"attendee_ability", infoValue(event.AttendeeAbility)},
+		{"free_busy_status", infoValue(event.FreeBusyStatus)},
+		{"recurrence", infoValue(event.Recurrence)},
+		{"is_exception", infoValueBoolPtr(event.IsException)},
+		{"recurring_event_id", infoValue(event.RecurringEventID)},
+		{"create_time", infoValue(event.CreateTime)},
+		{"color", infoValueIntPtr(event.Color)},
+		{"app_link", infoValue(event.AppLink)},
+	}
+
+	if event.VChat != nil {
+		rows = append(rows,
+			[]string{"vchat.vc_type", infoValue(event.VChat.VCType)},
+			[]string{"vchat.icon_type", infoValue(event.VChat.IconType)},
+			[]string{"vchat.description", infoValue(event.VChat.Description)},
+			[]string{"vchat.meeting_url", infoValue(event.VChat.MeetingURL)},
+		)
+		if event.VChat.MeetingSettings != nil {
+			settings := event.VChat.MeetingSettings
+			rows = append(rows,
+				[]string{"vchat.meeting_settings.owner_id", infoValue(settings.OwnerID)},
+				[]string{"vchat.meeting_settings.join_meeting_permission", infoValue(settings.JoinMeetingPermission)},
+				[]string{"vchat.meeting_settings.password", infoValue(settings.Password)},
+				[]string{"vchat.meeting_settings.assign_hosts.count", fmt.Sprintf("%d", len(settings.AssignHosts))},
+				[]string{"vchat.meeting_settings.auto_record", infoValueBoolPtr(settings.AutoRecord)},
+				[]string{"vchat.meeting_settings.open_lobby", infoValueBoolPtr(settings.OpenLobby)},
+				[]string{"vchat.meeting_settings.allow_attendees_start", infoValueBoolPtr(settings.AllowAttendeesStart)},
+			)
+			for i, host := range settings.AssignHosts {
+				rows = append(rows, []string{fmt.Sprintf("vchat.meeting_settings.assign_hosts[%d]", i), infoValue(host)})
+			}
+		} else {
+			rows = append(rows,
+				[]string{"vchat.meeting_settings.owner_id", infoValue("")},
+				[]string{"vchat.meeting_settings.join_meeting_permission", infoValue("")},
+				[]string{"vchat.meeting_settings.password", infoValue("")},
+				[]string{"vchat.meeting_settings.assign_hosts.count", "0"},
+				[]string{"vchat.meeting_settings.auto_record", infoValueBoolPtr(nil)},
+				[]string{"vchat.meeting_settings.open_lobby", infoValueBoolPtr(nil)},
+				[]string{"vchat.meeting_settings.allow_attendees_start", infoValueBoolPtr(nil)},
+			)
+		}
+	} else {
+		rows = append(rows,
+			[]string{"vchat.vc_type", infoValue("")},
+			[]string{"vchat.icon_type", infoValue("")},
+			[]string{"vchat.description", infoValue("")},
+			[]string{"vchat.meeting_url", infoValue("")},
+			[]string{"vchat.meeting_settings.owner_id", infoValue("")},
+			[]string{"vchat.meeting_settings.join_meeting_permission", infoValue("")},
+			[]string{"vchat.meeting_settings.password", infoValue("")},
+			[]string{"vchat.meeting_settings.assign_hosts.count", "0"},
+			[]string{"vchat.meeting_settings.auto_record", infoValueBoolPtr(nil)},
+			[]string{"vchat.meeting_settings.open_lobby", infoValueBoolPtr(nil)},
+			[]string{"vchat.meeting_settings.allow_attendees_start", infoValueBoolPtr(nil)},
+		)
+	}
+
+	if event.Location != nil {
+		rows = append(rows,
+			[]string{"location.name", infoValue(event.Location.Name)},
+			[]string{"location.address", infoValue(event.Location.Address)},
+			[]string{"location.latitude", infoValueFloatPtr(event.Location.Latitude)},
+			[]string{"location.longitude", infoValueFloatPtr(event.Location.Longitude)},
+		)
+	} else {
+		rows = append(rows,
+			[]string{"location.name", infoValue("")},
+			[]string{"location.address", infoValue("")},
+			[]string{"location.latitude", infoValueFloatPtr(nil)},
+			[]string{"location.longitude", infoValueFloatPtr(nil)},
+		)
+	}
+
+	if event.EventOrganizer != nil {
+		rows = append(rows,
+			[]string{"event_organizer.user_id", infoValue(event.EventOrganizer.UserID)},
+			[]string{"event_organizer.display_name", infoValue(event.EventOrganizer.DisplayName)},
+		)
+	} else {
+		rows = append(rows,
+			[]string{"event_organizer.user_id", infoValue("")},
+			[]string{"event_organizer.display_name", infoValue("")},
+		)
+	}
+
+	rows = append(rows, []string{"attendees.count", fmt.Sprintf("%d", len(event.Attendees))})
+	for i, attendee := range event.Attendees {
+		prefix := fmt.Sprintf("attendees[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".type", infoValue(attendee.Type)},
+			[]string{prefix + ".attendee_id", infoValue(attendee.AttendeeID)},
+			[]string{prefix + ".rsvp_status", infoValue(attendee.RSVPStatus)},
+			[]string{prefix + ".is_optional", infoValueBoolPtr(attendee.IsOptional)},
+			[]string{prefix + ".is_organizer", infoValueBoolPtr(attendee.IsOrganizer)},
+			[]string{prefix + ".is_external", infoValueBoolPtr(attendee.IsExternal)},
+			[]string{prefix + ".display_name", infoValue(attendee.DisplayName)},
+			[]string{prefix + ".user_id", infoValue(attendee.UserID)},
+			[]string{prefix + ".chat_id", infoValue(attendee.ChatID)},
+			[]string{prefix + ".room_id", infoValue(attendee.RoomID)},
+			[]string{prefix + ".third_party_email", infoValue(attendee.ThirdPartyEmail)},
+			[]string{prefix + ".operate_id", infoValue(attendee.OperateID)},
+			[]string{prefix + ".chat_members.count", fmt.Sprintf("%d", len(attendee.ChatMembers))},
+		)
+		for j, member := range attendee.ChatMembers {
+			memberPrefix := fmt.Sprintf("%s.chat_members[%d]", prefix, j)
+			rows = append(rows,
+				[]string{memberPrefix + ".rsvp_status", infoValue(member.RSVPStatus)},
+				[]string{memberPrefix + ".is_optional", infoValueBoolPtr(member.IsOptional)},
+				[]string{memberPrefix + ".display_name", infoValue(member.DisplayName)},
+				[]string{memberPrefix + ".is_organizer", infoValueBoolPtr(member.IsOrganizer)},
+				[]string{memberPrefix + ".is_external", infoValueBoolPtr(member.IsExternal)},
+				[]string{memberPrefix + ".user_id", infoValue(member.UserID)},
+			)
+		}
+	}
+
+	rows = append(rows,
+		[]string{"has_more_attendee", infoValueBoolPtr(event.HasMoreAttendee)},
+		[]string{"reminders.count", fmt.Sprintf("%d", len(event.Reminders))},
+	)
+	for i, reminder := range event.Reminders {
+		rows = append(rows, []string{fmt.Sprintf("reminders[%d].minutes", i), fmt.Sprintf("%d", reminder.Minutes)})
+	}
+
+	rows = append(rows, []string{"attachments.count", fmt.Sprintf("%d", len(event.Attachments))})
+	for i, attachment := range event.Attachments {
+		prefix := fmt.Sprintf("attachments[%d]", i)
+		rows = append(rows,
+			[]string{prefix + ".file_token", infoValue(attachment.FileToken)},
+			[]string{prefix + ".file_size", infoValue(attachment.FileSize)},
+			[]string{prefix + ".name", infoValue(attachment.Name)},
+		)
+	}
+
+	if event.EventCheckIn != nil {
+		rows = append(rows,
+			[]string{"event_check_in.enable_check_in", infoValueBoolPtr(event.EventCheckIn.EnableCheckIn)},
+			[]string{"event_check_in.need_notify_attendees", infoValueBoolPtr(event.EventCheckIn.NeedNotifyAttendees)},
+		)
+		if event.EventCheckIn.CheckInStartTime != nil {
+			rows = append(rows,
+				[]string{"event_check_in.check_in_start_time.time_type", infoValue(event.EventCheckIn.CheckInStartTime.TimeType)},
+				[]string{"event_check_in.check_in_start_time.duration", fmt.Sprintf("%d", event.EventCheckIn.CheckInStartTime.Duration)},
+			)
+		} else {
+			rows = append(rows,
+				[]string{"event_check_in.check_in_start_time.time_type", infoValue("")},
+				[]string{"event_check_in.check_in_start_time.duration", infoValue("")},
+			)
+		}
+		if event.EventCheckIn.CheckInEndTime != nil {
+			rows = append(rows,
+				[]string{"event_check_in.check_in_end_time.time_type", infoValue(event.EventCheckIn.CheckInEndTime.TimeType)},
+				[]string{"event_check_in.check_in_end_time.duration", fmt.Sprintf("%d", event.EventCheckIn.CheckInEndTime.Duration)},
+			)
+		} else {
+			rows = append(rows,
+				[]string{"event_check_in.check_in_end_time.time_type", infoValue("")},
+				[]string{"event_check_in.check_in_end_time.duration", infoValue("")},
+			)
+		}
+	} else {
+		rows = append(rows,
+			[]string{"event_check_in.enable_check_in", infoValueBoolPtr(nil)},
+			[]string{"event_check_in.need_notify_attendees", infoValueBoolPtr(nil)},
+			[]string{"event_check_in.check_in_start_time.time_type", infoValue("")},
+			[]string{"event_check_in.check_in_start_time.duration", infoValue("")},
+			[]string{"event_check_in.check_in_end_time.time_type", infoValue("")},
+			[]string{"event_check_in.check_in_end_time.duration", infoValue("")},
+		)
+	}
+
+	if extraErr != nil {
+		rows = append(rows, []string{"extra_error", infoValue(extraErr.Error())})
+	}
+
+	for i := range rows {
+		if len(rows[i]) > 1 {
+			rows[i][1] = strings.TrimSpace(rows[i][1])
+		}
+	}
+	return formatInfoTable(rows, "no event found")
 }

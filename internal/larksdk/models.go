@@ -21,13 +21,83 @@ type CalendarEventTime struct {
 	Timezone  string `json:"timezone"`
 }
 
+type CalendarEventMeetingSettings struct {
+	OwnerID               string   `json:"owner_id"`
+	JoinMeetingPermission string   `json:"join_meeting_permission"`
+	Password              string   `json:"password"`
+	AssignHosts           []string `json:"assign_hosts"`
+	AutoRecord            *bool    `json:"auto_record"`
+	OpenLobby             *bool    `json:"open_lobby"`
+	AllowAttendeesStart   *bool    `json:"allow_attendees_start"`
+}
+
+type CalendarEventVChat struct {
+	VCType          string                        `json:"vc_type"`
+	IconType        string                        `json:"icon_type"`
+	Description     string                        `json:"description"`
+	MeetingURL      string                        `json:"meeting_url"`
+	MeetingSettings *CalendarEventMeetingSettings `json:"meeting_settings"`
+}
+
+type CalendarEventLocation struct {
+	Name      string   `json:"name"`
+	Address   string   `json:"address"`
+	Latitude  *float64 `json:"latitude"`
+	Longitude *float64 `json:"longitude"`
+}
+
+type CalendarEventOrganizer struct {
+	UserID      string `json:"user_id"`
+	DisplayName string `json:"display_name"`
+}
+
+type CalendarEventReminder struct {
+	Minutes int `json:"minutes"`
+}
+
+type CalendarEventAttachment struct {
+	FileToken string `json:"file_token"`
+	FileSize  string `json:"file_size"`
+	Name      string `json:"name"`
+}
+
+type CalendarEventCheckInTime struct {
+	TimeType string `json:"time_type"`
+	Duration int    `json:"duration"`
+}
+
+type CalendarEventCheckIn struct {
+	EnableCheckIn       *bool                     `json:"enable_check_in"`
+	CheckInStartTime    *CalendarEventCheckInTime `json:"check_in_start_time"`
+	CheckInEndTime      *CalendarEventCheckInTime `json:"check_in_end_time"`
+	NeedNotifyAttendees *bool                     `json:"need_notify_attendees"`
+}
+
 type CalendarEvent struct {
-	EventID     string            `json:"event_id"`
-	Summary     string            `json:"summary"`
-	Description string            `json:"description"`
-	StartTime   CalendarEventTime `json:"start_time"`
-	EndTime     CalendarEventTime `json:"end_time"`
-	Status      string            `json:"status"`
+	EventID             string                    `json:"event_id"`
+	OrganizerCalendarID string                    `json:"organizer_calendar_id"`
+	Summary             string                    `json:"summary"`
+	Description         string                    `json:"description"`
+	StartTime           CalendarEventTime         `json:"start_time"`
+	EndTime             CalendarEventTime         `json:"end_time"`
+	VChat               *CalendarEventVChat       `json:"vchat"`
+	Visibility          string                    `json:"visibility"`
+	AttendeeAbility     string                    `json:"attendee_ability"`
+	FreeBusyStatus      string                    `json:"free_busy_status"`
+	Location            *CalendarEventLocation    `json:"location"`
+	Color               *int                      `json:"color"`
+	Reminders           []CalendarEventReminder   `json:"reminders"`
+	Recurrence          string                    `json:"recurrence"`
+	Status              string                    `json:"status"`
+	IsException         *bool                     `json:"is_exception"`
+	RecurringEventID    string                    `json:"recurring_event_id"`
+	CreateTime          string                    `json:"create_time"`
+	EventOrganizer      *CalendarEventOrganizer   `json:"event_organizer"`
+	AppLink             string                    `json:"app_link"`
+	Attendees           []CalendarEventAttendee   `json:"attendees"`
+	HasMoreAttendee     *bool                     `json:"has_more_attendee"`
+	Attachments         []CalendarEventAttachment `json:"attachments"`
+	EventCheckIn        *CalendarEventCheckIn     `json:"event_check_in"`
 }
 
 type ListCalendarEventsRequest struct {
@@ -64,8 +134,12 @@ type SearchCalendarEventsResult struct {
 }
 
 type GetCalendarEventRequest struct {
-	CalendarID string
-	EventID    string
+	CalendarID          string
+	EventID             string
+	NeedMeetingSettings *bool
+	NeedAttendee        *bool
+	MaxAttendeeNum      *int
+	UserIDType          string
 }
 
 type UpdateCalendarEventRequest struct {
@@ -97,11 +171,28 @@ type CreateCalendarEventRequest struct {
 }
 
 type CalendarEventAttendee struct {
-	Type            string `json:"type,omitempty"`
-	UserID          string `json:"user_id,omitempty"`
-	ChatID          string `json:"chat_id,omitempty"`
-	RoomID          string `json:"room_id,omitempty"`
-	ThirdPartyEmail string `json:"third_party_email,omitempty"`
+	Type            string                            `json:"type,omitempty"`
+	AttendeeID      string                            `json:"attendee_id,omitempty"`
+	RSVPStatus      string                            `json:"rsvp_status,omitempty"`
+	IsOptional      *bool                             `json:"is_optional,omitempty"`
+	IsOrganizer     *bool                             `json:"is_organizer,omitempty"`
+	IsExternal      *bool                             `json:"is_external,omitempty"`
+	DisplayName     string                            `json:"display_name,omitempty"`
+	ChatMembers     []CalendarEventAttendeeChatMember `json:"chat_members,omitempty"`
+	UserID          string                            `json:"user_id,omitempty"`
+	ChatID          string                            `json:"chat_id,omitempty"`
+	RoomID          string                            `json:"room_id,omitempty"`
+	ThirdPartyEmail string                            `json:"third_party_email,omitempty"`
+	OperateID       string                            `json:"operate_id,omitempty"`
+}
+
+type CalendarEventAttendeeChatMember struct {
+	RSVPStatus  string `json:"rsvp_status,omitempty"`
+	IsOptional  *bool  `json:"is_optional,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	IsOrganizer *bool  `json:"is_organizer,omitempty"`
+	IsExternal  *bool  `json:"is_external,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
 }
 
 type CreateCalendarEventAttendeesRequest struct {
