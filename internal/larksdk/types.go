@@ -165,10 +165,12 @@ type BaseRecordDeleteResult struct {
 }
 
 type SearchBaseRecordsRequest struct {
-	ViewID   string          `json:"view_id,omitempty"`
-	Filter   json.RawMessage `json:"filter,omitempty"`
-	Sort     json.RawMessage `json:"sort,omitempty"`
-	PageSize int             `json:"page_size,omitempty"`
+	ViewID          string          `json:"view_id,omitempty"`
+	FieldNames      []string        `json:"field_names,omitempty"`
+	Filter          json.RawMessage `json:"filter,omitempty"`
+	Sort            json.RawMessage `json:"sort,omitempty"`
+	AutomaticFields *bool           `json:"automatic_fields,omitempty"`
+	PageSize        int             `json:"page_size,omitempty"`
 }
 
 type SearchBaseRecordsResult struct {

@@ -15,20 +15,15 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create a Bitable table",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
-				return argsUsageError(cmd, err)
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+			return argsUsageError(cmd, err)
+		}
+		tableName = strings.TrimSpace(args[0])
+		if tableName == "" {
+			return errors.New("name is required")
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(tableName) == "" {
-					return errors.New("name is required")
-				}
-				return nil
-			}
-			if tableName != "" && tableName != args[0] {
-				return errors.New("name provided twice")
-			}
-			return cmd.Flags().Set("name", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -49,7 +44,6 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableName, "name", "", "Table name (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
 	return cmd
 }

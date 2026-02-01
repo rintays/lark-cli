@@ -126,3 +126,4 @@
 - 2026-02-01: Added detailed flag error usage output, expanded drive permissions examples, and enabled users search by email with updated columns.
 - 2026-02-01: Standardized required identifiers to positional args across chats/messages/calendar/drive/docs/sheets/wiki/base/meetings/minutes/mail, made search queries positional, and refreshed tests/README/examples.
 - 2026-02-01: Wrapped positional args validation errors with detailed usage output and hints for consistent CLI error messaging.
+- 2026-02-01: Base record search now always requests automatic fields, supports field selection, and renders fields in table output; base table create is positional-only.

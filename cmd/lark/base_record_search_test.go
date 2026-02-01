@@ -43,6 +43,16 @@ func TestBaseRecordSearchCommandWithSDK(t *testing.T) {
 		if payload["view_id"] != "viw_1" {
 			t.Fatalf("unexpected view_id: %#v", payload["view_id"])
 		}
+		if payload["automatic_fields"] != true {
+			t.Fatalf("unexpected automatic_fields: %#v", payload["automatic_fields"])
+		}
+		fieldNames, ok := payload["field_names"].([]any)
+		if !ok || len(fieldNames) != 2 {
+			t.Fatalf("unexpected field_names: %#v", payload["field_names"])
+		}
+		if fieldNames[0] != "City" || fieldNames[1] != "TempC" {
+			t.Fatalf("unexpected field_names order: %#v", fieldNames)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
@@ -53,6 +63,10 @@ func TestBaseRecordSearchCommandWithSDK(t *testing.T) {
 						"record_id":          "rec_1",
 						"created_time":       "1700000000",
 						"last_modified_time": "1700000001",
+						"fields": map[string]any{
+							"City":  "Seattle",
+							"TempC": 6.0,
+						},
 					},
 				},
 				"has_more":   false,
@@ -80,11 +94,14 @@ func TestBaseRecordSearchCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "search", "tbl_1", "--app-token", "app_1", "--view-id", "viw_1"})
+	cmd.SetArgs([]string{"record", "search", "tbl_1", "--app-token", "app_1", "--view-id", "viw_1", "--fields", "City,TempC"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record search error: %v", err)
 	}
 	if !strings.Contains(buf.String(), "rec_1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "Seattle") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

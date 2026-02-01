@@ -70,7 +70,7 @@ func TestBaseTableCreateCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"table", "create", "--app-token", "app_1", "--name", "MyTable"})
+	cmd.SetArgs([]string{"table", "create", "MyTable", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base table create error: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestBaseTableCreateCommandRequiresName(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"name\" not set" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
