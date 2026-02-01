@@ -350,6 +350,7 @@ Convert/Overwrite:
 lark docs convert --content "# Title"
 lark docs overwrite <DOCUMENT_ID> --content-file ./doc.md
 ```
+Note: `--content` unescapes `\\n`/`\\r`/`\\t` for quick multiline input.
 
 ### Sheets
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
@@ -26,7 +27,7 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			raw, err := readInput(content, contentFile, "content")
+			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
 				return err
 			}
@@ -89,7 +90,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			raw, err := readInput(content, contentFile, "content")
+			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
 				return err
 			}
@@ -168,6 +169,33 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&content, "content", "", "raw markdown/html content")
 	cmd.Flags().StringVar(&contentFile, "content-file", "", "path to file containing markdown/html content")
 	return cmd
+}
+
+func readDocxContent(raw, path string) (string, error) {
+	if path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("read content file: %w", err)
+		}
+		raw = string(data)
+	} else {
+		raw = unescapeCLIContent(raw)
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("content is required")
+	}
+	return raw, nil
+}
+
+func unescapeCLIContent(raw string) string {
+	replacer := strings.NewReplacer(
+		`\\r\\n`, "\r\n",
+		`\\n`, "\n",
+		`\\r`, "\r",
+		`\\t`, "\t",
+	)
+	return replacer.Replace(raw)
 }
 
 func normalizeDocxContentType(raw string) (string, error) {
