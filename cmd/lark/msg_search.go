@@ -167,8 +167,9 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 			text := output.Notice(output.NoticeInfo, "no messages found", nil)
 			if len(messages) > 0 {
 				lines := make([]string, 0, len(messages))
+				styles := newMessageFormatStyles(state.Printer.Styled)
 				for _, message := range messages {
-					lines = append(lines, formatMessageBlock(message))
+					lines = append(lines, formatMessageBlock(message, styles))
 				}
 				text = strings.Join(lines, "\n\n")
 			}

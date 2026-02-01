@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
 	"lark/internal/larksdk"
@@ -100,8 +101,9 @@ func newMsgListCmd(state *appState) *cobra.Command {
 			text := output.Notice(output.NoticeInfo, "no messages found", nil)
 			if len(messages) > 0 {
 				lines := make([]string, 0, len(messages))
+				styles := newMessageFormatStyles(state.Printer.Styled)
 				for _, message := range messages {
-					lines = append(lines, formatMessageBlock(message))
+					lines = append(lines, formatMessageBlock(message, styles))
 				}
 				text = strings.Join(lines, "\n\n")
 			}
@@ -118,42 +120,98 @@ func newMsgListCmd(state *appState) *cobra.Command {
 	return cmd
 }
 
-func formatMessageBlock(message larksdk.Message) string {
+type messageFormatStyles struct {
+	styled  bool
+	content lipgloss.Style
+	sender  lipgloss.Style
+	dim     lipgloss.Style
+}
+
+func newMessageFormatStyles(styled bool) messageFormatStyles {
+	if !styled {
+		return messageFormatStyles{styled: false}
+	}
+	dim := lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "245", Dark: "240"})
+	strong := lipgloss.NewStyle().Bold(true)
+	return messageFormatStyles{
+		styled:  true,
+		content: strong,
+		sender:  strong,
+		dim:     dim,
+	}
+}
+
+func (s messageFormatStyles) renderContent(text string) string {
+	if !s.styled {
+		return text
+	}
+	return s.content.Render(text)
+}
+
+func (s messageFormatStyles) renderSender(text string) string {
+	if !s.styled {
+		return text
+	}
+	return s.sender.Render(text)
+}
+
+func (s messageFormatStyles) renderDim(text string) string {
+	if !s.styled {
+		return text
+	}
+	return s.dim.Render(text)
+}
+
+func formatMessageBlock(message larksdk.Message, styles messageFormatStyles) string {
 	content := messageContentForDisplay(message)
 	if strings.TrimSpace(content) == "" {
 		content = "(no content)"
 	}
 	contentLines := strings.Split(content, "\n")
 	lines := make([]string, 0, len(contentLines)+1)
-	meta := formatMessageMeta(message)
-	if meta != "" {
-		lines = append(lines, meta)
+	for _, line := range contentLines {
+		lines = append(lines, styles.renderContent(line))
 	}
-	lines = append(lines, contentLines...)
+	meta := formatMessageMeta(message, styles)
+	if meta != "" {
+		lines = append(lines, "  "+meta)
+	}
 	return strings.Join(lines, "\n")
 }
 
-func formatMessageMeta(message larksdk.Message) string {
+func formatMessageMeta(message larksdk.Message, styles messageFormatStyles) string {
 	parts := make([]string, 0, 5)
-	if message.MessageID != "" {
-		parts = append(parts, "id: "+message.MessageID)
-	}
-	if sender := formatMessageSender(message.Sender); sender != "" {
-		parts = append(parts, "from: "+sender)
+	senderLabel, senderID := formatMessageSenderParts(message.Sender)
+	if senderLabel != "" || senderID != "" {
+		segment := "from "
+		if senderLabel != "" {
+			segment += styles.renderSender(senderLabel)
+		}
+		if senderID != "" {
+			if senderLabel != "" {
+				segment += " "
+			}
+			segment += styles.renderDim(senderID)
+		}
+		parts = append(parts, segment)
 	}
 	if message.MsgType != "" {
-		parts = append(parts, "type: "+message.MsgType)
+		parts = append(parts, styles.renderDim("type "+message.MsgType))
 	}
 	if message.CreateTime != "" {
-		parts = append(parts, "time: "+message.CreateTime)
+		parts = append(parts, styles.renderDim("time "+message.CreateTime))
 	}
-	return strings.Join(parts, "  ")
+	if message.MessageID != "" {
+		parts = append(parts, styles.renderDim("id "+message.MessageID))
+	}
+	return strings.Join(parts, " | ")
 }
 
-func formatMessageSender(sender larksdk.MessageSender) string {
+func formatMessageSenderParts(sender larksdk.MessageSender) (string, string) {
 	id := strings.TrimSpace(sender.ID)
 	if id == "" {
-		return ""
+		return "", ""
 	}
 	idType := strings.TrimSpace(sender.IDType)
 	if idType == "" {
@@ -161,9 +219,9 @@ func formatMessageSender(sender larksdk.MessageSender) string {
 	}
 	senderType := strings.TrimSpace(sender.SenderType)
 	if senderType == "" {
-		return fmt.Sprintf("%s:%s", idType, id)
+		return "", fmt.Sprintf("%s:%s", idType, id)
 	}
-	return fmt.Sprintf("%s:%s:%s", senderType, idType, id)
+	return senderType, fmt.Sprintf("%s:%s", idType, id)
 }
 
 func messageContentForDisplay(message larksdk.Message) string {
