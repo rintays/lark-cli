@@ -291,7 +291,7 @@ P1:
     - [x] `base view info`
 
 P2:
-- [ ] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
+- [x] `base app create/info/update/copy` (SDK supports; enables CLI-only lifecycle)
 - [x] `base list` / `base app list` (discover app_token via Drive/Wiki)
   - [x] implement via Drive search (`file_types=[bitable]`) and parse `file.url` to extract app_token
 - [ ] attachments workflows across Drive
