@@ -37,8 +37,9 @@ func newDrivePermissionAddCmd(state *appState) *cobra.Command {
 	var needNotification bool
 
 	cmd := &cobra.Command{
-		Use:   "add <file-token> <member-type> <member-id>",
-		Short: "Add a Drive collaborator permission",
+		Use:     "add <file-token> <member-type> <member-id>",
+		Short:   "Add a Drive collaborator permission",
+		Example: `  lark drive permissions add <file-token> email fred@srv.work --type docx --perm view --member-kind user`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(3)(cmd, args); err != nil {
 				return err
@@ -74,7 +75,8 @@ func newDrivePermissionAddCmd(state *appState) *cobra.Command {
 				return errors.New("sdk client is required")
 			}
 			if strings.TrimSpace(fileToken) == "" {
-				return errors.New("file-token is required")
+				return usageError(cmd, "file-token is required", `Example:
+  lark drive permissions add <file-token> email fred@srv.work --type docx --perm view --member-kind user`)
 			}
 			ctx := context.Background()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
@@ -141,8 +143,9 @@ func newDrivePermissionListCmd(state *appState) *cobra.Command {
 	var permType string
 
 	cmd := &cobra.Command{
-		Use:   "list <file-token>",
-		Short: "List Drive collaborator permissions",
+		Use:     "list <file-token>",
+		Short:   "List Drive collaborator permissions",
+		Example: `  lark drive permissions list <file-token> --type docx`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
 				return err
@@ -156,7 +159,8 @@ func newDrivePermissionListCmd(state *appState) *cobra.Command {
 				}
 			}
 			if strings.TrimSpace(fileToken) == "" {
-				return errors.New("file-token is required")
+				return usageError(cmd, "file-token is required", `Example:
+  lark drive permissions list <file-token> --type docx`)
 			}
 			return nil
 		},
@@ -220,8 +224,9 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 	var needNotification bool
 
 	cmd := &cobra.Command{
-		Use:   "update <file-token> <member-type> <member-id>",
-		Short: "Update a Drive collaborator permission",
+		Use:     "update <file-token> <member-type> <member-id>",
+		Short:   "Update a Drive collaborator permission",
+		Example: `  lark drive permissions update <file-token> email fred@srv.work --type docx --perm edit`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(3)(cmd, args); err != nil {
 				return err
@@ -257,10 +262,12 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 				return errors.New("sdk client is required")
 			}
 			if strings.TrimSpace(fileToken) == "" {
-				return errors.New("file-token is required")
+				return usageError(cmd, "file-token is required", `Example:
+  lark drive permissions update <file-token> email fred@srv.work --type docx --perm edit`)
 			}
 			if strings.TrimSpace(perm) == "" && strings.TrimSpace(permType) == "" && strings.TrimSpace(memberKind) == "" {
-				return errors.New("at least one of --perm, --perm-type, or --member-kind is required")
+				return usageError(cmd, "at least one of --perm, --perm-type, or --member-kind is required", `Example:
+  lark drive permissions update <file-token> email fred@srv.work --type docx --perm edit`)
 			}
 			ctx := context.Background()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
@@ -328,8 +335,9 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 	var memberKind string
 
 	cmd := &cobra.Command{
-		Use:   "delete <file-token> <member-type> <member-id>",
-		Short: "Delete a Drive collaborator permission",
+		Use:     "delete <file-token> <member-type> <member-id>",
+		Short:   "Delete a Drive collaborator permission",
+		Example: `  lark drive permissions delete <file-token> email fred@srv.work --type docx`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MaximumNArgs(3)(cmd, args); err != nil {
 				return err
@@ -365,7 +373,8 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 				return errors.New("sdk client is required")
 			}
 			if strings.TrimSpace(fileToken) == "" {
-				return errors.New("file-token is required")
+				return usageError(cmd, "file-token is required", `Example:
+  lark drive permissions delete <file-token> email fred@srv.work --type docx`)
 			}
 			ctx := context.Background()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
