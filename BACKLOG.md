@@ -383,6 +383,7 @@ Additional consistency work:
   - [x] `wiki node info` now uses required flag validation for `--node-token` and `--obj-type` (positional args set the flags) + unit tests assert stable required-flag errors
   - [x] `bases record delete` now uses required flag validation for `--table-id` and `--record-id` (positional args set the flags) + unit tests assert stable required-flag errors
   - [x] `wiki member add/delete` now use required flag validation for `--member-type` and `--member-id` (positional args set the flags) + unit tests assert stable required-flag errors
+  - [x] `mail mailbox set` now uses required flag validation for `--mailbox-id` (positional arg sets the flag) + unit test asserts stable required-flag error
   - [ ] TODO: audit remaining commands that still rely on manual required-input checks and decide whether to convert them to Cobra required-flag validation.
     - `messages send` (`--receive-id` is still checked manually in `RunE` even though it’s marked required)
     - `drive search` (`query is required` check is still manual)
