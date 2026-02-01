@@ -1,0 +1,58 @@
+version: 2
+
+project_name: lark
+
+builds:
+  - id: lark
+    main: ./cmd/lark
+    binary: lark
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X lark/internal/version.Version={{ .Tag }}
+      - -X lark/internal/version.Commit={{ .ShortCommit }}
+      - -X lark/internal/version.Date={{ .Date }}
+    targets:
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+  - id: lark_darwin
+    main: ./cmd/lark
+    binary: lark
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w
+      - -X lark/internal/version.Version={{ .Tag }}
+      - -X lark/internal/version.Commit={{ .ShortCommit }}
+      - -X lark/internal/version.Date={{ .Date }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+
+archives:
+  - id: lark
+    builds:
+      - lark
+      - lark_darwin
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
+checksum:
+  name_template: 'checksums.txt'
+
+release:
+  prerelease: auto
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'

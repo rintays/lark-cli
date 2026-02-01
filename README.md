@@ -43,6 +43,27 @@ Fast, script-friendly CLI for **Feishu (飞书)** / **Lark**.
 
 ## Installation
 
+### Install from GitHub Releases
+
+Download the archive for your OS from `https://github.com/rintays/lark/releases`, extract it, and move `lark` to your PATH.
+
+macOS/Linux example:
+
+```bash
+curl -L https://github.com/rintays/lark/releases/latest/download/lark_<VERSION>_darwin_arm64.tar.gz -o lark.tar.gz
+tar -xzf lark.tar.gz
+chmod +x lark
+sudo mv lark /usr/local/bin/lark
+```
+
+Windows (PowerShell) example:
+
+```powershell
+Invoke-WebRequest -Uri https://github.com/rintays/lark/releases/latest/download/lark_<VERSION>_windows_amd64.zip -OutFile lark.zip
+Expand-Archive lark.zip -DestinationPath .
+Move-Item .\\lark.exe $env:USERPROFILE\\bin\\lark.exe
+```
+
 ### Build from source
 
 ```bash
