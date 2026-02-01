@@ -78,6 +78,7 @@ func newBaseViewCmd(state *appState) *cobra.Command {
 	}
 	cmd.AddCommand(newBaseViewCreateCmd(state))
 	cmd.AddCommand(newBaseViewDeleteCmd(state))
+	cmd.AddCommand(newBaseViewInfoCmd(state))
 	cmd.AddCommand(newBaseViewListCmd(state))
 	return cmd
 }
