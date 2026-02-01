@@ -387,6 +387,17 @@ Additional consistency work:
   - Commands should not rely on scattered `if x == ""` checks.
   - Keep runtime validations for things like file existence, output path not a directory, etc.
   - Add/adjust tests to ensure required-flag errors are stable.
+  - [ ] TODO: remaining manual required checks in key commands (Args/RunE still returning "... is required"):
+    - `messages` send/reply/list/search/reactions/pin/unpin (receive-id/message-id/container-id/query/emoji/reaction-id)
+    - `chats update` (chat-id)
+    - `drive` search/info/download/export/share/upload (query/file-token/file)
+    - `docs` create/info/export/get/blocks/markdown convert/overwrite (title/doc-id/block-id)
+    - `sheets` read/update/append/clear/search (spreadsheet-id/range/query)
+    - `bases` list/fields/views/records + record create/update/search/batch (table-id/record-id/field-id)
+    - `meetings` info/update/delete + reserves update/delete (meeting-id/reserve-id)
+    - `minutes` info/update/delete (minute-token)
+    - `wiki` space create/node list/task info (name/space-id/task-id)
+    - `mail mailbox set` (mailbox-id)
 
 ---
 
