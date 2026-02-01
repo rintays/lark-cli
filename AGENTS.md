@@ -114,3 +114,4 @@
 - 2026-02-01: Docs get now unescapes content, strips title from raw content output, and docs create backfills missing URLs from Drive metadata.
 - 2026-02-01: Added drive collaborator permissions command (`lark drive permissions add`) backed by drive permission members API, with tests/docs updates.
 - 2026-02-01: Added drive permission member list/update/delete commands and clarified docs/sheets help about using drive permissions with file tokens.
+- 2026-02-01: Clarified wiki help text to mention using drive permissions for underlying Drive objects.
