@@ -12,6 +12,7 @@ import (
 func newSheetsCreateCmd(state *appState) *cobra.Command {
 	var title string
 	var folderID string
+	var sheetTitle string
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -36,10 +37,23 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 			var defaultSheetTitle string
 			if state.SDK != nil {
 				metadata, err := state.SDK.GetSpreadsheetMetadata(context.Background(), token, spreadsheetToken)
-				if err == nil && len(metadata.Sheets) > 0 {
+				if err != nil {
+					if strings.TrimSpace(sheetTitle) != "" {
+						return fmt.Errorf("resolve sheet id for --sheet-title: %w", err)
+					}
+				} else if len(metadata.Sheets) > 0 {
 					defaultSheetID = strings.TrimSpace(metadata.Sheets[0].SheetID)
 					defaultSheetTitle = strings.TrimSpace(metadata.Sheets[0].Title)
 				}
+			}
+			if strings.TrimSpace(sheetTitle) != "" {
+				if defaultSheetID == "" {
+					return errors.New("sheet id is required to set --sheet-title")
+				}
+				if err := state.SDK.UpdateSpreadsheetSheetTitle(context.Background(), token, spreadsheetToken, defaultSheetID, sheetTitle); err != nil {
+					return err
+				}
+				defaultSheetTitle = sheetTitle
 			}
 			payload := map[string]any{
 				"spreadsheet_token": spreadsheetToken,
@@ -53,8 +67,8 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 				payload["sheet_id"] = defaultSheetID
 				payload["sheet_title"] = defaultSheetTitle
 				payload["default_range"] = defaultRange
-				headers = append(headers, "sheet_id", "default_range")
-				values = append(values, defaultSheetID, defaultRange)
+				headers = append(headers, "sheet_id", "sheet_title", "default_range")
+				values = append(values, defaultSheetID, defaultSheetTitle, defaultRange)
 			}
 			text := tableTextRow(headers, values)
 			return state.Printer.Print(payload, text)
@@ -62,6 +76,7 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&title, "title", "", "spreadsheet title")
+	cmd.Flags().StringVar(&sheetTitle, "sheet-title", "", "default sheet (tab) title")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token (default: root; pass root or omit)")
 	_ = cmd.MarkFlagRequired("title")
 	return cmd

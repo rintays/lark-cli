@@ -393,6 +393,8 @@ Create:
 
 ```bash
 lark sheets create --title "Budget Q1" --folder-id <FOLDER_TOKEN>
+# optional: rename the default sheet (tab)
+lark sheets create --title "Budget Q1" --sheet-title "Summary"
 ```
 
 Read:
@@ -415,6 +417,9 @@ Update:
 lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]'
 # or
 lark sheets update <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values-file ./values.csv
+# inline CSV/TSV
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values "Name,Amount\nAda,42" --values-format csv
+lark sheets update <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values $'Name\tAmount\nAda\t42' --values-format tsv
 ```
 
 Append:
@@ -423,6 +428,9 @@ Append:
 lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values '[["Name","Amount"],["Ada",42]]' --insert-data-option INSERT_ROWS
 # or
 lark sheets append <SPREADSHEET_TOKEN> A1:B2 --sheet-id <SHEET_ID> --values @./values.json
+# inline CSV/TSV
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values "Name,Amount\nAda,42" --values-format csv
+lark sheets append <SPREADSHEET_TOKEN> "Sheet1!A1:B2" --values $'Name\tAmount\nAda\t42' --values-format tsv
 ```
 
 Clear:
