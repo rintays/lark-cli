@@ -209,3 +209,27 @@ func TestBaseFieldCreateCommandWithDeprecatedTypeIDFlag(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestBaseFieldCreateCommandRequiresTableID(t *testing.T) {
+	cmd := newBaseCmd(&appState{})
+	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--name", "City"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"table-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestBaseFieldCreateCommandRequiresName(t *testing.T) {
+	cmd := newBaseCmd(&appState{})
+	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--table-id", "tbl_1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"name\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
