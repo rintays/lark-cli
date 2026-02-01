@@ -406,7 +406,7 @@ func TestMailMailboxSetCommandRequiresMailboxID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"mailbox-id\" not set" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -420,7 +420,7 @@ func TestMailMailboxSetCommandPersistsDefaultMailbox(t *testing.T) {
 	}
 
 	cmd := newMailCmd(state)
-	cmd.SetArgs([]string{"mailbox", "set", "--mailbox-id", "mbx_123"})
+	cmd.SetArgs([]string{"mailbox", "set", "mbx_123"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("mail mailbox set error: %v", err)
 	}
@@ -1038,7 +1038,7 @@ func TestMailInfoCommandRequiresMessageID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"message-id\" not set" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -1125,7 +1125,7 @@ func TestMailGetCommandRequiresMessageID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"message-id\" not set" {
+	if err.Error() != "accepts 1 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

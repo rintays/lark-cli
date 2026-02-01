@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -16,16 +17,14 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 		Use:   "delete <table-id>",
 		Short: "Delete a Bitable table",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				return nil
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
-			if tableID != "" && tableID != args[0] {
-				return errors.New("table-id provided twice")
-			}
-			return cmd.Flags().Set("table-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -46,8 +45,6 @@ func newBaseTableDeleteCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
 	return cmd
 }

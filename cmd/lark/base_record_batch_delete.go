@@ -26,7 +26,7 @@ func newBaseRecordBatchDeleteCmd(state *appState) *cobra.Command {
 Provide record ids via repeatable --record-id, or via JSON using --record-ids-json/--record-ids-file.
 
 Example:
-  lark base record batch-delete --app-token app_x --table-id tbl_x \
+  lark base record batch-delete tbl_x --app-token app_x \
     --record-id rec_1 --record-id rec_2
 
 You can also pass JSON directly:
@@ -35,19 +35,14 @@ You can also pass JSON directly:
 Or pass a file path with @:
   --record-ids-json @record_ids.json`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(tableID) == "" {
-					return errors.New("table-id is required")
-				}
-				return nil
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
-			if tableID != "" && tableID != args[0] {
-				return errors.New("table-id provided twice")
-			}
-			return cmd.Flags().Set("table-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -76,7 +71,6 @@ Or pass a file path with @:
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringArrayVar(&recordIDs, "record-id", nil, "Bitable record id (repeatable)")
 	cmd.Flags().StringVar(&recordIDsJSON, "record-ids-json", "", "JSON array of record ids (or @file)")
 	cmd.Flags().StringVar(&recordIDsFile, "record-ids-file", "", "Path to JSON file with record ids (array of strings)")

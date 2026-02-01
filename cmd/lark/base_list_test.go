@@ -81,7 +81,7 @@ func TestBasesListCommandUsesDriveSearchAndExtractsAppToken(t *testing.T) {
 	state.SDK = client
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"list", "--query", "budget", "--limit", "1"})
+	cmd.SetArgs([]string{"list", "budget", "--limit", "1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("bases list error: %v", err)
 	}

@@ -76,7 +76,7 @@ func TestBaseFieldCreateCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--name", "City", "--field-type", "text"})
+	cmd.SetArgs([]string{"field", "create", "tbl_1", "--app-token", "app_1", "--name", "City", "--field-type", "text"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base field create error: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestBaseFieldCreateCommandDefaultsToText(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--name", "City"})
+	cmd.SetArgs([]string{"field", "create", "tbl_1", "--app-token", "app_1", "--name", "City"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base field create error: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestBaseFieldCreateCommandWithDeprecatedTypeIDFlag(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--name", "City", "--type", "1"})
+	cmd.SetArgs([]string{"field", "create", "tbl_1", "--app-token", "app_1", "--name", "City", "--type", "1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base field create error: %v", err)
 	}
@@ -217,19 +217,19 @@ func TestBaseFieldCreateCommandRequiresTableID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"table-id\" not set" {
+	if err.Error() != "requires at least 1 arg(s), only received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestBaseFieldCreateCommandRequiresName(t *testing.T) {
 	cmd := newBaseCmd(&appState{})
-	cmd.SetArgs([]string{"field", "create", "--app-token", "app_1", "--table-id", "tbl_1"})
+	cmd.SetArgs([]string{"field", "create", "tbl_1", "--app-token", "app_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"name\" not set" {
+	if err.Error() != "name is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

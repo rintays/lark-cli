@@ -27,7 +27,7 @@ func TestMsgSendCommandRequiresSDK(t *testing.T) {
 	}
 
 	cmd := newMsgCmd(state)
-	cmd.SetArgs([]string{"send", "--receive-id", "ou_123", "--text", "hello"})
+	cmd.SetArgs([]string{"send", "ou_123", "--text", "hello"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -91,7 +91,7 @@ func TestMsgSendCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMsgCmd(state)
-	cmd.SetArgs([]string{"send", "--receive-id", "ou_123", "--receive-id-type", "open_id", "--text", "hello"})
+	cmd.SetArgs([]string{"send", "ou_123", "--receive-id-type", "open_id", "--text", "hello"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("msg send error: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestMsgSendMissingTextDoesNotCallHTTP(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newMsgCmd(state)
-	cmd.SetArgs([]string{"send", "--receive-id", "ou_123"})
+	cmd.SetArgs([]string{"send", "ou_123"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -137,7 +137,7 @@ func TestMsgSendMissingTextDoesNotCallHTTP(t *testing.T) {
 func TestMsgSendRequiresFlags(t *testing.T) {
 	t.Run("requires text", func(t *testing.T) {
 		cmd := newMsgCmd(&appState{})
-		cmd.SetArgs([]string{"send", "--receive-id", "ou_1"})
+		cmd.SetArgs([]string{"send", "ou_1"})
 		err := cmd.Execute()
 		if err == nil {
 			t.Fatal("expected error")
@@ -154,7 +154,7 @@ func TestMsgSendRequiresFlags(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if err.Error() != "required flag(s) \"receive-id\" not set" {
+		if err.Error() != "accepts 1 arg(s), received 0" {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

@@ -39,17 +39,17 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 	// Best-effort cleanup: avoid leaving the test member as admin.
 	t.Cleanup(func() {
 		if !initialFound {
-			_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "--space-id", spaceID, "--member-type", "email", "--member-id", email})
+			_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "email", email, "--space-id", spaceID})
 			return
 		}
 
 		// Some environments require delete+add to change roles.
-		_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "--space-id", spaceID, "--member-type", "email", "--member-id", email})
-		_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "add", "--space-id", spaceID, "--member-type", "email", "--member-id", email, "--role", initialRole})
+		_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "email", email, "--space-id", spaceID})
+		_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "add", "email", email, "--space-id", spaceID, "--role", initialRole})
 	})
 
 	// (1) Ensure the member starts at role=member.
-	_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "--space-id", spaceID, "--member-type", "email", "--member-id", email})
+	_, _ = executeLark(t, []string{"--json", "--token-type", "tenant", "wiki", "member", "delete", "email", email, "--space-id", spaceID})
 
 	out, err := executeLark(t, []string{
 		"--json",
@@ -58,12 +58,10 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 		"wiki",
 		"member",
 		"add",
+		"email",
+		email,
 		"--space-id",
 		spaceID,
-		"--member-type",
-		"email",
-		"--member-id",
-		email,
 		"--role",
 		"member",
 	})
@@ -96,12 +94,10 @@ func TestWikiMemberRoleUpdateIntegration(t *testing.T) {
 		"wiki",
 		"member",
 		"add",
+		"email",
+		email,
 		"--space-id",
 		spaceID,
-		"--member-type",
-		"email",
-		"--member-id",
-		email,
 		"--role",
 		"admin",
 	})

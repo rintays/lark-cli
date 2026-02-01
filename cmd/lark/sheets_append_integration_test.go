@@ -24,7 +24,7 @@ func TestSheetsAppendIntegration(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "append", "--spreadsheet-id", sheetID, "--range", sheetRange, "--values", values})
+	cmd.SetArgs([]string{"--config", fx.ConfigPath, "--json", "sheets", "append", sheetID, sheetRange, "--values", values})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets append failed: %v", err)

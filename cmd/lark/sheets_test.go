@@ -57,7 +57,7 @@ func TestSheetsReadCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"read", "--spreadsheet-id", "spreadsheet", "--range", "Sheet1!A1:B2"})
+	cmd.SetArgs([]string{"read", "spreadsheet", "Sheet1!A1:B2"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets read error: %v", err)
 	}
@@ -135,8 +135,8 @@ func TestSheetsUpdateCommandWithSDK(t *testing.T) {
 	cmd := newSheetsCmd(state)
 	cmd.SetArgs([]string{
 		"update",
-		"--spreadsheet-id", "spreadsheet",
-		"--range", "Sheet1!A1:B2",
+		"spreadsheet",
+		"Sheet1!A1:B2",
 		"--values", `[["Name","Amount"],["Ada",42]]`,
 	})
 	if err := cmd.Execute(); err != nil {
@@ -225,8 +225,8 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 	cmd := newSheetsCmd(state)
 	cmd.SetArgs([]string{
 		"append",
-		"--spreadsheet-id", "spreadsheet",
-		"--range", "Sheet1!A1:B2",
+		"spreadsheet",
+		"Sheet1!A1:B2",
 		"--values", `[["Name","Amount"],["Ada",42]]`,
 		"--insert-data-option", "INSERT_ROWS",
 	})
@@ -451,7 +451,7 @@ func TestSheetsInfoCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"info", "--spreadsheet-id", "spreadsheet"})
+	cmd.SetArgs([]string{"info", "spreadsheet"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets info error: %v", err)
 	}
@@ -498,7 +498,7 @@ func TestSheetsInfoCommandRequiresSpreadsheetID(t *testing.T) {
 	cmd := newSheetsCmd(state)
 	cmd.SetArgs([]string{"info"})
 	if err := cmd.Execute(); err == nil {
-		t.Fatalf("expected error for missing spreadsheet-id")
+		t.Fatalf("expected error for missing spreadsheet-token")
 	}
 	if requests != 0 {
 		t.Fatalf("expected no HTTP requests, got %d", requests)
@@ -548,7 +548,7 @@ func TestSheetsDeleteCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"delete", "--spreadsheet-id", "spreadsheet"})
+	cmd.SetArgs([]string{"delete", "spreadsheet"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets delete error: %v", err)
 	}
@@ -589,7 +589,7 @@ func TestSheetsDeleteCommandRequiresSpreadsheetID(t *testing.T) {
 	cmd := newSheetsCmd(state)
 	cmd.SetArgs([]string{"delete"})
 	if err := cmd.Execute(); err == nil {
-		t.Fatalf("expected error for missing spreadsheet-id")
+		t.Fatalf("expected error for missing spreadsheet-token")
 	}
 	if requests != 0 {
 		t.Fatalf("expected no HTTP requests, got %d", requests)
@@ -648,7 +648,7 @@ func TestSheetsClearCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newSheetsCmd(state)
-	cmd.SetArgs([]string{"clear", "--spreadsheet-id", "spreadsheet", "--range", "Sheet1!A1:B2"})
+	cmd.SetArgs([]string{"clear", "spreadsheet", "Sheet1!A1:B2"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets clear error: %v", err)
 	}
@@ -722,10 +722,10 @@ func TestSheetsColsInsertCommandWithSDK(t *testing.T) {
 	cmd.SetArgs([]string{
 		"cols",
 		"insert",
-		"--spreadsheet-id", "spreadsheet",
-		"--sheet-id", "sheet",
-		"--start-index", "4",
-		"--count", "3",
+		"spreadsheet",
+		"sheet",
+		"4",
+		"3",
 	})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets cols insert error: %v", err)
@@ -765,15 +765,16 @@ func TestSheetsColsInsertRequiresSheetID(t *testing.T) {
 	cmd.SetArgs([]string{
 		"cols",
 		"insert",
-		"--spreadsheet-id", "spreadsheet",
-		"--start-index", "1",
-		"--count", "2",
+		"spreadsheet",
+		"",
+		"1",
+		"2",
 	})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
 	}
-	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+	if err.Error() != "sheet-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
@@ -841,10 +842,10 @@ func TestSheetsColsDeleteCommandWithSDK(t *testing.T) {
 	cmd.SetArgs([]string{
 		"cols",
 		"delete",
-		"--spreadsheet-id", "spreadsheet",
-		"--sheet-id", "sheet",
-		"--start-index", "3",
-		"--count", "2",
+		"spreadsheet",
+		"sheet",
+		"3",
+		"2",
 	})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets cols delete error: %v", err)
@@ -884,15 +885,16 @@ func TestSheetsColsDeleteRequiresSheetID(t *testing.T) {
 	cmd.SetArgs([]string{
 		"cols",
 		"delete",
-		"--spreadsheet-id", "spreadsheet",
-		"--start-index", "3",
-		"--count", "2",
+		"spreadsheet",
+		"",
+		"3",
+		"2",
 	})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
 	}
-	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+	if err.Error() != "sheet-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
@@ -960,10 +962,10 @@ func TestSheetsRowsInsertCommandWithSDK(t *testing.T) {
 	cmd.SetArgs([]string{
 		"rows",
 		"insert",
-		"--spreadsheet-id", "spreadsheet",
-		"--sheet-id", "sheet",
-		"--start-index", "1",
-		"--count", "2",
+		"spreadsheet",
+		"sheet",
+		"1",
+		"2",
 	})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets rows insert error: %v", err)
@@ -1035,10 +1037,10 @@ func TestSheetsRowsDeleteCommandWithSDK(t *testing.T) {
 	cmd.SetArgs([]string{
 		"rows",
 		"delete",
-		"--spreadsheet-id", "spreadsheet",
-		"--sheet-id", "sheet",
-		"--start-index", "2",
-		"--count", "4",
+		"spreadsheet",
+		"sheet",
+		"2",
+		"4",
 	})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("sheets rows delete error: %v", err)
@@ -1078,15 +1080,16 @@ func TestSheetsRowsInsertRequiresSheetID(t *testing.T) {
 	cmd.SetArgs([]string{
 		"rows",
 		"insert",
-		"--spreadsheet-id", "spreadsheet",
-		"--start-index", "1",
-		"--count", "2",
+		"spreadsheet",
+		"",
+		"1",
+		"2",
 	})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
 	}
-	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+	if err.Error() != "sheet-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
@@ -1094,7 +1097,7 @@ func TestSheetsRowsInsertRequiresSheetID(t *testing.T) {
 	}
 }
 
-func TestSheetsRowsInsertRequiresStartIndex(t *testing.T) {
+func TestSheetsRowsInsertRequiresCount(t *testing.T) {
 	requests := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
@@ -1122,15 +1125,15 @@ func TestSheetsRowsInsertRequiresStartIndex(t *testing.T) {
 	cmd.SetArgs([]string{
 		"rows",
 		"insert",
-		"--spreadsheet-id", "spreadsheet",
-		"--sheet-id", "sheet",
-		"--count", "2",
+		"spreadsheet",
+		"sheet",
+		"2",
 	})
 	err = cmd.Execute()
 	if err == nil {
-		t.Fatalf("expected error for missing start-index")
+		t.Fatalf("expected error for missing count")
 	}
-	if err.Error() != "required flag(s) \"start-index\" not set" {
+	if err.Error() != "accepts 4 arg(s), received 3" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {
@@ -1166,15 +1169,16 @@ func TestSheetsRowsDeleteRequiresSheetID(t *testing.T) {
 	cmd.SetArgs([]string{
 		"rows",
 		"delete",
-		"--spreadsheet-id", "spreadsheet",
-		"--start-index", "1",
-		"--count", "2",
+		"spreadsheet",
+		"",
+		"1",
+		"2",
 	})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatalf("expected error for missing sheet-id")
 	}
-	if err.Error() != "required flag(s) \"sheet-id\" not set" {
+	if err.Error() != "sheet-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if requests != 0 {

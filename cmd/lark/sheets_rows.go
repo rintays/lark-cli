@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -25,27 +26,19 @@ func newSheetsRowsInsertCmd(state *appState) *cobra.Command {
 	var count int
 
 	cmd := &cobra.Command{
-		Use:   "insert <spreadsheet-id> <sheet-id> <start-index> <count>",
+		Use:   "insert <spreadsheet-token> <sheet-id> <start-index> <count>",
 		Short: "Insert rows into a sheet",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(4)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(4)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
+			spreadsheetID = strings.TrimSpace(args[0])
+			sheetID = strings.TrimSpace(args[1])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
-			if len(args) > 1 {
-				if sheetID != "" && sheetID != args[1] {
-					return errors.New("sheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("sheet-id", args[1]); err != nil {
-					return err
-				}
+			if sheetID == "" {
+				return errors.New("sheet-id is required")
 			}
 			if len(args) > 2 {
 				if cmd.Flags().Changed("start-index") && fmt.Sprint(startIndex) != args[2] {
@@ -89,12 +82,8 @@ func newSheetsRowsInsertCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id (or provide as positional argument)")
 	cmd.Flags().IntVar(&startIndex, "start-index", 0, "start row index (0-based)")
 	cmd.Flags().IntVar(&count, "count", 0, "number of rows to insert (end_index = start_index + count)")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
-	_ = cmd.MarkFlagRequired("sheet-id")
 	_ = cmd.MarkFlagRequired("start-index")
 	_ = cmd.MarkFlagRequired("count")
 	return cmd
@@ -107,27 +96,19 @@ func newSheetsRowsDeleteCmd(state *appState) *cobra.Command {
 	var count int
 
 	cmd := &cobra.Command{
-		Use:   "delete <spreadsheet-id> <sheet-id> <start-index> <count>",
+		Use:   "delete <spreadsheet-token> <sheet-id> <start-index> <count>",
 		Short: "Delete rows from a sheet",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(4)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(4)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
+			spreadsheetID = strings.TrimSpace(args[0])
+			sheetID = strings.TrimSpace(args[1])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
-			if len(args) > 1 {
-				if sheetID != "" && sheetID != args[1] {
-					return errors.New("sheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("sheet-id", args[1]); err != nil {
-					return err
-				}
+			if sheetID == "" {
+				return errors.New("sheet-id is required")
 			}
 			if len(args) > 2 {
 				if cmd.Flags().Changed("start-index") && fmt.Sprint(startIndex) != args[2] {
@@ -171,12 +152,8 @@ func newSheetsRowsDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (or provide as positional argument)")
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id (or provide as positional argument)")
 	cmd.Flags().IntVar(&startIndex, "start-index", 0, "start row index (0-based)")
 	cmd.Flags().IntVar(&count, "count", 0, "number of rows to delete (end_index = start_index + count)")
-	_ = cmd.MarkFlagRequired("spreadsheet-id")
-	_ = cmd.MarkFlagRequired("sheet-id")
 	_ = cmd.MarkFlagRequired("start-index")
 	_ = cmd.MarkFlagRequired("count")
 	return cmd

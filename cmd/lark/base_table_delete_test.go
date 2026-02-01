@@ -55,7 +55,7 @@ func TestBaseTableDeleteCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"table", "delete", "--app-token", "app_1", "--table-id", "tbl_1"})
+	cmd.SetArgs([]string{"table", "delete", "tbl_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base table delete error: %v", err)
 	}

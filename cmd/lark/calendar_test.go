@@ -316,7 +316,7 @@ func TestCalendarSearchCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newCalendarCmd(state)
-	cmd.SetArgs([]string{"search", "--query", "Demo", "--start", start, "--end", end, "--limit", "2"})
+	cmd.SetArgs([]string{"search", "Demo", "--start", start, "--end", end, "--limit", "2"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("calendar search error: %v", err)
 	}
@@ -419,7 +419,7 @@ func TestCalendarGetCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newCalendarCmd(state)
-	cmd.SetArgs([]string{"get", "--event-id", "evt_1"})
+	cmd.SetArgs([]string{"get", "evt_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("calendar get error: %v", err)
 	}
@@ -535,7 +535,7 @@ func TestCalendarUpdateCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newCalendarCmd(state)
-	cmd.SetArgs([]string{"update", "--event-id", "evt_1", "--summary", "Updated", "--start", start, "--end", end})
+	cmd.SetArgs([]string{"update", "evt_1", "--summary", "Updated", "--start", start, "--end", end})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("calendar update error: %v", err)
 	}
@@ -603,7 +603,7 @@ func TestCalendarDeleteCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newCalendarCmd(state)
-	cmd.SetArgs([]string{"delete", "--event-id", "evt_1", "--notify=false"})
+	cmd.SetArgs([]string{"delete", "evt_1", "--notify=false"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("calendar delete error: %v", err)
 	}

@@ -29,31 +29,22 @@ func newMinutesCmd(state *appState) *cobra.Command {
 }
 
 func newMinutesInfoCmd(state *appState) *cobra.Command {
-	var minuteToken string
 	var userIDType string
 
 	cmd := &cobra.Command{
 		Use:   "info <minute-token>",
 		Short: "Show Minutes details",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if minuteToken != "" && minuteToken != args[0] {
-					return errors.New("minute-token provided twice")
-				}
-				if err := cmd.Flags().Set("minute-token", args[0]); err != nil {
-					return err
-				}
-				return nil
-			}
-			if strings.TrimSpace(minuteToken) == "" {
+			if strings.TrimSpace(args[0]) == "" {
 				return errors.New("minute-token is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			minuteToken := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -74,7 +65,6 @@ func newMinutesInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&minuteToken, "minute-token", "", "minute token (or provide as positional argument)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
 	return cmd
 }
@@ -164,23 +154,17 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 }
 
 func newMinutesDeleteCmd(state *appState) *cobra.Command {
-	var minuteToken string
 	var fileType string
 
 	cmd := &cobra.Command{
 		Use:   "delete <minute-token>",
 		Short: "Delete Minutes",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if minuteToken != "" && minuteToken != args[0] {
-					return errors.New("minute-token provided twice")
-				}
-				if err := cmd.Flags().Set("minute-token", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("minute-token is required")
 			}
 			return nil
 		},
@@ -188,6 +172,7 @@ func newMinutesDeleteCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			minuteToken := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -222,14 +207,11 @@ func newMinutesDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&minuteToken, "minute-token", "", "minute token (or provide as positional argument)")
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type to delete (default: auto-detect via drive metadata)")
-	_ = cmd.MarkFlagRequired("minute-token")
 	return cmd
 }
 
 func newMinutesUpdateCmd(state *appState) *cobra.Command {
-	var minuteToken string
 	var linkShare string
 	var externalAccess bool
 	var inviteExternal bool
@@ -240,20 +222,20 @@ func newMinutesUpdateCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <minute-token>",
 		Short: "Update Minutes sharing permissions",
-		Args:  cobra.MaximumNArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return nil
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
 			}
-			if minuteToken != "" && minuteToken != args[0] {
-				return errors.New("minute-token provided twice")
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("minute-token is required")
 			}
-			return cmd.Flags().Set("minute-token", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			minuteToken := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -293,14 +275,12 @@ func newMinutesUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&minuteToken, "minute-token", "", "minute token (or provide as positional argument)")
 	cmd.Flags().StringVar(&linkShare, "link-share", "", "link share permission (for example: tenant_readable, anyone_readable)")
 	cmd.Flags().BoolVar(&externalAccess, "external-access", false, "allow external access")
 	cmd.Flags().BoolVar(&inviteExternal, "invite-external", false, "allow external invite")
 	cmd.Flags().StringVar(&shareEntity, "share-entity", "", "share permission scope (for example: tenant_editable)")
 	cmd.Flags().StringVar(&securityEntity, "security-entity", "", "security permission scope (for example: tenant_editable)")
 	cmd.Flags().StringVar(&commentEntity, "comment-entity", "", "comment permission scope (for example: tenant_editable)")
-	_ = cmd.MarkFlagRequired("minute-token")
 	cmd.MarkFlagsOneRequired("link-share", "external-access", "invite-external", "share-entity", "security-entity", "comment-entity")
 	return cmd
 }

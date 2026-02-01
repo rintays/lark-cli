@@ -55,7 +55,7 @@ func TestBaseFieldDeleteCommandWithPositionalArgs(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"field", "delete", "--app-token", "app_1", "tbl_1", "fld_1"})
+	cmd.SetArgs([]string{"field", "delete", "tbl_1", "fld_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base field delete error: %v", err)
 	}
@@ -66,24 +66,24 @@ func TestBaseFieldDeleteCommandWithPositionalArgs(t *testing.T) {
 
 func TestBaseFieldDeleteCommandRequiresTableID(t *testing.T) {
 	cmd := newBaseCmd(&appState{})
-	cmd.SetArgs([]string{"field", "delete", "--app-token", "app_1", "--field-id", "fld_1"})
+	cmd.SetArgs([]string{"field", "delete", "--app-token", "app_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"table-id\" not set" {
+	if err.Error() != "accepts 2 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestBaseFieldDeleteCommandRequiresFieldID(t *testing.T) {
 	cmd := newBaseCmd(&appState{})
-	cmd.SetArgs([]string{"field", "delete", "--app-token", "app_1", "--table-id", "tbl_1"})
+	cmd.SetArgs([]string{"field", "delete", "tbl_1", "--app-token", "app_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"field-id\" not set" {
+	if err.Error() != "accepts 2 arg(s), received 1" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

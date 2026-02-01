@@ -36,19 +36,14 @@ Value formats (write):
 - link/duplex link: ["rec_x","rec_y"]
 - location: "116.397755,39.903179"`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(tableID) == "" {
-					return errors.New("table-id is required")
-				}
-				return nil
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
-			if tableID != "" && tableID != args[0] {
-				return errors.New("table-id provided twice")
-			}
-			return cmd.Flags().Set("table-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -76,7 +71,6 @@ Value formats (write):
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&fieldsJSON, "fields-json", "", `Record fields JSON object (full typed payload; quote for shell).
 Example: {"Title":"Task","Done":true,"Score":3.5,"Tags":["A","B"],"Owner":[{"id":"ou_x"}]}`)
 	cmd.Flags().StringArrayVar(&fields, "field", nil, `Record field assignment (repeatable; use := for JSON-typed values).

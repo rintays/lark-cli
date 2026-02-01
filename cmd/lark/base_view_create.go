@@ -18,16 +18,12 @@ func newBaseViewCreateCmd(state *appState) *cobra.Command {
 		Use:   "create <table-id> <name>",
 		Short: "Create a Bitable view",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.RangeArgs(1, 2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if tableID != "" && tableID != args[0] {
-					return errors.New("table-id provided twice")
-				}
-				if err := cmd.Flags().Set("table-id", args[0]); err != nil {
-					return err
-				}
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
 			if len(args) > 1 {
 				if viewName != "" && viewName != args[1] {
@@ -36,6 +32,9 @@ func newBaseViewCreateCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("name", args[1]); err != nil {
 					return err
 				}
+			}
+			if strings.TrimSpace(viewName) == "" {
+				return errors.New("name is required")
 			}
 			if strings.TrimSpace(viewType) == "" {
 				_ = cmd.Flags().Set("view-type", "grid")
@@ -61,11 +60,8 @@ func newBaseViewCreateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&viewName, "name", "", "View name (or provide as positional argument)")
 	cmd.Flags().StringVar(&viewType, "view-type", "grid", "View type (grid|kanban|gallery|gantt|form)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
-	_ = cmd.MarkFlagRequired("name")
 	return cmd
 }

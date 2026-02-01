@@ -58,7 +58,7 @@ func TestBaseViewInfoCommand(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"view", "info", "--app-token", "app_1", "tbl_1", "viw_1"})
+	cmd.SetArgs([]string{"view", "info", "tbl_1", "viw_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base view info error: %v", err)
 	}
@@ -70,24 +70,24 @@ func TestBaseViewInfoCommand(t *testing.T) {
 
 func TestBaseViewInfoCommandRequiresTableID(t *testing.T) {
 	cmd := newBaseCmd(&appState{})
-	cmd.SetArgs([]string{"view", "info", "--app-token", "app_1", "--view-id", "viw_1"})
+	cmd.SetArgs([]string{"view", "info", "--app-token", "app_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"table-id\" not set" {
+	if err.Error() != "accepts 2 arg(s), received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestBaseViewInfoCommandRequiresViewID(t *testing.T) {
 	cmd := newBaseCmd(&appState{})
-	cmd.SetArgs([]string{"view", "info", "--app-token", "app_1", "--table-id", "tbl_1"})
+	cmd.SetArgs([]string{"view", "info", "tbl_1", "--app-token", "app_1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"view-id\" not set" {
+	if err.Error() != "accepts 2 arg(s), received 1" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

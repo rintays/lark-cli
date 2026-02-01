@@ -91,30 +91,23 @@ func newDocsCreateCmd(state *appState) *cobra.Command {
 }
 
 func newDocsInfoCmd(state *appState) *cobra.Command {
-	var documentID string
-
 	cmd := &cobra.Command{
-		Use:   "info <doc-id>",
+		Use:   "info <document-id>",
 		Short: "Show Docs (docx) document info",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if documentID != "" && documentID != args[0] {
-				return errors.New("doc-id provided twice")
-			}
-			return cmd.Flags().Set("doc-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
 			token, tokenType, err := resolveAccessToken(context.Background(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
@@ -131,33 +124,24 @@ func newDocsInfoCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	return cmd
 }
 
 func newDocsExportCmd(state *appState) *cobra.Command {
-	var documentID string
 	var format string
 	var outPath string
 
 	cmd := &cobra.Command{
-		Use:   "export <doc-id> --format pdf --out <path>",
+		Use:   "export <document-id> --format pdf --out <path>",
 		Short: "Export a Docs (docx) document",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if documentID != "" && documentID != args[0] {
-				return errors.New("doc-id provided twice")
-			}
-			return cmd.Flags().Set("doc-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if info, err := os.Stat(outPath); err == nil && info.IsDir() {
@@ -167,6 +151,7 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -212,7 +197,6 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&format, "format", "", "export format (pdf)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path")
 	_ = cmd.MarkFlagRequired("format")
@@ -224,14 +208,14 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 	var format string
 
 	cmd := &cobra.Command{
-		Use:   "get <doc-id> [--format md|txt|blocks]",
+		Use:   "get <document-id> [--format md|txt|blocks]",
 		Short: "Fetch Docs (docx) document content",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				return errors.New("doc-id is required")
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
 			return nil
 		},
@@ -247,7 +231,7 @@ func newDocsGetCmd(state *appState) *cobra.Command {
 			if format == "" {
 				format = "md"
 			}
-			documentID := args[0]
+			documentID := strings.TrimSpace(args[0])
 			switch format {
 			case "md", "markdown":
 				blocks, err := listDocxBlocks(context.Background(), state.SDK, token, documentID)

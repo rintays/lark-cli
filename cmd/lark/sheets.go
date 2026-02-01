@@ -22,7 +22,7 @@ func newSheetsCmd(state *appState) *cobra.Command {
 		Short: "Read Sheets data",
 		Long: `Sheets are spreadsheet files stored in Drive.
 
-- spreadsheet-id identifies the file (use it as FILE_TOKEN for drive permissions).
+- spreadsheet_token identifies the file (use it as FILE_TOKEN for drive permissions).
 - Each spreadsheet contains sheets (tabs) with sheet_id.
 - Use lark drive permissions to manage collaborators for sheets.
 - Ranges use A1 notation: <sheet_id>!A1:B2; rows/cols act on a sheet.`,
@@ -47,32 +47,18 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 	var sheetID string
 
 	cmd := &cobra.Command{
-		Use:   "read <spreadsheet-id> <range>",
+		Use:   "read <spreadsheet-token> <range>",
 		Short: "Read a range from Sheets",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
+			spreadsheetID = strings.TrimSpace(args[0])
+			sheetRange = strings.TrimSpace(args[1])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
-			if len(args) > 1 {
-				if sheetRange != "" && sheetRange != args[1] {
-					return errors.New("range provided twice")
-				}
-				if err := cmd.Flags().Set("range", args[1]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if strings.TrimSpace(sheetRange) == "" {
+			if sheetRange == "" {
 				return errors.New("range is required")
 			}
 			return nil
@@ -102,9 +88,7 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
 	return cmd
 }
 
@@ -112,22 +96,15 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 
 	cmd := &cobra.Command{
-		Use:   "info <spreadsheet-id>",
+		Use:   "info <spreadsheet-token>",
 		Short: "Show spreadsheet info",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
+			spreadsheetID = strings.TrimSpace(args[0])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
 			return nil
 		},
@@ -149,7 +126,6 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
 	return cmd
 }
 
@@ -157,22 +133,15 @@ func newSheetsDeleteCmd(state *appState) *cobra.Command {
 	var spreadsheetID string
 
 	cmd := &cobra.Command{
-		Use:   "delete <spreadsheet-id>",
+		Use:   "delete <spreadsheet-token>",
 		Short: "Delete a spreadsheet",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
+			spreadsheetID = strings.TrimSpace(args[0])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
 			return nil
 		},
@@ -201,7 +170,6 @@ func newSheetsDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
 	return cmd
 }
 
@@ -213,32 +181,18 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 	var valuesFile string
 
 	cmd := &cobra.Command{
-		Use:   "update <spreadsheet-id> <range>",
+		Use:   "update <spreadsheet-token> <range>",
 		Short: "Update a range in Sheets",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
+			spreadsheetID = strings.TrimSpace(args[0])
+			sheetRange = strings.TrimSpace(args[1])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
-			if len(args) > 1 {
-				if sheetRange != "" && sheetRange != args[1] {
-					return errors.New("range provided twice")
-				}
-				if err := cmd.Flags().Set("range", args[1]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if strings.TrimSpace(sheetRange) == "" {
+			if sheetRange == "" {
 				return errors.New("range is required")
 			}
 			return nil
@@ -269,9 +223,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
 	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV file")
 	return cmd
@@ -286,32 +238,18 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 	var insertDataOption string
 
 	cmd := &cobra.Command{
-		Use:   "append <spreadsheet-id> <range>",
+		Use:   "append <spreadsheet-token> <range>",
 		Short: "Append rows to Sheets",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
+			spreadsheetID = strings.TrimSpace(args[0])
+			sheetRange = strings.TrimSpace(args[1])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
-			if len(args) > 1 {
-				if sheetRange != "" && sheetRange != args[1] {
-					return errors.New("range provided twice")
-				}
-				if err := cmd.Flags().Set("range", args[1]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if strings.TrimSpace(sheetRange) == "" {
+			if sheetRange == "" {
 				return errors.New("range is required")
 			}
 			return nil
@@ -342,9 +280,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
 	cmd.Flags().StringVar(&valuesRaw, "values", "", "JSON rows (or @file), e.g. '[[\"Name\",\"Amount\"],[\"Ada\",42]]'")
 	cmd.Flags().StringVar(&valuesFile, "values-file", "", "Read values from JSON/CSV file")
 	cmd.Flags().StringVar(&insertDataOption, "insert-data-option", "", "insert data option (for example: INSERT_ROWS)")
@@ -357,32 +293,18 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 	var sheetID string
 
 	cmd := &cobra.Command{
-		Use:   "clear <spreadsheet-id> <range>",
+		Use:   "clear <spreadsheet-token> <range>",
 		Short: "Clear a range in Sheets",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if spreadsheetID != "" && spreadsheetID != args[0] {
-					return errors.New("spreadsheet-id provided twice")
-				}
-				if err := cmd.Flags().Set("spreadsheet-id", args[0]); err != nil {
-					return err
-				}
+			spreadsheetID = strings.TrimSpace(args[0])
+			sheetRange = strings.TrimSpace(args[1])
+			if spreadsheetID == "" {
+				return errors.New("spreadsheet-token is required")
 			}
-			if len(args) > 1 {
-				if sheetRange != "" && sheetRange != args[1] {
-					return errors.New("range provided twice")
-				}
-				if err := cmd.Flags().Set("range", args[1]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(spreadsheetID) == "" {
-				return errors.New("spreadsheet-id is required")
-			}
-			if strings.TrimSpace(sheetRange) == "" {
+			if sheetRange == "" {
 				return errors.New("range is required")
 			}
 			return nil
@@ -407,9 +329,7 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&spreadsheetID, "spreadsheet-id", "", "spreadsheet token (positional preferred)")
-	cmd.Flags().StringVar(&sheetRange, "range", "", "A1 range, e.g. <sheet_id>!A1:B2 or Sheet1!A1:B2 (positional preferred)")
-	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with --range A1:B2)")
+	cmd.Flags().StringVar(&sheetID, "sheet-id", "", "sheet id to prefix the range (use with range like A1:B2)")
 	return cmd
 }
 

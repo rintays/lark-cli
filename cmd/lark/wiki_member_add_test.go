@@ -35,12 +35,12 @@ func TestWikiMemberAddCommandRequiresMemberID(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"member", "add", "--space-id", "spc1", "userid"})
+	cmd.SetArgs([]string{"member", "add", "user", "", "--space-id", "spc1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"member-id\" not set" {
+	if err.Error() != "member-id is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -68,12 +68,12 @@ func TestWikiMemberAddCommandRequiresMemberType(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newWikiCmd(state)
-	cmd.SetArgs([]string{"member", "add", "--space-id", "spc1", "--member-id", "u1"})
+	cmd.SetArgs([]string{"member", "add", "", "u1", "--space-id", "spc1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"member-type\" not set" {
+	if err.Error() != "member-type is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

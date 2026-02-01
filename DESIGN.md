@@ -16,6 +16,53 @@ This CLI follows a gog-inspired layout: a single root command wires shared state
 2. Commands call helper functions that enforce credentials and reuse cached tokens when valid.
 3. Token refresh updates config on disk.
 
+## CLI argument design (positional identifiers)
+
+Goals:
+- Make required identifiers discoverable and fast to type.
+- Align CLI naming with OpenAPI field names to reduce confusion when cross-referencing docs.
+- Avoid redundant required flags that duplicate positional args.
+
+Rules:
+- Required resource identifiers are positional arguments in `Use`.
+- Search queries are positional: `search <query>`.
+- Flags are reserved for optional filters, toggles, or when an identifier is optional.
+- Positional args are trimmed and validated; errors should name the identifier (`<name> is required`).
+- Help text must match positional naming (e.g., `document-id`, `spreadsheet-token`).
+
+Naming alignment (CLI placeholder -> OpenAPI field):
+- document-id -> document_id (Docs)
+- file-token -> file_token (Drive/Docs/Sheets/Minutes exports)
+- spreadsheet-token -> spreadsheet_token (Sheets)
+- node-token -> node_token (Wiki)
+- space-id -> space_id (Wiki, required flag for v2 member/node APIs)
+- chat-id -> chat_id (IM)
+- message-id -> message_id (IM/Mail)
+- event-id -> event_id (Calendar)
+- meeting-id -> meeting_id (Meetings)
+- reserve-id -> reserve_id (Meetings reservations)
+- minute-token -> minute_token (Minutes)
+- app-token -> app_token (Bitable base)
+- table-id -> table_id (Bitable)
+- record-id -> record_id (Bitable)
+- field-id -> field_id (Bitable)
+- view-id -> view_id (Bitable)
+- mailbox-id -> mailbox_id (Mail; optional, defaults to config or "me")
+
+Examples:
+- `lark docs get <document-id>`
+- `lark drive info <file-token>`
+- `lark sheets read <spreadsheet-token> <range>` (use `--sheet-id` to prefix ranges)
+- `lark sheets rows insert <spreadsheet-token> <sheet-id> <start-index> <count>`
+- `lark messages send <receive-id>` (use `--receive-id-type` for chat_id/open_id/user_id/email)
+- `lark calendars search <query> [--start ... --end ...]`
+- `lark calendars get <event-id>`
+
+Exceptions:
+- `base --app-token` remains a required flag (token is a config/scoping input, not a resource id).
+- `wiki --space-id` remains a required flag (space context is shared across member/node subcommands).
+- Optional identifiers remain flags (e.g., `--mailbox-id` for mail commands).
+
 ## Coverage Matrix
 
 | Area | API | SDK Support | Token | Version | Notes |

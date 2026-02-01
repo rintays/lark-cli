@@ -94,7 +94,7 @@ func TestBaseRecordBatchCreateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "batch-create", "--app-token", "app_1", "--table-id", "tbl_1", "--records", `[{"Title":"Task"},{"Title":"Task2"}]`})
+	cmd.SetArgs([]string{"record", "batch-create", "tbl_1", "--app-token", "app_1", "--records", `[{"Title":"Task"},{"Title":"Task2"}]`})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record batch-create error: %v", err)
 	}

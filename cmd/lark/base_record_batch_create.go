@@ -27,25 +27,20 @@ func newBaseRecordBatchCreateCmd(state *appState) *cobra.Command {
 Provide record fields via --records (JSON array of objects) or --records-file.
 
 Example:
-  lark base record batch-create --app-token app_x --table-id tbl_x \
+  lark base record batch-create tbl_x --app-token app_x \
     --records '[{"Title":"A"},{"Title":"B","Done":true}]'
 
 You can also pass a file path with @:
   --records @records.json`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(tableID) == "" {
-					return errors.New("table-id is required")
-				}
-				return nil
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
-			if tableID != "" && tableID != args[0] {
-				return errors.New("table-id provided twice")
-			}
-			return cmd.Flags().Set("table-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
@@ -74,7 +69,6 @@ You can also pass a file path with @:
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&recordsRaw, "records", "", "JSON array of field objects (or @file)")
 	cmd.Flags().StringVar(&recordsFile, "records-file", "", "Path to JSON file with records (array of objects)")
 	cmd.Flags().StringVar(&clientToken, "client-token", "", "idempotency token")

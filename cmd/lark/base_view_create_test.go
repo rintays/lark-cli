@@ -43,7 +43,7 @@ func TestBaseViewCreateCommandRequiresTableID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"table-id\" not set" {
+	if err.Error() != "requires at least 1 arg(s), only received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -71,12 +71,12 @@ func TestBaseViewCreateCommandRequiresName(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"view", "create", "--app-token", "app_1", "tbl_1"})
+	cmd.SetArgs([]string{"view", "create", "tbl_1", "--app-token", "app_1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "required flag(s) \"name\" not set" {
+	if err.Error() != "name is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -139,7 +139,7 @@ func TestBaseViewCreateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"view", "create", "--app-token", "app_1", "--table-id", "tbl_1", "--name", "MyView", "--view-type", "grid"})
+	cmd.SetArgs([]string{"view", "create", "tbl_1", "--app-token", "app_1", "--name", "MyView", "--view-type", "grid"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base view create error: %v", err)
 	}

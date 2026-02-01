@@ -27,16 +27,12 @@ func newChatsAnnouncementGetCmd(state *appState) *cobra.Command {
 		Use:   "get <chat-id>",
 		Short: "Get chat announcement",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if chatID != "" && chatID != args[0] {
-					return errors.New("chat-id provided twice")
-				}
-				if err := cmd.Flags().Set("chat-id", args[0]); err != nil {
-					return err
-				}
+			chatID = strings.TrimSpace(args[0])
+			if chatID == "" {
+				return errors.New("chat-id is required")
 			}
 			return nil
 		},
@@ -80,9 +76,7 @@ func newChatsAnnouncementGetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&chatID, "chat-id", "", "chat ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "open_id", "user ID type (open_id, union_id, user_id)")
-	_ = cmd.MarkFlagRequired("chat-id")
 	return cmd
 }
 
@@ -92,8 +86,18 @@ func newChatsAnnouncementUpdateCmd(state *appState) *cobra.Command {
 	var requests []string
 
 	cmd := &cobra.Command{
-		Use:   "update",
+		Use:   "update <chat-id>",
 		Short: "Update chat announcement",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
+			}
+			chatID = strings.TrimSpace(args[0])
+			if chatID == "" {
+				return errors.New("chat-id is required")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
@@ -110,10 +114,8 @@ func newChatsAnnouncementUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&chatID, "chat-id", "", "chat ID")
 	cmd.Flags().StringVar(&revision, "revision", "", "announcement revision")
 	cmd.Flags().StringArrayVar(&requests, "request", nil, "announcement update request (repeatable JSON string)")
-	_ = cmd.MarkFlagRequired("chat-id")
 	_ = cmd.MarkFlagRequired("revision")
 	_ = cmd.MarkFlagRequired("request")
 	return cmd

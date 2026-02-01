@@ -99,7 +99,7 @@ func TestBaseRecordBatchUpdateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "batch-update", "--app-token", "app_1", "--table-id", "tbl_1", "--records", `[{"record_id":"rec_1","fields":{"Title":"Task"}},{"record_id":"rec_2","fields":{"Title":"Task2"}}]`})
+	cmd.SetArgs([]string{"record", "batch-update", "tbl_1", "--app-token", "app_1", "--records", `[{"record_id":"rec_1","fields":{"Title":"Task"}},{"record_id":"rec_2","fields":{"Title":"Task2"}}]`})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record batch-update error: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestBaseRecordBatchUpdateCommandWithRecordsFileAndClientToken(t *testing.T)
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "batch-update", "--app-token", "app_1", "--table-id", "tbl_1", "--records", "@" + recordsPath, "--client-token", "token_1", "--ignore-consistency-check"})
+	cmd.SetArgs([]string{"record", "batch-update", "tbl_1", "--app-token", "app_1", "--records", "@" + recordsPath, "--client-token", "token_1", "--ignore-consistency-check"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record batch-update error: %v", err)
 	}

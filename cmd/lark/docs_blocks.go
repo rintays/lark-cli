@@ -30,45 +30,30 @@ func newDocsBlocksCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksGetCmd(state *appState) *cobra.Command {
-	var documentID string
-	var blockID string
 	var revisionID int
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "get <doc-id> <block-id>",
+		Use:   "get <document-id> <block-id>",
 		Short: "Get a Docx block",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-			} else {
-				if documentID != "" && documentID != args[0] {
-					return errors.New("doc-id provided twice")
-				}
-				if err := cmd.Flags().Set("doc-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if len(args) < 2 {
-				if strings.TrimSpace(blockID) == "" {
-					return errors.New("block-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[1]) == "" {
+				return errors.New("block-id is required")
 			}
-			if blockID != "" && blockID != args[1] {
-				return errors.New("block-id provided twice")
-			}
-			return cmd.Flags().Set("block-id", args[1])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -89,37 +74,28 @@ func newDocsBlocksGetCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&blockID, "block-id", "", "block ID (or provide as positional argument)")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user id type (open_id|union_id|user_id)")
 	return cmd
 }
 
 func newDocsBlocksListCmd(state *appState) *cobra.Command {
-	var documentID string
 	var limit int
 	var pageSize int
 	var revisionID int
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "list <doc-id>",
+		Use:   "list <document-id>",
 		Short: "List Docx blocks",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if documentID != "" && documentID != args[0] {
-				return errors.New("doc-id provided twice")
-			}
-			return cmd.Flags().Set("doc-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
@@ -128,6 +104,7 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -174,7 +151,6 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().IntVar(&limit, "limit", 200, "max number of blocks to return")
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "page size for list requests")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
@@ -183,8 +159,6 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
-	var documentID string
-	var blockID string
 	var bodyJSON string
 	var bodyFile string
 	var revisionID int
@@ -192,39 +166,26 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "update <doc-id> <block-id>",
+		Use:   "update <document-id> <block-id>",
 		Short: "Update a Docx block",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-			} else {
-				if documentID != "" && documentID != args[0] {
-					return errors.New("doc-id provided twice")
-				}
-				if err := cmd.Flags().Set("doc-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if len(args) < 2 {
-				if strings.TrimSpace(blockID) == "" {
-					return errors.New("block-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[1]) == "" {
+				return errors.New("block-id is required")
 			}
-			if blockID != "" && blockID != args[1] {
-				return errors.New("block-id provided twice")
-			}
-			return cmd.Flags().Set("block-id", args[1])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
 			raw, err := readInput(bodyJSON, bodyFile, "body")
 			if err != nil {
 				return err
@@ -269,8 +230,6 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&blockID, "block-id", "", "block ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&bodyJSON, "body-json", "", "JSON body for update request")
 	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to file containing JSON body")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
@@ -280,7 +239,6 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
-	var documentID string
 	var requestsJSON string
 	var requestsFile string
 	var revisionID int
@@ -288,27 +246,22 @@ func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "batch-update <doc-id>",
+		Use:   "batch-update <document-id>",
 		Short: "Batch update Docx blocks",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if documentID != "" && documentID != args[0] {
-				return errors.New("doc-id provided twice")
-			}
-			return cmd.Flags().Set("doc-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
 			raw, err := readInput(requestsJSON, requestsFile, "requests")
 			if err != nil {
 				return err
@@ -351,7 +304,6 @@ func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&requestsJSON, "requests-json", "", "JSON array of update requests")
 	cmd.Flags().StringVar(&requestsFile, "requests-file", "", "path to file containing JSON array of update requests")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
@@ -372,8 +324,6 @@ func newDocsBlocksChildrenCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
-	var documentID string
-	var blockID string
 	var limit int
 	var pageSize int
 	var revisionID int
@@ -381,34 +331,19 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "list <doc-id> <block-id>",
+		Use:   "list <document-id> <block-id>",
 		Short: "List children of a Docx block",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-			} else {
-				if documentID != "" && documentID != args[0] {
-					return errors.New("doc-id provided twice")
-				}
-				if err := cmd.Flags().Set("doc-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if len(args) < 2 {
-				if strings.TrimSpace(blockID) == "" {
-					return errors.New("block-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[1]) == "" {
+				return errors.New("block-id is required")
 			}
-			if blockID != "" && blockID != args[1] {
-				return errors.New("block-id provided twice")
-			}
-			return cmd.Flags().Set("block-id", args[1])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
@@ -417,6 +352,8 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -466,8 +403,6 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&blockID, "block-id", "", "block ID (or provide as positional argument)")
 	cmd.Flags().IntVar(&limit, "limit", 200, "max number of blocks to return")
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "page size for list requests")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
@@ -477,8 +412,6 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
-	var documentID string
-	var blockID string
 	var bodyJSON string
 	var bodyFile string
 	var revisionID int
@@ -486,39 +419,26 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "create <doc-id> <block-id>",
+		Use:   "create <document-id> <block-id>",
 		Short: "Create children blocks",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-			} else {
-				if documentID != "" && documentID != args[0] {
-					return errors.New("doc-id provided twice")
-				}
-				if err := cmd.Flags().Set("doc-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if len(args) < 2 {
-				if strings.TrimSpace(blockID) == "" {
-					return errors.New("block-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[1]) == "" {
+				return errors.New("block-id is required")
 			}
-			if blockID != "" && blockID != args[1] {
-				return errors.New("block-id provided twice")
-			}
-			return cmd.Flags().Set("block-id", args[1])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
 			raw, err := readInput(bodyJSON, bodyFile, "body")
 			if err != nil {
 				return err
@@ -558,8 +478,6 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&blockID, "block-id", "", "block ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&bodyJSON, "body-json", "", "JSON body for create request")
 	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to file containing JSON body")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
@@ -569,42 +487,25 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksChildrenDeleteCmd(state *appState) *cobra.Command {
-	var documentID string
-	var blockID string
 	var startIndex int
 	var endIndex int
 	var revisionID int
 	var clientToken string
 
 	cmd := &cobra.Command{
-		Use:   "delete <doc-id> <block-id>",
+		Use:   "delete <document-id> <block-id>",
 		Short: "Delete children blocks by index range",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-			} else {
-				if documentID != "" && documentID != args[0] {
-					return errors.New("doc-id provided twice")
-				}
-				if err := cmd.Flags().Set("doc-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if len(args) < 2 {
-				if strings.TrimSpace(blockID) == "" {
-					return errors.New("block-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[1]) == "" {
+				return errors.New("block-id is required")
 			}
-			if blockID != "" && blockID != args[1] {
-				return errors.New("block-id provided twice")
-			}
-			return cmd.Flags().Set("block-id", args[1])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if startIndex < 0 || endIndex < 0 {
@@ -616,6 +517,8 @@ func newDocsBlocksChildrenDeleteCmd(state *appState) *cobra.Command {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
 			token, err := tokenFor(context.Background(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err
@@ -640,15 +543,13 @@ func newDocsBlocksChildrenDeleteCmd(state *appState) *cobra.Command {
 				revision = fmt.Sprintf("%d", *resp.DocumentRevisionId)
 			}
 			text := tableTextRow(
-				[]string{"doc_id", "block_id", "start_index", "end_index", "revision_id"},
+				[]string{"document_id", "block_id", "start_index", "end_index", "revision_id"},
 				[]string{documentID, blockID, fmt.Sprintf("%d", startIndex), fmt.Sprintf("%d", endIndex), revision},
 			)
 			return state.Printer.Print(payload, text)
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&blockID, "block-id", "", "block ID (or provide as positional argument)")
 	cmd.Flags().IntVar(&startIndex, "start-index", -1, "start index (inclusive)")
 	cmd.Flags().IntVar(&endIndex, "end-index", -1, "end index (exclusive)")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")
@@ -666,8 +567,6 @@ func newDocsBlocksDescendantCmd(state *appState) *cobra.Command {
 }
 
 func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
-	var documentID string
-	var blockID string
 	var bodyJSON string
 	var bodyFile string
 	var revisionID int
@@ -675,39 +574,26 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 	var userIDType string
 
 	cmd := &cobra.Command{
-		Use:   "create <doc-id> <block-id>",
+		Use:   "create <document-id> <block-id>",
 		Short: "Create nested blocks",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-			} else {
-				if documentID != "" && documentID != args[0] {
-					return errors.New("doc-id provided twice")
-				}
-				if err := cmd.Flags().Set("doc-id", args[0]); err != nil {
-					return err
-				}
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if len(args) < 2 {
-				if strings.TrimSpace(blockID) == "" {
-					return errors.New("block-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[1]) == "" {
+				return errors.New("block-id is required")
 			}
-			if blockID != "" && blockID != args[1] {
-				return errors.New("block-id provided twice")
-			}
-			return cmd.Flags().Set("block-id", args[1])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
 			raw, err := readInput(bodyJSON, bodyFile, "body")
 			if err != nil {
 				return err
@@ -747,8 +633,6 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
-	cmd.Flags().StringVar(&blockID, "block-id", "", "block ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&bodyJSON, "body-json", "", "JSON body for create request")
 	cmd.Flags().StringVar(&bodyFile, "body-file", "", "path to file containing JSON body")
 	cmd.Flags().IntVar(&revisionID, "revision-id", -1, "document revision id (-1 for latest)")

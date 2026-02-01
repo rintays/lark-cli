@@ -77,7 +77,7 @@ func TestBaseRecordBatchDeleteCommandWithRecordIDFlags(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "batch-delete", "--app-token", "app_1", "--table-id", "tbl_1", "--record-id", "rec_1", "--record-id", "rec_2"})
+	cmd.SetArgs([]string{"record", "batch-delete", "tbl_1", "--app-token", "app_1", "--record-id", "rec_1", "--record-id", "rec_2"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record batch-delete error: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestBaseRecordBatchDeleteCommandWithRecordIDsJSONAtFile(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "batch-delete", "--app-token", "app_1", "--table-id", "tbl_1", "--record-ids-json", "@" + idsPath})
+	cmd.SetArgs([]string{"record", "batch-delete", "tbl_1", "--app-token", "app_1", "--record-ids-json", "@" + idsPath})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record batch-delete error: %v", err)
 	}

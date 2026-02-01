@@ -64,33 +64,27 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 }
 
 func newDocsOverwriteCmd(state *appState) *cobra.Command {
-	var documentID string
 	var contentType string
 	var content string
 	var contentFile string
 
 	cmd := &cobra.Command{
-		Use:   "overwrite <doc-id>",
+		Use:   "overwrite <document-id>",
 		Short: "Overwrite a Docx document with Markdown/HTML",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) == 0 {
-				if strings.TrimSpace(documentID) == "" {
-					return errors.New("doc-id is required")
-				}
-				return nil
+			if strings.TrimSpace(args[0]) == "" {
+				return errors.New("document-id is required")
 			}
-			if documentID != "" && documentID != args[0] {
-				return errors.New("doc-id provided twice")
-			}
-			return cmd.Flags().Set("doc-id", args[0])
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
+			documentID := strings.TrimSpace(args[0])
 			raw, err := readDocxContent(content, contentFile)
 			if err != nil {
 				return err
@@ -165,7 +159,6 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&documentID, "doc-id", "", "document ID (or provide as positional argument)")
 	cmd.Flags().StringVar(&contentType, "content-type", "markdown", "content type (markdown|html)")
 	cmd.Flags().StringVar(&content, "content", "", "raw markdown/html content")
 	cmd.Flags().StringVar(&contentFile, "content-file", "", "path to file containing markdown/html content")

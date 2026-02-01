@@ -58,7 +58,7 @@ func TestBaseViewListCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"view", "list", "--app-token", "app_1", "--table-id", "tbl_1"})
+	cmd.SetArgs([]string{"view", "list", "tbl_1", "--app-token", "app_1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base view list error: %v", err)
 	}

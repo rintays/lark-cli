@@ -38,7 +38,7 @@ func TestBaseRecordUpdateCommandRequiresFieldsJSON(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "update", "--app-token", "app_1", "--table-id", "tbl_1", "--record-id", "rec_1"})
+	cmd.SetArgs([]string{"record", "update", "tbl_1", "rec_1", "--app-token", "app_1"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -108,7 +108,7 @@ func TestBaseRecordUpdateCommandWithSDK(t *testing.T) {
 	state.SDK = sdkClient
 
 	cmd := newBaseCmd(state)
-	cmd.SetArgs([]string{"record", "update", "--app-token", "app_1", "--table-id", "tbl_1", "--record-id", "rec_1", "--fields-json", `{"Title":"Updated"}`})
+	cmd.SetArgs([]string{"record", "update", "tbl_1", "rec_1", "--app-token", "app_1", "--fields-json", `{"Title":"Updated"}`})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("base record update error: %v", err)
 	}

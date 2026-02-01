@@ -17,7 +17,7 @@ func newDrivePermissionsCmd(state *appState) *cobra.Command {
 		Short: "Manage Drive file permissions",
 		Long: `Manage Drive file collaborator permissions.
 
-- file-token is the Drive file token (docx id, spreadsheet id, or file token).`,
+- file-token is the Drive file token (docx document_id, spreadsheet_token, or file_token).`,
 	}
 	cmd.AddCommand(newDrivePermissionAddCmd(state))
 	cmd.AddCommand(newDrivePermissionListCmd(state))
@@ -40,32 +40,20 @@ func newDrivePermissionAddCmd(state *appState) *cobra.Command {
 		Use:   "add <file-token> <member-type> <member-id>",
 		Short: "Add a Drive collaborator permission",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(3)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(3)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if fileToken != "" && fileToken != args[0] {
-					return errors.New("file-token provided twice")
-				}
-				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
-					return err
-				}
+			fileToken = strings.TrimSpace(args[0])
+			memberType = strings.TrimSpace(args[1])
+			memberID = strings.TrimSpace(args[2])
+			if fileToken == "" {
+				return errors.New("file-token is required")
 			}
-			if len(args) > 1 {
-				if memberType != "" && memberType != args[1] {
-					return errors.New("member-type provided twice")
-				}
-				if err := cmd.Flags().Set("member-type", args[1]); err != nil {
-					return err
-				}
+			if memberType == "" {
+				return errors.New("member-type is required")
 			}
-			if len(args) > 2 {
-				if memberID != "" && memberID != args[2] {
-					return errors.New("member-id provided twice")
-				}
-				if err := cmd.Flags().Set("member-id", args[2]); err != nil {
-					return err
-				}
+			if memberID == "" {
+				return errors.New("member-id is required")
 			}
 			return nil
 		},
@@ -119,17 +107,12 @@ func newDrivePermissionAddCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (docx/sheet id; or provide as positional argument)")
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
-	cmd.Flags().StringVar(&memberType, "member-type", "", "member id type (email, openid, unionid, openchat, opendepartmentid, userid, groupid, wikispaceid) (or provide as positional argument)")
-	cmd.Flags().StringVar(&memberID, "member-id", "", "member id (or provide as positional argument)")
 	cmd.Flags().StringVar(&perm, "perm", "", "permission role (view, edit, full_access)")
 	cmd.Flags().StringVar(&permType, "perm-type", "", "permission scope for wiki (container, single_page)")
 	cmd.Flags().StringVar(&memberKind, "member-kind", "", "collaborator type (user, chat, department, group, wiki_space_member, wiki_space_viewer, wiki_space_editor)")
 	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after adding permissions (user token only)")
 	_ = cmd.MarkFlagRequired("type")
-	_ = cmd.MarkFlagRequired("member-type")
-	_ = cmd.MarkFlagRequired("member-id")
 	_ = cmd.MarkFlagRequired("perm")
 	return cmd
 }
@@ -144,18 +127,11 @@ func newDrivePermissionListCmd(state *appState) *cobra.Command {
 		Use:   "list <file-token>",
 		Short: "List Drive collaborator permissions",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(1)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if fileToken != "" && fileToken != args[0] {
-					return errors.New("file-token provided twice")
-				}
-				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(fileToken) == "" {
+			fileToken = strings.TrimSpace(args[0])
+			if fileToken == "" {
 				return errors.New("file-token is required")
 			}
 			return nil
@@ -201,7 +177,6 @@ func newDrivePermissionListCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (docx/sheet id; or provide as positional argument)")
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
 	cmd.Flags().StringVar(&fields, "fields", "", "fields to return (comma-separated, optional)")
 	cmd.Flags().StringVar(&permType, "perm-type", "", "permission scope for wiki (container, single_page)")
@@ -223,41 +198,26 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 		Use:   "update <file-token> <member-type> <member-id>",
 		Short: "Update a Drive collaborator permission",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(3)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(3)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if fileToken != "" && fileToken != args[0] {
-					return errors.New("file-token provided twice")
-				}
-				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
-					return err
-				}
+			fileToken = strings.TrimSpace(args[0])
+			memberType = strings.TrimSpace(args[1])
+			memberID = strings.TrimSpace(args[2])
+			if fileToken == "" {
+				return errors.New("file-token is required")
 			}
-			if len(args) > 1 {
-				if memberType != "" && memberType != args[1] {
-					return errors.New("member-type provided twice")
-				}
-				if err := cmd.Flags().Set("member-type", args[1]); err != nil {
-					return err
-				}
+			if memberType == "" {
+				return errors.New("member-type is required")
 			}
-			if len(args) > 2 {
-				if memberID != "" && memberID != args[2] {
-					return errors.New("member-id provided twice")
-				}
-				if err := cmd.Flags().Set("member-id", args[2]); err != nil {
-					return err
-				}
+			if memberID == "" {
+				return errors.New("member-id is required")
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
-			}
-			if strings.TrimSpace(fileToken) == "" {
-				return errors.New("file-token is required")
 			}
 			if strings.TrimSpace(perm) == "" && strings.TrimSpace(permType) == "" && strings.TrimSpace(memberKind) == "" {
 				return errors.New("at least one of --perm, --perm-type, or --member-kind is required")
@@ -305,17 +265,12 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (docx/sheet id; or provide as positional argument)")
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
-	cmd.Flags().StringVar(&memberType, "member-type", "", "member id type (email, openid, unionid, openchat, opendepartmentid, userid, groupid, wikispaceid) (or provide as positional argument)")
-	cmd.Flags().StringVar(&memberID, "member-id", "", "member id (or provide as positional argument)")
 	cmd.Flags().StringVar(&perm, "perm", "", "permission role (view, edit, full_access)")
 	cmd.Flags().StringVar(&permType, "perm-type", "", "permission scope for wiki (container, single_page)")
 	cmd.Flags().StringVar(&memberKind, "member-kind", "", "collaborator type (user, chat, department, group, wiki_space_member, wiki_space_viewer, wiki_space_editor)")
 	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after updating permissions (user token only)")
 	_ = cmd.MarkFlagRequired("type")
-	_ = cmd.MarkFlagRequired("member-type")
-	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }
 
@@ -331,32 +286,20 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 		Use:   "delete <file-token> <member-type> <member-id>",
 		Short: "Delete a Drive collaborator permission",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(3)(cmd, args); err != nil {
+			if err := cobra.ExactArgs(3)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if fileToken != "" && fileToken != args[0] {
-					return errors.New("file-token provided twice")
-				}
-				if err := cmd.Flags().Set("file-token", args[0]); err != nil {
-					return err
-				}
+			fileToken = strings.TrimSpace(args[0])
+			memberType = strings.TrimSpace(args[1])
+			memberID = strings.TrimSpace(args[2])
+			if fileToken == "" {
+				return errors.New("file-token is required")
 			}
-			if len(args) > 1 {
-				if memberType != "" && memberType != args[1] {
-					return errors.New("member-type provided twice")
-				}
-				if err := cmd.Flags().Set("member-type", args[1]); err != nil {
-					return err
-				}
+			if memberType == "" {
+				return errors.New("member-type is required")
 			}
-			if len(args) > 2 {
-				if memberID != "" && memberID != args[2] {
-					return errors.New("member-id provided twice")
-				}
-				if err := cmd.Flags().Set("member-id", args[2]); err != nil {
-					return err
-				}
+			if memberID == "" {
+				return errors.New("member-id is required")
 			}
 			return nil
 		},
@@ -405,14 +348,9 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&fileToken, "file-token", "", "Drive file token (docx/sheet id; or provide as positional argument)")
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
-	cmd.Flags().StringVar(&memberType, "member-type", "", "member id type (email, openid, unionid, openchat, opendepartmentid, userid, groupid, wikispaceid) (or provide as positional argument)")
-	cmd.Flags().StringVar(&memberID, "member-id", "", "member id (or provide as positional argument)")
 	cmd.Flags().StringVar(&permType, "perm-type", "", "permission scope for wiki (container, single_page)")
 	cmd.Flags().StringVar(&memberKind, "member-kind", "", "collaborator type (user, chat, department, group, wiki_space_member, wiki_space_viewer, wiki_space_editor)")
 	_ = cmd.MarkFlagRequired("type")
-	_ = cmd.MarkFlagRequired("member-type")
-	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }

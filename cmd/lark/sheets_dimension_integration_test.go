@@ -91,18 +91,18 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 		// Put two sentinel values in A1 and A2.
 		_ = runIntegrationCLI(t, fx,
 			"sheets", "update",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A1:A2", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A1:A2", sheetID),
 			"--values", `[["top"],["bottom"]]`,
 		)
 
 		// Insert 1 row at index 1 (between row 1 and row 2).
 		insertPayload := runIntegrationCLI(t, fx,
 			"sheets", "rows", "insert",
-			"--spreadsheet-id", spreadsheetToken,
-			"--sheet-id", sheetID,
-			"--start-index", "1",
-			"--count", "1",
+			spreadsheetToken,
+			sheetID,
+			"1",
+			"1",
 		)
 		if _, ok := insertPayload["insert"]; !ok {
 			t.Fatalf("expected insert in output, got: %v", insertPayload)
@@ -111,15 +111,15 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 		// Write into the newly inserted row so the subsequent read is stable.
 		_ = runIntegrationCLI(t, fx,
 			"sheets", "update",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A2:A2", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A2:A2", sheetID),
 			"--values", `[["middle"]]`,
 		)
 
 		readPayload := runIntegrationCLI(t, fx,
 			"sheets", "read",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A1:A3", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A1:A3", sheetID),
 		)
 		col := readFirstColumnStrings(t, readPayload)
 		if len(col) < 3 || col[0] != "top" || col[1] != "middle" || col[2] != "bottom" {
@@ -128,10 +128,10 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 
 		deletePayload := runIntegrationCLI(t, fx,
 			"sheets", "rows", "delete",
-			"--spreadsheet-id", spreadsheetToken,
-			"--sheet-id", sheetID,
-			"--start-index", "1",
-			"--count", "1",
+			spreadsheetToken,
+			sheetID,
+			"1",
+			"1",
 		)
 		if _, ok := deletePayload["delete"]; !ok {
 			t.Fatalf("expected delete in output, got: %v", deletePayload)
@@ -139,8 +139,8 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 
 		readPayload = runIntegrationCLI(t, fx,
 			"sheets", "read",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A1:A2", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A1:A2", sheetID),
 		)
 		col = readFirstColumnStrings(t, readPayload)
 		if len(col) < 2 || col[0] != "top" || col[1] != "bottom" {
@@ -152,17 +152,17 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 		// Put two sentinel values in A1 and B1.
 		_ = runIntegrationCLI(t, fx,
 			"sheets", "update",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A1:B1", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A1:B1", sheetID),
 			"--values", `[["left","right"]]`,
 		)
 
 		insertPayload := runIntegrationCLI(t, fx,
 			"sheets", "cols", "insert",
-			"--spreadsheet-id", spreadsheetToken,
-			"--sheet-id", sheetID,
-			"--start-index", "1",
-			"--count", "1",
+			spreadsheetToken,
+			sheetID,
+			"1",
+			"1",
 		)
 		if _, ok := insertPayload["insert"]; !ok {
 			t.Fatalf("expected insert in output, got: %v", insertPayload)
@@ -171,15 +171,15 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 		// Write into the newly inserted column.
 		_ = runIntegrationCLI(t, fx,
 			"sheets", "update",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!B1:B1", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!B1:B1", sheetID),
 			"--values", `[["middlecol"]]`,
 		)
 
 		readPayload := runIntegrationCLI(t, fx,
 			"sheets", "read",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A1:C1", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A1:C1", sheetID),
 		)
 		row := readRowStrings(t, readPayload)
 		if len(row) < 3 || row[0] != "left" || row[1] != "middlecol" || row[2] != "right" {
@@ -188,10 +188,10 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 
 		deletePayload := runIntegrationCLI(t, fx,
 			"sheets", "cols", "delete",
-			"--spreadsheet-id", spreadsheetToken,
-			"--sheet-id", sheetID,
-			"--start-index", "1",
-			"--count", "1",
+			spreadsheetToken,
+			sheetID,
+			"1",
+			"1",
 		)
 		if _, ok := deletePayload["delete"]; !ok {
 			t.Fatalf("expected delete in output, got: %v", deletePayload)
@@ -199,8 +199,8 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 
 		readPayload = runIntegrationCLI(t, fx,
 			"sheets", "read",
-			"--spreadsheet-id", spreadsheetToken,
-			"--range", fmt.Sprintf("%s!A1:B1", sheetID),
+			spreadsheetToken,
+			fmt.Sprintf("%s!A1:B1", sheetID),
 		)
 		row = readRowStrings(t, readPayload)
 		if len(row) < 2 || row[0] != "left" || row[1] != "right" {

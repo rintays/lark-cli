@@ -23,16 +23,12 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 		Use:   "create <table-id> <name>",
 		Short: "Create a Bitable field",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MaximumNArgs(2)(cmd, args); err != nil {
+			if err := cobra.RangeArgs(1, 2)(cmd, args); err != nil {
 				return err
 			}
-			if len(args) > 0 {
-				if tableID != "" && tableID != args[0] {
-					return errors.New("table-id provided twice")
-				}
-				if err := cmd.Flags().Set("table-id", args[0]); err != nil {
-					return err
-				}
+			tableID = strings.TrimSpace(args[0])
+			if tableID == "" {
+				return errors.New("table-id is required")
 			}
 			if len(args) > 1 {
 				if fieldName != "" && fieldName != args[1] {
@@ -41,6 +37,9 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("name", args[1]); err != nil {
 					return err
 				}
+			}
+			if strings.TrimSpace(fieldName) == "" {
+				return errors.New("name is required")
 			}
 			fieldTypeNameSet := cmd.Flags().Changed("field-type")
 			fieldTypeIDSet := cmd.Flags().Changed("type")
@@ -89,15 +88,12 @@ func newBaseFieldCreateCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&appToken, "app-token", "", "Bitable app token")
-	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&fieldName, "name", "", "Field name (or provide as positional argument)")
 	cmd.Flags().StringVar(&fieldTypeName, "field-type", "", "Field type name or id (e.g. text, number, 1). Prefer this over --type")
 	cmd.Flags().IntVar(&fieldType, "type", 0, "Field type id (deprecated; use --field-type)")
 	cmd.Flags().StringVar(&propertyJSON, "property-json", "", "Field property JSON (object; see `bases field types` for hints)")
 	cmd.Flags().StringVar(&descriptionJSON, "description-json", "", "Field description JSON (object)")
 	_ = cmd.MarkFlagRequired("app-token")
-	_ = cmd.MarkFlagRequired("table-id")
-	_ = cmd.MarkFlagRequired("name")
 	return cmd
 }
 
