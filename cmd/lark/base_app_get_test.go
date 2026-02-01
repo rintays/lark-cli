@@ -65,3 +65,15 @@ func TestBaseAppGetCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestBaseAppGetCommandRequiresAppToken(t *testing.T) {
+	cmd := newBaseCmd(&appState{})
+	cmd.SetArgs([]string{"app", "info"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"app-token\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
