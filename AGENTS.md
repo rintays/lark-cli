@@ -111,3 +111,4 @@
 - 2026-02-01: Removed docs get/doc create legacy flags for required args, added best-effort URL fetch after docs create, and unescaped CLI content for docs convert/overwrite.
 - 2026-02-01: Calendar get now renders key/value details for all event fields and defaults to fetching attendees/meeting settings.
 - 2026-02-01: Calendar get now groups nested fields (time/location/vchat/check-in) into readable single-line values and skips empty subfields.
+- 2026-02-01: Calendar create/update now expose all event fields via flags (removed body-json/body-file shortcuts) and refreshed README examples.
