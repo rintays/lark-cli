@@ -12,7 +12,7 @@ func newBaseAppGetCmd(state *appState) *cobra.Command {
 	var appToken string
 
 	cmd := &cobra.Command{
-		Use:     "info <app-token>",
+		Use:     "info [app-token]", 
 		Aliases: []string{"get"},
 		Short:   "Get a Bitable app",
 		Args: func(cmd *cobra.Command, args []string) error {
