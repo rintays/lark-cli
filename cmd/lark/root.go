@@ -431,7 +431,11 @@ func expireUserToken(state *appState, account string, cause error) error {
 func execute() int {
 	cmd := newRootCmd()
 	targetCmd := commandForArgs(cmd, os.Args[1:])
-	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+	parent := cmd.Context()
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, stop := signal.NotifyContext(parent, os.Interrupt)
 	defer stop()
 	if err := cmd.ExecuteContext(ctx); err != nil {
 		if targetCmd != nil && !isUsageError(err) && isRequiredFlagError(err) {
