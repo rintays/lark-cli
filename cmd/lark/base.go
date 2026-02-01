@@ -25,6 +25,7 @@ A base (also called an app) is the top-level container. Each base contains one o
 Relationships: app -> tables -> fields + records; views belong to a table.
 Most subcommands require the Bitable app token to identify the base.`,
 	}
+	cmd.AddCommand(newBaseListCmd(state))
 	cmd.AddCommand(newBaseAppCmd(state))
 	cmd.AddCommand(newBaseTableCmd(state))
 	cmd.AddCommand(newBaseFieldCmd(state))
@@ -38,6 +39,7 @@ func newBaseAppCmd(state *appState) *cobra.Command {
 		Use:   "app",
 		Short: "Manage Bitable apps",
 	}
+	cmd.AddCommand(newBaseAppListCmd(state))
 	cmd.AddCommand(newBaseAppCreateCmd(state))
 	cmd.AddCommand(newBaseAppCopyCmd(state))
 	cmd.AddCommand(newBaseAppGetCmd(state))
