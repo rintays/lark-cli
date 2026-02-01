@@ -118,6 +118,7 @@
 - 2026-02-01: Added drive permission member list/update/delete commands and clarified docs/sheets help about using drive permissions with file tokens.
 - 2026-02-01: Clarified wiki help text to mention using drive permissions for underlying Drive objects.
 - 2026-02-01: Docs create/info now attempt Drive metadata URL lookup with user-token fallback when needed.
+- 2026-02-02: Users search now enriches emails and department names (name + ID) via batch user/department lookups.
 - 2026-02-01: Docs URL lookup now always retries with user token when available.
 - 2026-02-01: Docs get --format md now renders Markdown from docx blocks instead of raw_content.
 - 2026-02-01: Switched users search to search/v1/user with positional query, user-token scopes, and updated output/tests/docs.

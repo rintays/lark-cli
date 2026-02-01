@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	contact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
 
 type SearchUsersRequest struct {
@@ -99,5 +100,148 @@ func (c *Client) SearchUsers(ctx context.Context, userAccessToken string, req Se
 			result.HasMore = *resp.Data.HasMore
 		}
 	}
+
+	if len(result.Users) == 0 {
+		return result, nil
+	}
+	if err := c.enrichSearchUsers(ctx, userAccessToken, result.Users); err != nil {
+		return result, err
+	}
 	return result, nil
+}
+
+func (c *Client) enrichSearchUsers(ctx context.Context, userAccessToken string, users []User) error {
+	if !c.available() {
+		return ErrUnavailable
+	}
+	if len(users) == 0 {
+		return nil
+	}
+	userAccessToken = strings.TrimSpace(userAccessToken)
+	if userAccessToken == "" {
+		return errors.New("user access token is required")
+	}
+
+	userIDs := make([]string, 0, len(users))
+	for _, user := range users {
+		if user.UserID != "" {
+			userIDs = append(userIDs, user.UserID)
+		}
+	}
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	userReq := contact.NewBatchUserReqBuilder().
+		UserIds(userIDs).
+		UserIdType("user_id").
+		DepartmentIdType("department_id").
+		Build()
+	userResp, err := c.sdk.Contact.V3.User.Batch(ctx, userReq, larkcore.WithUserAccessToken(userAccessToken))
+	if err != nil {
+		return err
+	}
+	if userResp == nil {
+		return errors.New("batch users failed: empty response")
+	}
+	if !userResp.Success() {
+		return fmt.Errorf("batch users failed: %s", userResp.Msg)
+	}
+
+	lookup := map[string]*contact.User{}
+	if userResp.Data != nil && userResp.Data.Items != nil {
+		for _, item := range userResp.Data.Items {
+			if item == nil || item.UserId == nil || *item.UserId == "" {
+				continue
+			}
+			lookup[*item.UserId] = item
+		}
+	}
+
+	departmentIDs := map[string]struct{}{}
+	for _, item := range lookup {
+		if item.DepartmentIds == nil {
+			continue
+		}
+		for _, deptID := range item.DepartmentIds {
+			if deptID == "" {
+				continue
+			}
+			departmentIDs[deptID] = struct{}{}
+		}
+	}
+
+	departmentNames := map[string]string{}
+	if len(departmentIDs) > 0 {
+		deptIDs := make([]string, 0, len(departmentIDs))
+		for deptID := range departmentIDs {
+			deptIDs = append(deptIDs, deptID)
+		}
+		deptReq := contact.NewBatchDepartmentReqBuilder().
+			DepartmentIds(deptIDs).
+			DepartmentIdType("department_id").
+			Build()
+		deptResp, err := c.sdk.Contact.V3.Department.Batch(ctx, deptReq, larkcore.WithUserAccessToken(userAccessToken))
+		if err != nil {
+			return err
+		}
+		if deptResp == nil {
+			return errors.New("batch departments failed: empty response")
+		}
+		if !deptResp.Success() {
+			return fmt.Errorf("batch departments failed: %s", deptResp.Msg)
+		}
+		if deptResp.Data != nil && deptResp.Data.Items != nil {
+			for _, dept := range deptResp.Data.Items {
+				if dept == nil || dept.DepartmentId == nil || *dept.DepartmentId == "" {
+					continue
+				}
+				name := ""
+				if dept.Name != nil {
+					name = *dept.Name
+				}
+				if name == "" && dept.I18nName != nil {
+					if dept.I18nName.ZhCn != nil && *dept.I18nName.ZhCn != "" {
+						name = *dept.I18nName.ZhCn
+					} else if dept.I18nName.EnUs != nil && *dept.I18nName.EnUs != "" {
+						name = *dept.I18nName.EnUs
+					} else if dept.I18nName.JaJp != nil && *dept.I18nName.JaJp != "" {
+						name = *dept.I18nName.JaJp
+					}
+				}
+				if name == "" {
+					continue
+				}
+				departmentNames[*dept.DepartmentId] = name
+			}
+		}
+	}
+
+	for i := range users {
+		user := &users[i]
+		detail, ok := lookup[user.UserID]
+		if !ok {
+			continue
+		}
+		if detail.Email != nil && *detail.Email != "" {
+			user.Email = *detail.Email
+		}
+		if detail.EnterpriseEmail != nil && *detail.EnterpriseEmail != "" {
+			user.EnterpriseEmail = *detail.EnterpriseEmail
+		}
+		if detail.DepartmentIds != nil {
+			user.DepartmentIDs = append([]string{}, detail.DepartmentIds...)
+			user.Departments = make([]DepartmentInfo, 0, len(detail.DepartmentIds))
+			for _, deptID := range detail.DepartmentIds {
+				if deptID == "" {
+					continue
+				}
+				user.Departments = append(user.Departments, DepartmentInfo{
+					ID:   deptID,
+					Name: departmentNames[deptID],
+				})
+			}
+		}
+	}
+	return nil
 }

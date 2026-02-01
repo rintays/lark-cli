@@ -143,8 +143,12 @@ func formatUserSearchLine(user larksdk.User) string {
 	if id == "" {
 		id = user.OpenID
 	}
-	departments := strings.Join(user.DepartmentIDs, ",")
-	return fmt.Sprintf("%s\t%s\t%s\t%s", id, user.Name, user.Email, departments)
+	email := user.Email
+	if email == "" {
+		email = user.EnterpriseEmail
+	}
+	departments := formatUserDepartments(user)
+	return fmt.Sprintf("%s\t%s\t%s\t%s", id, user.Name, email, departments)
 }
 
 func formatUserLine(user larksdk.User) string {
@@ -153,4 +157,22 @@ func formatUserLine(user larksdk.User) string {
 		id = user.OpenID
 	}
 	return fmt.Sprintf("%s\t%s\t%s\t%s", id, user.Name, user.Email, user.Mobile)
+}
+
+func formatUserDepartments(user larksdk.User) string {
+	if len(user.Departments) > 0 {
+		parts := make([]string, 0, len(user.Departments))
+		for _, dept := range user.Departments {
+			if dept.ID == "" {
+				continue
+			}
+			if dept.Name != "" {
+				parts = append(parts, fmt.Sprintf("%s(%s)", dept.Name, dept.ID))
+				continue
+			}
+			parts = append(parts, dept.ID)
+		}
+		return strings.Join(parts, ",")
+	}
+	return strings.Join(user.DepartmentIDs, ",")
 }

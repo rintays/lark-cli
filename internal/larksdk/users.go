@@ -167,8 +167,14 @@ func mapContactUser(user *contact.User) User {
 	if user.Email != nil {
 		result.Email = *user.Email
 	}
+	if user.EnterpriseEmail != nil {
+		result.EnterpriseEmail = *user.EnterpriseEmail
+	}
 	if user.Mobile != nil {
 		result.Mobile = *user.Mobile
+	}
+	if user.DepartmentIds != nil {
+		result.DepartmentIDs = append([]string{}, user.DepartmentIds...)
 	}
 	return result
 }

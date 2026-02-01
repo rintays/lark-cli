@@ -346,14 +346,21 @@ type ReserveCorrectionCheckInfo struct {
 	InvalidHostIDList []string `json:"invalid_host_id_list,omitempty"`
 }
 
+type DepartmentInfo struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 type User struct {
-	UserID        string      `json:"user_id"`
-	OpenID        string      `json:"open_id"`
-	Name          string      `json:"name"`
-	Email         string      `json:"email"`
-	Mobile        string      `json:"mobile"`
-	DepartmentIDs []string    `json:"department_ids,omitempty"`
-	Avatar        *AvatarInfo `json:"avatar,omitempty"`
+	UserID          string           `json:"user_id"`
+	OpenID          string           `json:"open_id"`
+	Name            string           `json:"name"`
+	Email           string           `json:"email"`
+	EnterpriseEmail string           `json:"enterprise_email,omitempty"`
+	Mobile          string           `json:"mobile"`
+	DepartmentIDs   []string         `json:"department_ids,omitempty"`
+	Departments     []DepartmentInfo `json:"departments,omitempty"`
+	Avatar          *AvatarInfo      `json:"avatar,omitempty"`
 }
 
 type AvatarInfo struct {
