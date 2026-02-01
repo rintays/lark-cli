@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -36,12 +35,6 @@ func newBaseRecordDeleteCmd(state *appState) *cobra.Command {
 					return err
 				}
 			}
-			if strings.TrimSpace(tableID) == "" {
-				return errors.New("table-id is required")
-			}
-			if strings.TrimSpace(recordID) == "" {
-				return errors.New("record-id is required")
-			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -69,5 +62,7 @@ func newBaseRecordDeleteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&tableID, "table-id", "", "Bitable table id (or provide as positional argument)")
 	cmd.Flags().StringVar(&recordID, "record-id", "", "Bitable record id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("app-token")
+	_ = cmd.MarkFlagRequired("table-id")
+	_ = cmd.MarkFlagRequired("record-id")
 	return cmd
 }

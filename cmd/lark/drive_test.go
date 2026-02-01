@@ -215,6 +215,18 @@ func TestDriveSearchCommand(t *testing.T) {
 	}
 }
 
+func TestDriveSearchCommandRequiresQuery(t *testing.T) {
+	cmd := newDriveCmd(&appState{})
+	cmd.SetArgs([]string{"search"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"query\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDriveSearchCommandRespectsPagesCap(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 	callCount := 0
@@ -963,6 +975,21 @@ func TestDriveUploadRequiresFileBeforeHTTP(t *testing.T) {
 		t.Fatal("expected error")
 	}
 	if err.Error() != "file is required" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDriveDownloadRequiresFileToken(t *testing.T) {
+	outDir := t.TempDir()
+	outPath := filepath.Join(outDir, "download.txt")
+
+	cmd := newDriveCmd(&appState{})
+	cmd.SetArgs([]string{"download", "--out", outPath})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"file-token\" not set" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

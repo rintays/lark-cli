@@ -113,3 +113,15 @@ func TestWikiTaskInfoCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 		t.Fatalf("expected JSON-only output, got: %q", buf.String())
 	}
 }
+
+func TestWikiTaskInfoCommandRequiresTaskID(t *testing.T) {
+	cmd := newWikiCmd(&appState{})
+	cmd.SetArgs([]string{"task", "info"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "required flag(s) \"task-id\" not set" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

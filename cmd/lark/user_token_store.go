@@ -173,40 +173,63 @@ func getKeyringToken(state *appState, account string) (userToken, bool, error) {
 	if state == nil {
 		return userToken{}, false, errors.New("state is required")
 	}
+
+	// v2: bucketed by (profile, base_url, app_id).
 	name := keyringUsername(state, account)
 	value, err := keyring.Get(keyringServiceName, name)
-	if err != nil {
-		if errors.Is(err, keyring.ErrNotFound) {
-			// Backward compat: tokens used to be keyed by config path only.
-			legacy := legacyKeyringUsername(state.ConfigPath, account)
-			legacyValue, legacyErr := keyring.Get(keyringServiceName, legacy)
-			if legacyErr != nil {
-				if errors.Is(legacyErr, keyring.ErrNotFound) {
-					return userToken{}, false, nil
-				}
-				if errors.Is(legacyErr, keyring.ErrUnsupportedPlatform) {
-					return userToken{}, false, errors.New("keychain backend is not supported on this platform; use keyring_backend=file")
-				}
-				return userToken{}, false, legacyErr
-			}
-			var token userToken
-			if err := json.Unmarshal([]byte(legacyValue), &token); err != nil {
-				return userToken{}, false, fmt.Errorf("invalid keyring token data: %w", err)
-			}
-			// Best-effort migration to the new bucketed key.
-			_ = saveKeyringToken(state, account, token)
-			_ = deleteLegacyKeyringToken(state.ConfigPath, account)
-			return token, true, nil
+	if err == nil {
+		var token userToken
+		if err := json.Unmarshal([]byte(value), &token); err != nil {
+			return userToken{}, false, fmt.Errorf("invalid keyring token data: %w", err)
 		}
+		return token, true, nil
+	}
+	if !errors.Is(err, keyring.ErrNotFound) {
 		if errors.Is(err, keyring.ErrUnsupportedPlatform) {
 			return userToken{}, false, errors.New("keychain backend is not supported on this platform; use keyring_backend=file")
 		}
 		return userToken{}, false, err
 	}
+
+	// v1: bucketed by (config_path, base_url, app_id).
+	v1Name := keyringUsernameV1(state, account)
+	v1Value, v1Err := keyring.Get(keyringServiceName, v1Name)
+	if v1Err == nil {
+		var token userToken
+		if err := json.Unmarshal([]byte(v1Value), &token); err != nil {
+			return userToken{}, false, fmt.Errorf("invalid keyring token data: %w", err)
+		}
+		// Best-effort migration to v2.
+		_ = saveKeyringToken(state, account, token)
+		_ = deleteKeyringTokenV1(state, account)
+		return token, true, nil
+	}
+	if v1Err != nil && !errors.Is(v1Err, keyring.ErrNotFound) {
+		if errors.Is(v1Err, keyring.ErrUnsupportedPlatform) {
+			return userToken{}, false, errors.New("keychain backend is not supported on this platform; use keyring_backend=file")
+		}
+		return userToken{}, false, v1Err
+	}
+
+	// v0 legacy: tokens used to be keyed by config path only.
+	legacy := legacyKeyringUsername(state.ConfigPath, account)
+	legacyValue, legacyErr := keyring.Get(keyringServiceName, legacy)
+	if legacyErr != nil {
+		if errors.Is(legacyErr, keyring.ErrNotFound) {
+			return userToken{}, false, nil
+		}
+		if errors.Is(legacyErr, keyring.ErrUnsupportedPlatform) {
+			return userToken{}, false, errors.New("keychain backend is not supported on this platform; use keyring_backend=file")
+		}
+		return userToken{}, false, legacyErr
+	}
 	var token userToken
-	if err := json.Unmarshal([]byte(value), &token); err != nil {
+	if err := json.Unmarshal([]byte(legacyValue), &token); err != nil {
 		return userToken{}, false, fmt.Errorf("invalid keyring token data: %w", err)
 	}
+	// Best-effort migration to v2.
+	_ = saveKeyringToken(state, account, token)
+	_ = deleteLegacyKeyringToken(state.ConfigPath, account)
 	return token, true, nil
 }
 
@@ -232,7 +255,8 @@ func deleteKeyringToken(state *appState, account string) error {
 	if state == nil {
 		return errors.New("state is required")
 	}
-	// Delete both new and legacy keys so `auth user accounts remove` does not
+
+	// Delete v2, v1, and legacy keys so `auth user accounts remove` does not
 	// leave stale credentials behind.
 	name := keyringUsername(state, account)
 	err := keyring.Delete(keyringServiceName, name)
@@ -244,6 +268,14 @@ func deleteKeyringToken(state *appState, account string) error {
 			return err
 		}
 	}
+
+	if v1Err := deleteKeyringTokenV1(state, account); v1Err != nil {
+		if errors.Is(v1Err, keyring.ErrUnsupportedPlatform) {
+			return errors.New("keychain backend is not supported on this platform; use keyring_backend=file")
+		}
+		return v1Err
+	}
+
 	legacyErr := deleteLegacyKeyringToken(state.ConfigPath, account)
 	if legacyErr != nil {
 		if errors.Is(legacyErr, keyring.ErrUnsupportedPlatform) {
@@ -266,15 +298,42 @@ func deleteLegacyKeyringToken(configPath, account string) error {
 	return nil
 }
 
+// deleteKeyringTokenV1 deletes the pre-v2 keyring entry (bucketed by
+// config_path, base_url, app_id).
+func deleteKeyringTokenV1(state *appState, account string) error {
+	if state == nil {
+		return errors.New("state is required")
+	}
+	name := keyringUsernameV1(state, account)
+	err := keyring.Delete(keyringServiceName, name)
+	if err != nil {
+		if errors.Is(err, keyring.ErrNotFound) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
 // keyringUsername returns a stable keyring username for the user token.
 //
-// It includes a "client bucket" derived from (profile=config path, base_url,
-// app_id) so that refresh tokens do not get mixed across apps or platforms.
+// It includes a "client bucket" derived from (profile, base_url, app_id) so
+// that refresh tokens do not get mixed across apps, platforms, or profiles.
 func keyringUsername(state *appState, account string) string {
 	if account == "" {
 		account = defaultUserAccountName
 	}
 	bucket := userTokenBucketID(state)
+	return fmt.Sprintf("%s:%s", bucket, account)
+}
+
+// keyringUsernameV1 is the previous bucketing scheme, which used config_path
+// (rather than profile) to isolate tokens.
+func keyringUsernameV1(state *appState, account string) string {
+	if account == "" {
+		account = defaultUserAccountName
+	}
+	bucket := userTokenBucketIDV1(state)
 	return fmt.Sprintf("%s:%s", bucket, account)
 }
 
@@ -287,6 +346,25 @@ func legacyKeyringUsername(configPath, account string) string {
 }
 
 func userTokenBucketID(state *appState) string {
+	if state == nil {
+		return ""
+	}
+	profile := strings.TrimSpace(state.Profile)
+	if profile == "" || strings.EqualFold(profile, "default") {
+		profile = "default"
+	}
+	baseURL := ""
+	appID := ""
+	if state.Config != nil {
+		baseURL = strings.ToLower(normalizeBaseURL(state.Config.BaseURL))
+		appID = strings.TrimSpace(state.Config.AppID)
+	}
+	seed := strings.Join([]string{profile, baseURL, appID}, "\n")
+	hash := sha256.Sum256([]byte(seed))
+	return hex.EncodeToString(hash[:])
+}
+
+func userTokenBucketIDV1(state *appState) string {
 	if state == nil {
 		return ""
 	}

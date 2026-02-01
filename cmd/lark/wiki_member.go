@@ -123,15 +123,6 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 					return err
 				}
 			}
-			if strings.TrimSpace(spaceID) == "" {
-				return errors.New("space-id is required")
-			}
-			if strings.TrimSpace(memberType) == "" {
-				return errors.New("member-type is required")
-			}
-			if strings.TrimSpace(memberID) == "" {
-				return errors.New("member-id is required")
-			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -171,6 +162,8 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&memberRole, "role", "member", "member role (member, admin)")
 	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after adding permissions")
 	_ = cmd.MarkFlagRequired("space-id")
+	_ = cmd.MarkFlagRequired("member-type")
+	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }
 
@@ -201,15 +194,6 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 				if err := cmd.Flags().Set("member-id", args[1]); err != nil {
 					return err
 				}
-			}
-			if strings.TrimSpace(spaceID) == "" {
-				return errors.New("space-id is required")
-			}
-			if strings.TrimSpace(memberType) == "" {
-				return errors.New("member-type is required")
-			}
-			if strings.TrimSpace(memberID) == "" {
-				return errors.New("member-id is required")
 			}
 			return nil
 		},
@@ -244,5 +228,7 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&memberType, "member-type", "", "member type (userid, email, openid, unionid, openchat, opendepartmentid) (or provide as positional argument)")
 	cmd.Flags().StringVar(&memberID, "member-id", "", "member id (or provide as positional argument)")
 	_ = cmd.MarkFlagRequired("space-id")
+	_ = cmd.MarkFlagRequired("member-type")
+	_ = cmd.MarkFlagRequired("member-id")
 	return cmd
 }
