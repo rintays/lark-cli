@@ -580,6 +580,7 @@ Example:
 ./lark bases view list --help
 ./lark bases view create --help
 ./lark bases view delete --help
+./lark bases view info --help
 ./lark bases record create --help
 ./lark bases record batch-create --help
 ./lark bases record batch-delete --help
