@@ -845,6 +845,14 @@ func flagIntPtr(cmd *cobra.Command, name string, value int) *int {
 	return &v
 }
 
+func flagFloatPtr(cmd *cobra.Command, name string, value float64) *float64 {
+	if !cmd.Flags().Changed(name) {
+		return nil
+	}
+	v := value
+	return &v
+}
+
 func buildCalendarReminders(values []int) []larksdk.CalendarEventReminder {
 	if len(values) == 0 {
 		return nil
@@ -933,8 +941,8 @@ func buildCalendarLocation(cmd *cobra.Command, name, address string, latitude, l
 	return &larksdk.CalendarEventLocation{
 		Name:      name,
 		Address:   address,
-		Latitude:  latitude,
-		Longitude: longitude,
+		Latitude:  flagFloatPtr(cmd, "location-latitude", latitude),
+		Longitude: flagFloatPtr(cmd, "location-longitude", longitude),
 	}
 }
 

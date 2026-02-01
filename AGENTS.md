@@ -112,6 +112,7 @@
 - 2026-02-01: Calendar get now renders key/value details for all event fields, defaults to fetching attendees/meeting settings, and updates SDK models/README/tests.
 - 2026-02-01: Calendar get now groups nested fields (time/location/vchat/check-in) into readable single-line values and skips empty subfields.
 - 2026-02-01: Calendar create/update now expose all event fields via flags (removed body-json/body-file shortcuts) and refreshed README examples.
+- 2026-02-01: Fixed calendar location flag handling to use pointer coordinates and resolved build errors.
 - 2026-02-01: Docs get now unescapes content, strips title from raw content output, and docs create backfills missing URLs from Drive metadata.
 - 2026-02-01: Added drive collaborator permissions command (`lark drive permissions add`) backed by drive permission members API, with tests/docs updates.
 - 2026-02-01: Added drive permission member list/update/delete commands and clarified docs/sheets help about using drive permissions with file tokens.
