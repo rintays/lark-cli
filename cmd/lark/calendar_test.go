@@ -444,7 +444,10 @@ func TestCalendarGetCommand(t *testing.T) {
 		t.Fatalf("missing organizer output: %q", output)
 	}
 	if !strings.Contains(output, "attendees.count\t1") {
-		t.Fatalf("unexpected output: %q", buf.String())
+		t.Fatalf("missing attendees count output: %q", output)
+	}
+	if !strings.Contains(output, "summary\tReview") {
+		t.Fatalf("missing summary output: %q", output)
 	}
 }
 
