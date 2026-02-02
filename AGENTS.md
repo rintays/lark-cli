@@ -159,3 +159,9 @@
 - 2026-02-02: Added `lark wiki node tree` command for ASCII tree output with node tokens, plus docs/tests updates.
 - 2026-02-02: Capped wiki node tree page_size to 50 to match API limits and avoid invalid page_size errors.
 - 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.
+- 2026-02-02: Refreshed README structure and examples to align with gogcli-style flow (short Quickstart, output/auth sections, streamlined examples).
+- 2026-02-02: Removed informal "(today)" wording from README section headings.
+- 2026-02-02: Reordered User OAuth section to recommend services-based authorization first.
+- 2026-02-02: Updated README install section to mirror gogcli-style Homebrew/Build-from-source flow and moved releases below.
+- 2026-02-02: Clarified build-from-source usage by separating go install vs local binary commands in README.
+- 2026-02-02: Added concepts sections for Docs/Drive/Sheets/Wiki/Mail/Calendar/Meetings/Minutes/Tasks/IM in README.
