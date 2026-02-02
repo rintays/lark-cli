@@ -7,7 +7,7 @@ import (
 
 func TestListUserOAuthServicesStableSorted(t *testing.T) {
 	got := ListUserOAuthServices()
-	want := []string{"calendar", "docs", "docx", "drive", "drive-export", "mail", "mail-send", "search-docs", "search-message", "search-user", "sheets", "task", "task-write", "tasklist", "tasklist-write", "wiki"}
+	want := []string{"calendar", "docs", "docx", "drive", "drive-export", "im", "mail", "mail-send", "search-docs", "search-message", "search-user", "sheets", "task", "task-write", "tasklist", "tasklist-write", "wiki"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ListUserOAuthServices()=%v, want %v", got, want)
 	}

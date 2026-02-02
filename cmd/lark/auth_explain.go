@@ -48,9 +48,23 @@ func newAuthExplainCmd(state *appState) *cobra.Command {
 			var suggestedScopes []string
 			suggestedCmd := ""
 			if requiresUser {
-				suggestedScopes, err = authregistry.SuggestedUserOAuthScopesFromServices(services, readonly)
-				if err != nil {
-					return err
+				// By default, suggest the minimal scopes the command needs.
+				// When --readonly is set, prefer readonly variants when available.
+				if readonly {
+					suggestedScopes, err = authregistry.SuggestedUserOAuthScopesFromServices(services, true)
+					if err != nil {
+						return err
+					}
+				} else {
+					suggestedScopes = append([]string(nil), requiredUserScopes...)
+					// If we don't know required scopes yet, fall back to whatever the
+					// service registry can suggest.
+					if len(suggestedScopes) == 0 {
+						suggestedScopes, err = authregistry.SuggestedUserOAuthScopesFromServices(services, false)
+						if err != nil {
+							return err
+						}
+					}
 				}
 				if requiresOffline {
 					suggestedScopes = ensureOfflineAccess(suggestedScopes)
