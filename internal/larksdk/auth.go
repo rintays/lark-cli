@@ -80,7 +80,7 @@ func (c *Client) RefreshUserAccessToken(ctx context.Context, refreshToken string
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	httpClient := http.DefaultClient
+	var httpClient larkcore.HttpClient = http.DefaultClient
 	if c.coreConfig != nil && c.coreConfig.HttpClient != nil {
 		httpClient = c.coreConfig.HttpClient
 	}
