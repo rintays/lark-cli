@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	liptable "github.com/charmbracelet/lipgloss/table"
+	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 )
 
@@ -23,7 +25,7 @@ func (p Printer) Print(v any, text string) error {
 		return enc.Encode(v)
 	}
 	if p.Styled {
-		text = FormatText(text)
+		text = FormatText(text, terminalWidth(p.Writer))
 	}
 	_, err := fmt.Fprintln(p.Writer, text)
 	return err
@@ -44,7 +46,7 @@ func AutoStyle(w io.Writer) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func FormatText(text string) string {
+func FormatText(text string, width int) string {
 	if text == "" {
 		return text
 	}
@@ -81,51 +83,8 @@ func FormatText(text string) string {
 		}
 		return strings.Join(styled, "\n")
 	}
-
-	widths := make([]int, maxCols)
-	for _, row := range rows {
-		for i, col := range row {
-			w := lipgloss.Width(col)
-			if w > widths[i] {
-				widths[i] = w
-			}
-		}
-	}
-
-	headerRow := -1
-	separatorRow := -1
-	if len(rows) >= 2 && isSeparatorRow(rows[1]) {
-		headerRow = 0
-		separatorRow = 1
-	}
-
-	out := make([]string, 0, len(rows))
-	for rowIndex, row := range rows {
-		if len(row) == 1 && row[0] == "" {
-			out = append(out, "")
-			continue
-		}
-		var b strings.Builder
-		for colIndex, col := range row {
-			if colIndex >= len(widths) {
-				break
-			}
-			cell := col
-			if rowIndex == headerRow {
-				cell = theme.RenderHeader(cell)
-			}
-			if rowIndex == separatorRow {
-				cell = theme.RenderSeparator(cell)
-			}
-			style := lipgloss.NewStyle().Width(widths[colIndex]).Align(lipgloss.Left)
-			b.WriteString(style.Render(cell))
-			if colIndex < len(row)-1 {
-				b.WriteString("  ")
-			}
-		}
-		out = append(out, strings.TrimRight(b.String(), " "))
-	}
-	return strings.Join(out, "\n")
+	headers, dataRows := splitTableHeader(rows)
+	return renderTable(theme, headers, dataRows, width)
 }
 
 func TableText(headers []string, rows [][]string) string {
@@ -211,4 +170,71 @@ func TableTSVFromLines(headers []string, lines []string) string {
 		rows = append(rows, strings.Split(line, "\t"))
 	}
 	return TableTSV(headers, rows)
+}
+
+func terminalWidth(w io.Writer) int {
+	if w == nil {
+		return 0
+	}
+	type fdWriter interface {
+		Fd() uintptr
+	}
+	fw, ok := w.(fdWriter)
+	if !ok {
+		return 0
+	}
+	width, _, err := term.GetSize(fw.Fd())
+	if err != nil || width <= 0 {
+		return 0
+	}
+	return width
+}
+
+func splitTableHeader(rows [][]string) ([]string, [][]string) {
+	if len(rows) >= 2 && isSeparatorRow(rows[1]) {
+		if len(rows) > 2 {
+			return rows[0], rows[2:]
+		}
+		return rows[0], nil
+	}
+	return nil, rows
+}
+
+func renderTable(theme Theme, headers []string, rows [][]string, width int) string {
+	table := liptable.New().Wrap(true)
+	if width > 0 {
+		table.Width(width)
+	}
+
+	cellStyle := lipgloss.NewStyle().Padding(0, 1)
+	headerStyle := cellStyle
+	if theme.Styled {
+		headerStyle = theme.headerStyle.Copy().Padding(0, 1)
+	}
+
+	table.StyleFunc(func(row, col int) lipgloss.Style {
+		if row == liptable.HeaderRow {
+			return headerStyle
+		}
+		return cellStyle
+	})
+
+	table.Border(lipgloss.NormalBorder()).
+		BorderLeft(false).
+		BorderRight(false).
+		BorderTop(false).
+		BorderBottom(false).
+		BorderRow(false).
+		BorderColumn(false)
+
+	if len(headers) > 0 {
+		table.Headers(headers...).BorderHeader(true)
+		if theme.Styled {
+			table.BorderStyle(theme.separatorStyle)
+		}
+	}
+	if len(rows) > 0 {
+		table.Rows(rows...)
+	}
+	return table.Render()
 }
