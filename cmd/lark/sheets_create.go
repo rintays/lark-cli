@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newSheetsCreateCmd(state *appState) *cobra.Command {
@@ -20,7 +22,7 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -28,14 +30,14 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 			if strings.EqualFold(normalizedFolderID, "root") {
 				normalizedFolderID = ""
 			}
-			spreadsheetToken, err := state.SDK.CreateSpreadsheet(cmd.Context(), token, title, normalizedFolderID)
+			spreadsheetToken, err := state.SDK.CreateSpreadsheet(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), title, normalizedFolderID)
 			if err != nil {
 				return err
 			}
 			var defaultSheetID string
 			var defaultSheetTitle string
 			if state.SDK != nil {
-				metadata, err := state.SDK.GetSpreadsheetMetadata(cmd.Context(), token, spreadsheetToken)
+				metadata, err := state.SDK.GetSpreadsheetMetadata(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetToken)
 				if err != nil {
 					if strings.TrimSpace(sheetTitle) != "" {
 						return fmt.Errorf("resolve sheet id for --sheet-title: %w", err)
@@ -49,7 +51,7 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 				if defaultSheetID == "" {
 					return errors.New("sheet id is required to set --sheet-title")
 				}
-				if err := state.SDK.UpdateSpreadsheetSheetTitle(cmd.Context(), token, spreadsheetToken, defaultSheetID, sheetTitle); err != nil {
+				if err := state.SDK.UpdateSpreadsheetSheetTitle(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetToken, defaultSheetID, sheetTitle); err != nil {
 					return err
 				}
 				defaultSheetTitle = sheetTitle

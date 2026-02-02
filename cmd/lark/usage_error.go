@@ -29,6 +29,14 @@ func usageErrorWithUsage(cmd *cobra.Command, message string, hint string, usage 
 	}
 }
 
+func usagef(cmd *cobra.Command, format string, args ...any) error {
+	return usageErrorWithUsage(cmd, fmt.Sprintf(format, args...), "", cmd.UsageString())
+}
+
+func flagUsage(cmd *cobra.Command, message string) error {
+	return usageErrorWithUsage(cmd, message, "", cmd.UsageString())
+}
+
 func argsUsageError(cmd *cobra.Command, err error) error {
 	if err == nil {
 		return nil

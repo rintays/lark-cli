@@ -36,7 +36,7 @@ func newWikiMemberListCmd(state *appState) *cobra.Command {
 				limit = 50
 			}
 			spaceID = strings.TrimSpace(spaceID)
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				items := make([]larksdk.WikiSpaceMember, 0, limit)
 				pageToken := ""
 				remaining := limit
@@ -115,14 +115,17 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 			memberType = strings.TrimSpace(args[0])
 			memberID = strings.TrimSpace(args[1])
 			if memberType == "" {
-				return errors.New("member-type is required")
+				return argsUsageError(cmd, errors.New("member-type is required"))
 			}
 			if memberID == "" {
-				return errors.New("member-id is required")
+				return argsUsageError(cmd, errors.New("member-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete wiki member %s", memberID)); err != nil {
+				return err
+			}
 			spaceID = strings.TrimSpace(spaceID)
 			memberType = strings.TrimSpace(memberType)
 			memberID = strings.TrimSpace(memberID)
@@ -136,7 +139,7 @@ func newWikiMemberAddCmd(state *appState) *cobra.Command {
 				NeedNotification:    needNotification,
 				NeedNotificationSet: needNotificationSet,
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var member larksdk.WikiSpaceMember
 				var err error
 				switch tokenType {
@@ -199,7 +202,7 @@ func newWikiMemberDeleteCmd(state *appState) *cobra.Command {
 				MemberType: memberType,
 				MemberID:   memberID,
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var member larksdk.WikiSpaceMember
 				var err error
 				switch tokenType {

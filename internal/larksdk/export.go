@@ -42,7 +42,7 @@ func (r *getExportTaskResponse) Success() bool {
 	return r.Code == 0
 }
 
-func (c *Client) CreateExportTask(ctx context.Context, token string, req CreateExportTaskRequest) (string, error) {
+func (c *Client) CreateExportTask(ctx context.Context, token string, tokenType AccessTokenType, req CreateExportTaskRequest) (string, error) {
 	if c == nil || c.coreConfig == nil {
 		return "", ErrUnavailable
 	}
@@ -55,17 +55,17 @@ func (c *Client) CreateExportTask(ctx context.Context, token string, req CreateE
 	if req.FileExtension == "" {
 		return "", fmt.Errorf("file extension is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return "", errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return "", err
 	}
 	if c.exportTaskSDKAvailable() {
-		return c.createExportTaskSDK(ctx, tenantToken, req)
+		return c.createExportTaskSDK(ctx, option, req)
 	}
-	return c.createExportTaskCore(ctx, tenantToken, req)
+	return c.createExportTaskCore(ctx, option, req)
 }
 
-func (c *Client) createExportTaskSDK(ctx context.Context, tenantToken string, req CreateExportTaskRequest) (string, error) {
+func (c *Client) createExportTaskSDK(ctx context.Context, option larkcore.RequestOptionFunc, req CreateExportTaskRequest) (string, error) {
 	task := larkdrive.NewExportTaskBuilder().
 		Token(req.Token).
 		Type(req.Type).
@@ -74,7 +74,7 @@ func (c *Client) createExportTaskSDK(ctx context.Context, tenantToken string, re
 	resp, err := c.sdk.Drive.V1.ExportTask.Create(
 		ctx,
 		larkdrive.NewCreateExportTaskReqBuilder().ExportTask(task).Build(),
-		larkcore.WithTenantAccessToken(tenantToken),
+		option,
 	)
 	if err != nil {
 		return "", err
@@ -91,7 +91,7 @@ func (c *Client) createExportTaskSDK(ctx context.Context, tenantToken string, re
 	return *resp.Data.Ticket, nil
 }
 
-func (c *Client) createExportTaskCore(ctx context.Context, tenantToken string, req CreateExportTaskRequest) (string, error) {
+func (c *Client) createExportTaskCore(ctx context.Context, option larkcore.RequestOptionFunc, req CreateExportTaskRequest) (string, error) {
 	payload := map[string]any{
 		"token":          req.Token,
 		"type":           req.Type,
@@ -107,7 +107,7 @@ func (c *Client) createExportTaskCore(ctx context.Context, tenantToken string, r
 	}
 	apiReq.Body = payload
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return "", err
 	}
@@ -127,26 +127,26 @@ func (c *Client) createExportTaskCore(ctx context.Context, tenantToken string, r
 	return resp.Data.Ticket, nil
 }
 
-func (c *Client) GetExportTask(ctx context.Context, token, ticket string) (ExportTaskResult, error) {
+func (c *Client) GetExportTask(ctx context.Context, token string, tokenType AccessTokenType, ticket string) (ExportTaskResult, error) {
 	if c == nil || c.coreConfig == nil {
 		return ExportTaskResult{}, ErrUnavailable
 	}
 	if ticket == "" {
 		return ExportTaskResult{}, fmt.Errorf("export ticket is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return ExportTaskResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return ExportTaskResult{}, err
 	}
 	if c.exportTaskSDKAvailable() {
-		return c.getExportTaskSDK(ctx, tenantToken, ticket)
+		return c.getExportTaskSDK(ctx, option, ticket)
 	}
-	return c.getExportTaskCore(ctx, tenantToken, ticket)
+	return c.getExportTaskCore(ctx, option, ticket)
 }
 
-func (c *Client) getExportTaskSDK(ctx context.Context, tenantToken, ticket string) (ExportTaskResult, error) {
+func (c *Client) getExportTaskSDK(ctx context.Context, option larkcore.RequestOptionFunc, ticket string) (ExportTaskResult, error) {
 	req := larkdrive.NewGetExportTaskReqBuilder().Ticket(ticket).Build()
-	resp, err := c.sdk.Drive.V1.ExportTask.Get(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Drive.V1.ExportTask.Get(ctx, req, option)
 	if err != nil {
 		return ExportTaskResult{}, err
 	}
@@ -162,7 +162,7 @@ func (c *Client) getExportTaskSDK(ctx context.Context, tenantToken, ticket strin
 	return mapExportTask(resp.Data.Result), nil
 }
 
-func (c *Client) getExportTaskCore(ctx context.Context, tenantToken, ticket string) (ExportTaskResult, error) {
+func (c *Client) getExportTaskCore(ctx context.Context, option larkcore.RequestOptionFunc, ticket string) (ExportTaskResult, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/drive/v1/export_tasks/:ticket",
 		HttpMethod:                http.MethodGet,
@@ -172,7 +172,7 @@ func (c *Client) getExportTaskCore(ctx context.Context, tenantToken, ticket stri
 	}
 	apiReq.PathParams.Set("ticket", ticket)
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return ExportTaskResult{}, err
 	}
@@ -192,26 +192,26 @@ func (c *Client) getExportTaskCore(ctx context.Context, tenantToken, ticket stri
 	return resp.Data.Result, nil
 }
 
-func (c *Client) DownloadExportedFile(ctx context.Context, token, fileToken string) (io.ReadCloser, error) {
+func (c *Client) DownloadExportedFile(ctx context.Context, token string, tokenType AccessTokenType, fileToken string) (io.ReadCloser, error) {
 	if c == nil || c.coreConfig == nil {
 		return nil, ErrUnavailable
 	}
 	if fileToken == "" {
 		return nil, fmt.Errorf("export file token is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, resolved, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if c.exportTaskSDKAvailable() {
-		return c.downloadExportTaskSDK(ctx, tenantToken, fileToken)
+		return c.downloadExportTaskSDK(ctx, option, fileToken)
 	}
-	return c.downloadExportTaskCore(ctx, tenantToken, fileToken)
+	return c.downloadExportTaskCore(ctx, resolved, fileToken)
 }
 
-func (c *Client) downloadExportTaskSDK(ctx context.Context, tenantToken, fileToken string) (io.ReadCloser, error) {
+func (c *Client) downloadExportTaskSDK(ctx context.Context, option larkcore.RequestOptionFunc, fileToken string) (io.ReadCloser, error) {
 	req := larkdrive.NewDownloadExportTaskReqBuilder().FileToken(fileToken).Build()
-	resp, err := c.sdk.Drive.V1.ExportTask.Download(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Drive.V1.ExportTask.Download(ctx, req, option)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (c *Client) downloadExportTaskSDK(ctx context.Context, tenantToken, fileTok
 	return nil, errors.New("export download failed: empty file response")
 }
 
-func (c *Client) downloadExportTaskCore(ctx context.Context, tenantToken, fileToken string) (io.ReadCloser, error) {
+func (c *Client) downloadExportTaskCore(ctx context.Context, token, fileToken string) (io.ReadCloser, error) {
 	endpoint, err := c.endpoint("/open-apis/drive/v1/export_tasks/file/" + url.PathEscape(fileToken) + "/download")
 	if err != nil {
 		return nil, err
@@ -236,7 +236,7 @@ func (c *Client) downloadExportTaskCore(ctx context.Context, tenantToken, fileTo
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Authorization", "Bearer "+tenantToken)
+	request.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := c.httpClient().Do(request)
 	if err != nil {

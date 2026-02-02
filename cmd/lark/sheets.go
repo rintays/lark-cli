@@ -71,7 +71,7 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -82,7 +82,7 @@ func newSheetsReadCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			valueRange, err := state.SDK.ReadSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange)
+			valueRange, err := state.SDK.ReadSheetRange(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID, resolvedRange)
 			if err != nil {
 				return err
 			}
@@ -120,14 +120,14 @@ func newSheetsInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			metadata, err := state.SDK.GetSpreadsheetMetadata(cmd.Context(), token, spreadsheetID)
+			metadata, err := state.SDK.GetSpreadsheetMetadata(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID)
 			if err != nil {
 				return err
 			}
@@ -156,11 +156,14 @@ func newSheetsDeleteCmd(state *appState) *cobra.Command {
 			}
 			spreadsheetID = strings.TrimSpace(token)
 			if spreadsheetID == "" {
-				return errors.New("spreadsheet-token is required")
+				return argsUsageError(cmd, errors.New("spreadsheet-token is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete spreadsheet %s", spreadsheetID)); err != nil {
+				return err
+			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
@@ -222,7 +225,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -236,7 +239,7 @@ func newSheetsUpdateCmd(state *appState) *cobra.Command {
 			if err := validateSheetRangeForValues(resolvedRange, values); err != nil {
 				return err
 			}
-			update, err := state.SDK.UpdateSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange, values)
+			update, err := state.SDK.UpdateSheetRange(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID, resolvedRange, values)
 			if err != nil {
 				return err
 			}
@@ -288,7 +291,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -299,7 +302,7 @@ func newSheetsAppendCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			appendResult, err := state.SDK.AppendSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange, values, insertDataOption)
+			appendResult, err := state.SDK.AppendSheetRange(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID, resolvedRange, values, insertDataOption)
 			if err != nil {
 				return err
 			}
@@ -344,7 +347,7 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -355,7 +358,7 @@ func newSheetsClearCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := state.SDK.ClearSheetRange(cmd.Context(), token, spreadsheetID, resolvedRange)
+			result, err := state.SDK.ClearSheetRange(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID, resolvedRange)
 			if err != nil {
 				return err
 			}

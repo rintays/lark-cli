@@ -29,7 +29,7 @@ func newWikiNodeListCmd(state *appState) *cobra.Command {
 			}
 			spaceID = strings.TrimSpace(spaceID)
 			parentNodeToken = strings.TrimSpace(parentNodeToken)
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				items := make([]larksdk.WikiNode, 0, limit)
 				pageToken := ""
 				remaining := limit

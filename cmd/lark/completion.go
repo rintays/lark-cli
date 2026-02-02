@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -31,7 +30,7 @@ func newCompletionCmd() *cobra.Command {
 			case "powershell":
 				return cmd.Root().GenPowerShellCompletion(out)
 			default:
-				return errors.New(fmt.Sprintf("unsupported shell %q (expected bash|zsh|fish|powershell)", shell))
+				return usageErrorWithUsage(cmd, fmt.Sprintf("unsupported shell %q (expected bash|zsh|fish|powershell)", shell), "", cmd.UsageString())
 			}
 		},
 	}

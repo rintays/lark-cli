@@ -30,7 +30,7 @@ func newWikiNodeInfoCmd(state *appState) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			nodeToken := strings.TrimSpace(args[0])
 			objType := strings.TrimSpace(args[1])
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var node larksdk.WikiNode
 				var err error
 				req := larksdk.GetWikiNodeRequest{

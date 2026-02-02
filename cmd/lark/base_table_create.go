@@ -23,12 +23,12 @@ func newBaseTableCreateCmd(state *appState) *cobra.Command {
 			}
 			tableName = strings.TrimSpace(args[0])
 			if tableName == "" {
-				return errors.New("name is required")
+				return argsUsageError(cmd, errors.New("name is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				table, err := sdk.CreateBaseTable(ctx, token, appToken, tableName)
 				if err != nil {
 					return nil, "", err

@@ -235,7 +235,7 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 	// Spreadsheet fixture
 	if fx.SpreadsheetToken == "" {
 		ssTitle := integrationFixturePrefix + "sheet-" + time.Now().Format("20060102-150405")
-		ssToken, err := sdk.CreateSpreadsheet(t.Context(), token, ssTitle, fx.DriveFolderToken)
+		ssToken, err := sdk.CreateSpreadsheet(t.Context(), token, larksdk.AccessTokenTenant, ssTitle, fx.DriveFolderToken)
 		if err != nil {
 			t.Fatalf("create spreadsheet: %v", err)
 		}
@@ -249,7 +249,7 @@ func getIntegrationFixtures(t *testing.T) integrationFixtures {
 
 	// Sheet id + title fixture (queried from API)
 	if fx.SheetID == "" || fx.SheetTitle == "" {
-		sheets, err := sdk.ListSpreadsheetSheets(t.Context(), token, fx.SpreadsheetToken)
+		sheets, err := sdk.ListSpreadsheetSheets(t.Context(), token, larksdk.AccessTokenTenant, fx.SpreadsheetToken)
 		if err != nil {
 			t.Fatalf("list spreadsheet sheets: %v", err)
 		}

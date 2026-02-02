@@ -5,25 +5,24 @@ import (
 	"errors"
 	"fmt"
 
-	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larksheets "github.com/larksuite/oapi-sdk-go/v3/service/sheets/v3"
 )
 
 // ListSpreadsheetSheets queries the sheets within a spreadsheet.
-func (c *Client) ListSpreadsheetSheets(ctx context.Context, token, spreadsheetToken string) ([]SpreadsheetSheet, error) {
+func (c *Client) ListSpreadsheetSheets(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken string) ([]SpreadsheetSheet, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
 	if spreadsheetToken == "" {
 		return nil, errors.New("spreadsheet token is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 
 	req := larksheets.NewQuerySpreadsheetSheetReqBuilder().SpreadsheetToken(spreadsheetToken).Build()
-	resp, err := c.sdk.Sheets.V3.SpreadsheetSheet.Query(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Sheets.V3.SpreadsheetSheet.Query(ctx, req, option)
 	if err != nil {
 		return nil, err
 	}

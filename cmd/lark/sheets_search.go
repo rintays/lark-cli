@@ -22,16 +22,16 @@ func newSheetsSearchCmd(state *appState) *cobra.Command {
 			}
 			query = strings.TrimSpace(args[0])
 			if query == "" {
-				return errors.New("query is required")
+				return argsUsageError(cmd, errors.New("query is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if pages <= 0 {
-				return errors.New("pages must be greater than 0")
+				return flagUsage(cmd, "pages must be greater than 0")
 			}
 			ctx := cmd.Context()
 			token, err := resolveDriveSearchToken(ctx, state)

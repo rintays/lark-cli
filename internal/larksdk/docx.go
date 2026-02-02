@@ -39,24 +39,24 @@ func (r *getDocxDocumentResponse) Success() bool {
 	return r.Code == 0
 }
 
-func (c *Client) CreateDocxDocument(ctx context.Context, token string, req CreateDocxDocumentRequest) (DocxDocument, error) {
+func (c *Client) CreateDocxDocument(ctx context.Context, token string, tokenType AccessTokenType, req CreateDocxDocumentRequest) (DocxDocument, error) {
 	if !c.available() {
 		return DocxDocument{}, ErrUnavailable
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return DocxDocument{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return DocxDocument{}, err
 	}
 	if c.docxSDKAvailable() {
-		return c.createDocxDocumentSDK(ctx, tenantToken, req)
+		return c.createDocxDocumentSDK(ctx, option, req)
 	}
 	if c.coreConfig == nil {
 		return DocxDocument{}, ErrUnavailable
 	}
-	return c.createDocxDocumentCore(ctx, tenantToken, req)
+	return c.createDocxDocumentCore(ctx, option, req)
 }
 
-func (c *Client) createDocxDocumentSDK(ctx context.Context, tenantToken string, req CreateDocxDocumentRequest) (DocxDocument, error) {
+func (c *Client) createDocxDocumentSDK(ctx context.Context, option larkcore.RequestOptionFunc, req CreateDocxDocumentRequest) (DocxDocument, error) {
 	bodyBuilder := larkdocx.NewCreateDocumentReqBodyBuilder().Title(req.Title)
 	if req.FolderToken != "" {
 		bodyBuilder = bodyBuilder.FolderToken(req.FolderToken)
@@ -65,7 +65,7 @@ func (c *Client) createDocxDocumentSDK(ctx context.Context, tenantToken string, 
 	resp, err := c.sdk.Docx.V1.Document.Create(
 		ctx,
 		larkdocx.NewCreateDocumentReqBuilder().Body(body).Build(),
-		larkcore.WithTenantAccessToken(tenantToken),
+		option,
 	)
 	if err != nil {
 		return DocxDocument{}, err
@@ -92,7 +92,7 @@ func (c *Client) createDocxDocumentSDK(ctx context.Context, tenantToken string, 
 	return mapDocxDocument(resp.Data.Document), nil
 }
 
-func (c *Client) createDocxDocumentCore(ctx context.Context, tenantToken string, req CreateDocxDocumentRequest) (DocxDocument, error) {
+func (c *Client) createDocxDocumentCore(ctx context.Context, option larkcore.RequestOptionFunc, req CreateDocxDocumentRequest) (DocxDocument, error) {
 	payload := map[string]any{
 		"title": req.Title,
 	}
@@ -109,7 +109,7 @@ func (c *Client) createDocxDocumentCore(ctx context.Context, tenantToken string,
 	}
 	apiReq.Body = payload
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return DocxDocument{}, err
 	}
@@ -129,31 +129,31 @@ func (c *Client) createDocxDocumentCore(ctx context.Context, tenantToken string,
 	return *resp.Data.Document, nil
 }
 
-func (c *Client) GetDocxDocument(ctx context.Context, token, documentID string) (DocxDocument, error) {
+func (c *Client) GetDocxDocument(ctx context.Context, token string, tokenType AccessTokenType, documentID string) (DocxDocument, error) {
 	if !c.available() {
 		return DocxDocument{}, ErrUnavailable
 	}
 	if documentID == "" {
 		return DocxDocument{}, errors.New("document id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return DocxDocument{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return DocxDocument{}, err
 	}
 	if c.docxSDKAvailable() {
-		return c.getDocxDocumentSDK(ctx, tenantToken, documentID)
+		return c.getDocxDocumentSDK(ctx, option, documentID)
 	}
 	if c.coreConfig == nil {
 		return DocxDocument{}, ErrUnavailable
 	}
-	return c.getDocxDocumentCore(ctx, tenantToken, documentID)
+	return c.getDocxDocumentCore(ctx, option, documentID)
 }
 
-func (c *Client) getDocxDocumentSDK(ctx context.Context, tenantToken, documentID string) (DocxDocument, error) {
+func (c *Client) getDocxDocumentSDK(ctx context.Context, option larkcore.RequestOptionFunc, documentID string) (DocxDocument, error) {
 	resp, err := c.sdk.Docx.V1.Document.Get(
 		ctx,
 		larkdocx.NewGetDocumentReqBuilder().DocumentId(documentID).Build(),
-		larkcore.WithTenantAccessToken(tenantToken),
+		option,
 	)
 	if err != nil {
 		return DocxDocument{}, err
@@ -180,7 +180,7 @@ func (c *Client) getDocxDocumentSDK(ctx context.Context, tenantToken, documentID
 	return mapDocxDocument(resp.Data.Document), nil
 }
 
-func (c *Client) getDocxDocumentCore(ctx context.Context, tenantToken, documentID string) (DocxDocument, error) {
+func (c *Client) getDocxDocumentCore(ctx context.Context, option larkcore.RequestOptionFunc, documentID string) (DocxDocument, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/docx/v1/documents/:document_id",
 		HttpMethod:                http.MethodGet,
@@ -190,7 +190,7 @@ func (c *Client) getDocxDocumentCore(ctx context.Context, tenantToken, documentI
 	}
 	apiReq.PathParams.Set("document_id", documentID)
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return DocxDocument{}, err
 	}
@@ -224,31 +224,31 @@ func (r *rawContentDocxResponse) Success() bool {
 	return r.Code == 0
 }
 
-func (c *Client) GetDocxRawContent(ctx context.Context, token, documentID string) (string, error) {
+func (c *Client) GetDocxRawContent(ctx context.Context, token string, tokenType AccessTokenType, documentID string) (string, error) {
 	if !c.available() {
 		return "", ErrUnavailable
 	}
 	if documentID == "" {
 		return "", errors.New("document id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return "", errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return "", err
 	}
 	if c.docxSDKAvailable() {
-		return c.getDocxRawContentSDK(ctx, tenantToken, documentID)
+		return c.getDocxRawContentSDK(ctx, option, documentID)
 	}
 	if c.coreConfig == nil {
 		return "", ErrUnavailable
 	}
-	return c.getDocxRawContentCore(ctx, tenantToken, documentID)
+	return c.getDocxRawContentCore(ctx, option, documentID)
 }
 
-func (c *Client) getDocxRawContentSDK(ctx context.Context, tenantToken, documentID string) (string, error) {
+func (c *Client) getDocxRawContentSDK(ctx context.Context, option larkcore.RequestOptionFunc, documentID string) (string, error) {
 	resp, err := c.sdk.Docx.V1.Document.RawContent(
 		ctx,
 		larkdocx.NewRawContentDocumentReqBuilder().DocumentId(documentID).Build(),
-		larkcore.WithTenantAccessToken(tenantToken),
+		option,
 	)
 	if err != nil {
 		return "", err
@@ -265,7 +265,7 @@ func (c *Client) getDocxRawContentSDK(ctx context.Context, tenantToken, document
 	return *resp.Data.Content, nil
 }
 
-func (c *Client) getDocxRawContentCore(ctx context.Context, tenantToken, documentID string) (string, error) {
+func (c *Client) getDocxRawContentCore(ctx context.Context, option larkcore.RequestOptionFunc, documentID string) (string, error) {
 	apiReq := &larkcore.ApiReq{
 		ApiPath:                   "/open-apis/docx/v1/documents/:document_id/raw_content",
 		HttpMethod:                http.MethodGet,
@@ -275,7 +275,7 @@ func (c *Client) getDocxRawContentCore(ctx context.Context, tenantToken, documen
 	}
 	apiReq.PathParams.Set("document_id", documentID)
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return "", err
 	}

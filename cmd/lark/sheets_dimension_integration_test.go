@@ -127,6 +127,7 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 		}
 
 		deletePayload := runIntegrationCLI(t, fx,
+			"--force",
 			"sheets", "rows", "delete",
 			spreadsheetToken,
 			sheetID,
@@ -187,6 +188,7 @@ func TestSheetsDimensionIntegration_RowsAndColsInsertDelete(t *testing.T) {
 		}
 
 		deletePayload := runIntegrationCLI(t, fx,
+			"--force",
 			"sheets", "cols", "delete",
 			spreadsheetToken,
 			sheetID,

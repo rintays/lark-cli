@@ -181,16 +181,19 @@ func newTaskInfoCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("task-guid is required")
+				return argsUsageError(cmd, errors.New("task-guid is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			taskGUID := strings.TrimSpace(args[0])
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete task %s", taskGUID)); err != nil {
+				return err
+			}
 			if state.SDK == nil {
 				return errors.New("sdk client is required")
 			}
-			taskGUID := strings.TrimSpace(args[0])
-			ctx := context.Background()
+			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err

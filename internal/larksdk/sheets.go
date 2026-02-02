@@ -121,7 +121,7 @@ func dimensionDeletePayload(majorDimension string, sheetID string, startIndex, e
 	}
 }
 
-func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (SheetValueRange, error) {
+func (c *Client) ReadSheetRange(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetRange string) (SheetValueRange, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetValueRange{}, ErrUnavailable
 	}
@@ -131,9 +131,9 @@ func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sh
 	if sheetRange == "" {
 		return SheetValueRange{}, errors.New("range is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetValueRange{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetValueRange{}, err
 	}
 
 	req := &larkcore.ApiReq{
@@ -146,7 +146,7 @@ func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sh
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.PathParams.Set("range", sheetRange)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetValueRange{}, err
 	}
@@ -166,7 +166,7 @@ func (c *Client) ReadSheetRange(ctx context.Context, token, spreadsheetToken, sh
 	return *resp.Data.ValueRange, nil
 }
 
-func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any) (SheetValueUpdate, error) {
+func (c *Client) UpdateSheetRange(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetRange string, values [][]any) (SheetValueUpdate, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetValueUpdate{}, ErrUnavailable
 	}
@@ -179,9 +179,9 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 	if len(values) == 0 {
 		return SheetValueUpdate{}, errors.New("values are required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetValueUpdate{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetValueUpdate{}, err
 	}
 
 	req := &larkcore.ApiReq{
@@ -201,7 +201,7 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 		},
 	}
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetValueUpdate{}, err
 	}
@@ -221,7 +221,7 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token, spreadsheetToken, 
 	return *resp.Data, nil
 }
 
-func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string, values [][]any, insertDataOption string) (SheetValueAppend, error) {
+func (c *Client) AppendSheetRange(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetRange string, values [][]any, insertDataOption string) (SheetValueAppend, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetValueAppend{}, ErrUnavailable
 	}
@@ -234,9 +234,9 @@ func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, 
 	if len(values) == 0 {
 		return SheetValueAppend{}, errors.New("values are required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetValueAppend{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetValueAppend{}, err
 	}
 
 	req := &larkcore.ApiReq{
@@ -259,7 +259,7 @@ func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, 
 		},
 	}
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetValueAppend{}, err
 	}
@@ -279,7 +279,7 @@ func (c *Client) AppendSheetRange(ctx context.Context, token, spreadsheetToken, 
 	return *resp.Data, nil
 }
 
-func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, sheetRange string) (ClearSheetRangeResult, error) {
+func (c *Client) ClearSheetRange(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetRange string) (ClearSheetRangeResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return ClearSheetRangeResult{}, ErrUnavailable
 	}
@@ -306,14 +306,14 @@ func (c *Client) ClearSheetRange(ctx context.Context, token, spreadsheetToken, s
 		}
 		values = append(values, row)
 	}
-	_, err := c.UpdateSheetRange(ctx, token, spreadsheetToken, sheetRange, values)
+	_, err := c.UpdateSheetRange(ctx, token, tokenType, spreadsheetToken, sheetRange, values)
 	if err != nil {
 		return ClearSheetRangeResult{}, err
 	}
 	return ClearSheetRangeResult{ClearedRange: sheetRange}, nil
 }
 
-func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionInsertResult, error) {
+func (c *Client) InsertSheetRows(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionInsertResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetDimensionInsertResult{}, ErrUnavailable
 	}
@@ -329,9 +329,9 @@ func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, s
 	if count <= 0 {
 		return SheetDimensionInsertResult{}, errors.New("count must be greater than 0")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetDimensionInsertResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetDimensionInsertResult{}, err
 	}
 	endIndex := startIndex + count
 
@@ -347,7 +347,7 @@ func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, s
 	req.PathParams.Set("sheet_id", sheetID)
 	req.Body = dimensionRangePayload("ROWS", startIndex, endIndex)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetDimensionInsertResult{}, err
 	}
@@ -364,7 +364,7 @@ func (c *Client) InsertSheetRows(ctx context.Context, token, spreadsheetToken, s
 	return SheetDimensionInsertResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
 }
 
-func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionDeleteResult, error) {
+func (c *Client) DeleteSheetRows(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionDeleteResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetDimensionDeleteResult{}, ErrUnavailable
 	}
@@ -380,9 +380,9 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	if count <= 0 {
 		return SheetDimensionDeleteResult{}, errors.New("count must be greater than 0")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetDimensionDeleteResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetDimensionDeleteResult{}, err
 	}
 	startIndexOneBased := startIndex + 1
 	endIndexOneBased := startIndex + count
@@ -398,7 +398,7 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.Body = dimensionDeletePayload("ROWS", sheetID, startIndexOneBased, endIndexOneBased)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetDimensionDeleteResult{}, err
 	}
@@ -415,7 +415,7 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token, spreadsheetToken, s
 	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: startIndex + count}, nil
 }
 
-func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionDeleteResult, error) {
+func (c *Client) DeleteSheetCols(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionDeleteResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetDimensionDeleteResult{}, ErrUnavailable
 	}
@@ -431,9 +431,9 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 	if count <= 0 {
 		return SheetDimensionDeleteResult{}, errors.New("count must be greater than 0")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetDimensionDeleteResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetDimensionDeleteResult{}, err
 	}
 	startIndexOneBased := startIndex + 1
 	endIndexOneBased := startIndex + count
@@ -449,7 +449,7 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 	req.Body = dimensionDeletePayload("COLUMNS", sheetID, startIndexOneBased, endIndexOneBased)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetDimensionDeleteResult{}, err
 	}
@@ -466,7 +466,7 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token, spreadsheetToken, s
 	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: startIndex + count}, nil
 }
 
-func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionInsertResult, error) {
+func (c *Client) InsertSheetCols(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetID string, startIndex, count int) (SheetDimensionInsertResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SheetDimensionInsertResult{}, ErrUnavailable
 	}
@@ -482,9 +482,9 @@ func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, s
 	if count <= 0 {
 		return SheetDimensionInsertResult{}, errors.New("count must be greater than 0")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SheetDimensionInsertResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SheetDimensionInsertResult{}, err
 	}
 	endIndex := startIndex + count
 
@@ -500,7 +500,7 @@ func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, s
 	req.PathParams.Set("sheet_id", sheetID)
 	req.Body = dimensionRangePayload("COLUMNS", startIndex, endIndex)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return SheetDimensionInsertResult{}, err
 	}
@@ -517,22 +517,22 @@ func (c *Client) InsertSheetCols(ctx context.Context, token, spreadsheetToken, s
 	return SheetDimensionInsertResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
 }
 
-func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetToken string) (SpreadsheetMetadata, error) {
+func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken string) (SpreadsheetMetadata, error) {
 	if !c.available() {
 		return SpreadsheetMetadata{}, ErrUnavailable
 	}
 	if spreadsheetToken == "" {
 		return SpreadsheetMetadata{}, errors.New("spreadsheet token is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SpreadsheetMetadata{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SpreadsheetMetadata{}, err
 	}
 
 	req := larksheets.NewGetSpreadsheetReqBuilder().
 		SpreadsheetToken(spreadsheetToken).
 		Build()
-	resp, err := c.sdk.Sheets.V3.Spreadsheet.Get(ctx, req, larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Sheets.V3.Spreadsheet.Get(ctx, req, option)
 	if err != nil {
 		return SpreadsheetMetadata{}, err
 	}
@@ -560,7 +560,7 @@ func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token, spreadsheetT
 		metadata.Spreadsheet.OwnerID = *spreadsheet.OwnerId
 	}
 
-	sheets, err := c.ListSpreadsheetSheets(ctx, token, spreadsheetToken)
+	sheets, err := c.ListSpreadsheetSheets(ctx, token, tokenType, spreadsheetToken)
 	if err != nil {
 		return SpreadsheetMetadata{}, err
 	}

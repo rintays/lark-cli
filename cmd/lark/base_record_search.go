@@ -49,7 +49,7 @@ func newBaseRecordSearchCmd(state *appState) *cobra.Command {
 			if sortJSON != "" && !json.Valid([]byte(sortJSON)) {
 				return usageError(cmd, "invalid sort JSON", "Provide a valid JSON array/object for --sort/--sort-json.")
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				automaticFields := true
 				req := larksdk.SearchBaseRecordsRequest{
 					ViewID:          viewID,

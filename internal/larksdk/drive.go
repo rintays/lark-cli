@@ -12,13 +12,13 @@ import (
 	larkdrive "github.com/larksuite/oapi-sdk-go/v3/service/drive/v1"
 )
 
-func (c *Client) ListDriveFiles(ctx context.Context, token string, req ListDriveFilesRequest) (ListDriveFilesResult, error) {
+func (c *Client) ListDriveFiles(ctx context.Context, token string, tokenType AccessTokenType, req ListDriveFilesRequest) (ListDriveFilesResult, error) {
 	if !c.available() {
 		return ListDriveFilesResult{}, ErrUnavailable
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return ListDriveFilesResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return ListDriveFilesResult{}, err
 	}
 
 	builder := larkdrive.NewListFileReqBuilder()
@@ -32,7 +32,7 @@ func (c *Client) ListDriveFiles(ctx context.Context, token string, req ListDrive
 		builder.PageToken(req.PageToken)
 	}
 
-	resp, err := c.sdk.Drive.V1.File.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Drive.V1.File.List(ctx, builder.Build(), option)
 	if err != nil {
 		return ListDriveFilesResult{}, err
 	}
@@ -359,7 +359,7 @@ func hasDrivePermissionPublicUpdate(req UpdateDrivePermissionPublicRequest) bool
 	return false
 }
 
-func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDriveFileRequest) (DriveUploadResult, error) {
+func (c *Client) UploadDriveFile(ctx context.Context, token string, tokenType AccessTokenType, req UploadDriveFileRequest) (DriveUploadResult, error) {
 	if !c.available() {
 		return DriveUploadResult{}, ErrUnavailable
 	}
@@ -372,9 +372,9 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDr
 	if req.Size < 0 {
 		return DriveUploadResult{}, fmt.Errorf("file size must be non-negative")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return DriveUploadResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return DriveUploadResult{}, err
 	}
 
 	parentNode := req.FolderToken
@@ -392,7 +392,7 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDr
 		Build()
 	builder := larkdrive.NewUploadAllFileReqBuilder().Body(body)
 
-	resp, err := c.sdk.Drive.V1.File.UploadAll(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Drive.V1.File.UploadAll(ctx, builder.Build(), option)
 	if err != nil {
 		return DriveUploadResult{}, err
 	}
@@ -413,19 +413,19 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, req UploadDr
 	return result, nil
 }
 
-func (c *Client) DownloadDriveFile(ctx context.Context, token, fileToken string) (io.ReadCloser, error) {
+func (c *Client) DownloadDriveFile(ctx context.Context, token string, tokenType AccessTokenType, fileToken string) (io.ReadCloser, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
 	if fileToken == "" {
 		return nil, fmt.Errorf("file token is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	builder := larkdrive.NewDownloadFileReqBuilder().FileToken(fileToken)
-	resp, err := c.sdk.Drive.V1.File.Download(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Drive.V1.File.Download(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}

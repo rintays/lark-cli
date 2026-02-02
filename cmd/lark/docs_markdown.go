@@ -36,11 +36,11 @@ func newDocsConvertCmd(state *appState) *cobra.Command {
 				return err
 			}
 
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			resp, err := state.SDK.ConvertDocxContent(cmd.Context(), token, normalized, raw)
+			resp, err := state.SDK.ConvertDocxContent(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), normalized, raw)
 			if err != nil {
 				return err
 			}
@@ -75,7 +75,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			return nil
 		},
@@ -97,11 +97,11 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 				return err
 			}
 
-			accessToken, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			accessToken, accessTokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			convertResp, err := state.SDK.ConvertDocxContent(cmd.Context(), accessToken, normalized, raw)
+			convertResp, err := state.SDK.ConvertDocxContent(cmd.Context(), accessToken, larksdk.AccessTokenType(accessTokenType), normalized, raw)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			}
 			scrubDocxTableMergeInfo(convertResp.Blocks)
 
-			deleted, err := clearDocxBlockChildren(cmd.Context(), state.SDK, accessToken, documentID, documentID)
+			deleted, err := clearDocxBlockChildren(cmd.Context(), state.SDK, accessToken, larksdk.AccessTokenType(accessTokenType), documentID, documentID)
 			if err != nil {
 				return err
 			}
@@ -122,6 +122,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			created, err := state.SDK.CreateDocxBlockDescendant(
 				cmd.Context(),
 				accessToken,
+				larksdk.AccessTokenType(accessTokenType),
 				documentID,
 				documentID,
 				createBody,
@@ -227,13 +228,13 @@ func scrubDocxTableMergeInfo(blocks []*larkdocx.Block) {
 	}
 }
 
-func clearDocxBlockChildren(ctx context.Context, sdk *larksdk.Client, token, documentID, blockID string) (int, error) {
+func clearDocxBlockChildren(ctx context.Context, sdk *larksdk.Client, token string, tokenType larksdk.AccessTokenType, documentID, blockID string) (int, error) {
 	if sdk == nil {
 		return 0, errors.New("sdk client is required")
 	}
 	total := 0
 	for {
-		items, _, _, err := sdk.GetDocxBlockChildren(ctx, token, documentID, blockID, docxBlocksDeletePageSize, "", -1, false, "")
+		items, _, _, err := sdk.GetDocxBlockChildren(ctx, token, tokenType, documentID, blockID, docxBlocksDeletePageSize, "", -1, false, "")
 		if err != nil {
 			return total, err
 		}
@@ -241,7 +242,7 @@ func clearDocxBlockChildren(ctx context.Context, sdk *larksdk.Client, token, doc
 			return total, nil
 		}
 		end := len(items)
-		_, err = sdk.BatchDeleteDocxBlockChildren(ctx, token, documentID, blockID, 0, end, -1, "")
+		_, err = sdk.BatchDeleteDocxBlockChildren(ctx, token, tokenType, documentID, blockID, 0, end, -1, "")
 		if err != nil {
 			return total, err
 		}

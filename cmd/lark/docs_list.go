@@ -1,8 +1,8 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -18,9 +18,13 @@ func newDocsListCmd(state *appState) *cobra.Command {
 		Short: "List Docs (docx) in a Drive folder",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			folderID = strings.TrimSpace(folderID)
+			if strings.EqualFold(folderID, "root") {
+				folderID = "0"
+			}
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -38,7 +42,7 @@ func newDocsListCmd(state *appState) *cobra.Command {
 				}
 
 				// Thin wrapper over drive list: fetch then filter to docx.
-				result, err := state.SDK.ListDriveFiles(cmd.Context(), token, larksdk.ListDriveFilesRequest{
+				result, err := state.SDK.ListDriveFiles(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), larksdk.ListDriveFilesRequest{
 					FolderToken: folderID,
 					PageSize:    pageSize,
 					PageToken:   pageToken,

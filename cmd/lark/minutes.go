@@ -80,14 +80,18 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
+			}
+			folderID = strings.TrimSpace(folderID)
+			if strings.EqualFold(folderID, "root") {
+				folderID = "0"
 			}
 			fileType = strings.TrimSpace(fileType)
 			query = strings.TrimSpace(query)
@@ -103,7 +107,7 @@ func newMinutesListCmd(state *appState) *cobra.Command {
 				if pageSize > remaining {
 					pageSize = remaining
 				}
-				result, err := state.SDK.ListDriveFiles(cmd.Context(), token, larksdk.ListDriveFilesRequest{
+				result, err := state.SDK.ListDriveFiles(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), larksdk.ListDriveFilesRequest{
 					FolderToken: folderID,
 					PageSize:    pageSize,
 					PageToken:   pageToken,
@@ -163,15 +167,18 @@ func newMinutesDeleteCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("minute-token is required")
+				return argsUsageError(cmd, errors.New("minute-token is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			minuteToken := strings.TrimSpace(args[0])
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete minutes %s", minuteToken)); err != nil {
+				return err
+			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			minuteToken := strings.TrimSpace(args[0])
 			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
 			if err != nil {
 				return err

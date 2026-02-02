@@ -48,6 +48,7 @@ func TestSheetsReadCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -124,6 +125,7 @@ func TestSheetsUpdateCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -214,6 +216,7 @@ func TestSheetsAppendCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -284,6 +287,7 @@ func TestSheetsUpdateCommandNormalizesSingleCellRange(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -443,6 +447,7 @@ func TestSheetsCreateCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -681,6 +686,7 @@ func TestSheetsInfoCommand(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -778,6 +784,7 @@ func TestSheetsDeleteCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -878,6 +885,7 @@ func TestSheetsClearCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -949,6 +957,7 @@ func TestSheetsColsInsertCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -1069,6 +1078,7 @@ func TestSheetsColsDeleteCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -1189,6 +1199,7 @@ func TestSheetsRowsInsertCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
@@ -1264,6 +1275,7 @@ func TestSheetsRowsDeleteCommandWithSDK(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))

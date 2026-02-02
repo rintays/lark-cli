@@ -240,7 +240,7 @@ func newMailListCmd(state *appState) *cobra.Command {
 		Short: "List mail messages",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			mailboxID = resolveMailboxID(state, mailboxID)
 			if _, err := requireSDK(state); err != nil {

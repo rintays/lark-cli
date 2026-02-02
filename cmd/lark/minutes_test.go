@@ -113,7 +113,7 @@ func TestMinutesListCommand(t *testing.T) {
 			if r.URL.Path != "/open-apis/drive/v1/files" {
 				t.Fatalf("unexpected path: %s", r.URL.Path)
 			}
-			if r.URL.Query().Get("folder_token") != "root" {
+			if r.URL.Query().Get("folder_token") != "0" {
 				t.Fatalf("unexpected folder_token: %s", r.URL.Query().Get("folder_token"))
 			}
 			if r.URL.Query().Get("page_size") != "2" {
@@ -236,6 +236,7 @@ func TestMinutesDeleteCommand(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))

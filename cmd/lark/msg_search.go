@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"strings"
 	"time"
@@ -51,13 +50,13 @@ func newMsgSearchCmd(state *appState) *cobra.Command {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if pageSize < 0 {
-				return errors.New("page-size must be greater than or equal to 0")
+				return flagUsage(cmd, "page-size must be greater than or equal to 0")
 			}
 			if pages <= 0 {
-				return errors.New("pages must be greater than 0")
+				return flagUsage(cmd, "pages must be greater than 0")
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err

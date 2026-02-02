@@ -20,7 +20,7 @@ func newBaseAppUpdateCmd(state *appState) *cobra.Command {
 		Short: "Update a Bitable app",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenant, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				advancedSet := cmd.Flags().Changed("is-advanced")
 				if name == "" && !advancedSet {
 					return nil, "", errors.New("one of --name or --is-advanced is required")

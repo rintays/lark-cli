@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -50,10 +49,10 @@ func newMsgListCmd(state *appState) *cobra.Command {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if pageSize <= 0 {
-				return errors.New("page-size must be greater than 0")
+				return flagUsage(cmd, "page-size must be greater than 0")
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err

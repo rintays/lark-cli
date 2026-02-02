@@ -8,6 +8,8 @@ import (
 
 	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 const docxBlocksMaxPageSize = 200
@@ -39,10 +41,10 @@ func newDocsBlocksGetCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			if strings.TrimSpace(args[1]) == "" {
-				return errors.New("block-id is required")
+				return argsUsageError(cmd, errors.New("block-id is required"))
 			}
 			return nil
 		},
@@ -52,11 +54,11 @@ func newDocsBlocksGetCmd(state *appState) *cobra.Command {
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
-			block, err := state.SDK.GetDocxBlock(cmd.Context(), token, documentID, blockID, revisionID, userIDType)
+			block, err := state.SDK.GetDocxBlock(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), documentID, blockID, revisionID, userIDType)
 			if err != nil {
 				return err
 			}
@@ -91,19 +93,19 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
 			documentID := strings.TrimSpace(args[0])
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -122,6 +124,7 @@ func newDocsBlocksListCmd(state *appState) *cobra.Command {
 				items, nextToken, hasMore, err := state.SDK.ListDocxBlocks(
 					cmd.Context(),
 					token,
+					larksdk.AccessTokenType(tokenTypeValue),
 					documentID,
 					pageSize,
 					pageToken,
@@ -171,10 +174,10 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			if strings.TrimSpace(args[1]) == "" {
-				return errors.New("block-id is required")
+				return argsUsageError(cmd, errors.New("block-id is required"))
 			}
 			return nil
 		},
@@ -193,13 +196,14 @@ func newDocsBlocksUpdateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("body must be valid JSON: %w", err)
 			}
 
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.PatchDocxBlock(
 				cmd.Context(),
 				token,
+				larksdk.AccessTokenType(tokenTypeValue),
 				documentID,
 				blockID,
 				&update,
@@ -251,7 +255,7 @@ func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			return nil
 		},
@@ -269,16 +273,17 @@ func newDocsBlocksBatchUpdateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("requests must be a JSON array: %w", err)
 			}
 			if len(requests) == 0 {
-				return errors.New("requests must be a non-empty JSON array")
+				return usageErrorWithUsage(cmd, "requests must be a non-empty JSON array", "", cmd.UsageString())
 			}
 
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.BatchUpdateDocxBlocks(
 				cmd.Context(),
 				token,
+				larksdk.AccessTokenType(tokenTypeValue),
 				documentID,
 				requests,
 				revisionID,
@@ -336,23 +341,23 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			if strings.TrimSpace(args[1]) == "" {
-				return errors.New("block-id is required")
+				return argsUsageError(cmd, errors.New("block-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
 			documentID := strings.TrimSpace(args[0])
 			blockID := strings.TrimSpace(args[1])
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -371,6 +376,7 @@ func newDocsBlocksChildrenListCmd(state *appState) *cobra.Command {
 				items, nextToken, hasMore, err := state.SDK.GetDocxBlockChildren(
 					cmd.Context(),
 					token,
+					larksdk.AccessTokenType(tokenTypeValue),
 					documentID,
 					blockID,
 					pageSize,
@@ -424,10 +430,10 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			if strings.TrimSpace(args[1]) == "" {
-				return errors.New("block-id is required")
+				return argsUsageError(cmd, errors.New("block-id is required"))
 			}
 			return nil
 		},
@@ -446,13 +452,14 @@ func newDocsBlocksChildrenCreateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("body must be valid JSON: %w", err)
 			}
 
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.CreateDocxBlockChildren(
 				cmd.Context(),
 				token,
+				larksdk.AccessTokenType(tokenTypeValue),
 				documentID,
 				blockID,
 				&body,
@@ -498,26 +505,29 @@ func newDocsBlocksChildrenDeleteCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			if strings.TrimSpace(args[1]) == "" {
-				return errors.New("block-id is required")
+				return argsUsageError(cmd, errors.New("block-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if startIndex < 0 || endIndex < 0 {
-				return errors.New("start-index and end-index must be >= 0")
+				return usageErrorWithUsage(cmd, "start-index and end-index must be >= 0", "", cmd.UsageString())
 			}
 			if endIndex <= startIndex {
-				return errors.New("end-index must be greater than start-index")
+				return usageErrorWithUsage(cmd, "end-index must be greater than start-index", "", cmd.UsageString())
+			}
+			documentID := strings.TrimSpace(args[0])
+			blockID := strings.TrimSpace(args[1])
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete block children for %s/%s", documentID, blockID)); err != nil {
+				return err
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			documentID := strings.TrimSpace(args[0])
-			blockID := strings.TrimSpace(args[1])
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -525,6 +535,7 @@ func newDocsBlocksChildrenDeleteCmd(state *appState) *cobra.Command {
 			resp, err := state.SDK.BatchDeleteDocxBlockChildren(
 				cmd.Context(),
 				token,
+				larksdk.AccessTokenType(tokenTypeValue),
 				documentID,
 				blockID,
 				startIndex,
@@ -579,10 +590,10 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("document-id is required")
+				return argsUsageError(cmd, errors.New("document-id is required"))
 			}
 			if strings.TrimSpace(args[1]) == "" {
-				return errors.New("block-id is required")
+				return argsUsageError(cmd, errors.New("block-id is required"))
 			}
 			return nil
 		},
@@ -601,13 +612,14 @@ func newDocsBlocksDescendantCreateCmd(state *appState) *cobra.Command {
 				return fmt.Errorf("body must be valid JSON: %w", err)
 			}
 
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			resp, err := state.SDK.CreateDocxBlockDescendant(
 				cmd.Context(),
 				token,
+				larksdk.AccessTokenType(tokenTypeValue),
 				documentID,
 				blockID,
 				&body,

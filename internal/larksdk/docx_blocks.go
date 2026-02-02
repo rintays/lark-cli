@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkdocx "github.com/larksuite/oapi-sdk-go/v3/service/docx/v1"
 )
 
@@ -33,7 +32,7 @@ func (c *Client) docxBlockDescendantSDKAvailable() bool {
 //
 // This is primarily used by integration tests to create a predictable piece of
 // content that can be asserted via export/cat.
-func (c *Client) AppendDocxTextBlock(ctx context.Context, token, documentID, text string) (string, error) {
+func (c *Client) AppendDocxTextBlock(ctx context.Context, token string, tokenType AccessTokenType, documentID, text string) (string, error) {
 	if !c.available() {
 		return "", ErrUnavailable
 	}
@@ -43,9 +42,9 @@ func (c *Client) AppendDocxTextBlock(ctx context.Context, token, documentID, tex
 	if strings.TrimSpace(text) == "" {
 		return "", errors.New("text is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return "", errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return "", err
 	}
 	if !c.docxBlocksSDKAvailable() {
 		return "", ErrUnavailable
@@ -54,7 +53,7 @@ func (c *Client) AppendDocxTextBlock(ctx context.Context, token, documentID, tex
 	listResp, err := c.sdk.Docx.V1.DocumentBlock.List(
 		ctx,
 		larkdocx.NewListDocumentBlockReqBuilder().DocumentId(documentID).PageSize(200).Build(),
-		larkcore.WithTenantAccessToken(tenantToken),
+		option,
 	)
 	if err != nil {
 		return "", err
@@ -115,7 +114,7 @@ func (c *Client) AppendDocxTextBlock(ctx context.Context, token, documentID, tex
 			BlockId(parentBlockID).
 			Body(body).
 			Build(),
-		larkcore.WithTenantAccessToken(tenantToken),
+		option,
 	)
 	if err != nil {
 		return "", err
@@ -135,7 +134,7 @@ func (c *Client) AppendDocxTextBlock(ctx context.Context, token, documentID, tex
 	return *createResp.Data.Children[0].BlockId, nil
 }
 
-func (c *Client) GetDocxBlock(ctx context.Context, token, documentID, blockID string, revisionID int, userIDType string) (*larkdocx.Block, error) {
+func (c *Client) GetDocxBlock(ctx context.Context, token string, tokenType AccessTokenType, documentID, blockID string, revisionID int, userIDType string) (*larkdocx.Block, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -145,9 +144,9 @@ func (c *Client) GetDocxBlock(ctx context.Context, token, documentID, blockID st
 	if blockID == "" {
 		return nil, errors.New("block id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxBlockSDKAvailable() {
 		return nil, errors.New("docx block sdk unavailable")
@@ -161,7 +160,7 @@ func (c *Client) GetDocxBlock(ctx context.Context, token, documentID, blockID st
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlock.Get(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+resp, err := c.sdk.Docx.V1.DocumentBlock.Get(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -177,16 +176,16 @@ func (c *Client) GetDocxBlock(ctx context.Context, token, documentID, blockID st
 	return resp.Data.Block, nil
 }
 
-func (c *Client) ListDocxBlocks(ctx context.Context, token, documentID string, pageSize int, pageToken string, revisionID int, userIDType string) ([]*larkdocx.Block, string, bool, error) {
+func (c *Client) ListDocxBlocks(ctx context.Context, token string, tokenType AccessTokenType, documentID string, pageSize int, pageToken string, revisionID int, userIDType string) ([]*larkdocx.Block, string, bool, error) {
 	if !c.available() {
 		return nil, "", false, ErrUnavailable
 	}
 	if documentID == "" {
 		return nil, "", false, errors.New("document id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, "", false, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, "", false, err
 	}
 	if !c.docxBlockSDKAvailable() {
 		return nil, "", false, errors.New("docx block sdk unavailable")
@@ -206,7 +205,7 @@ func (c *Client) ListDocxBlocks(ctx context.Context, token, documentID string, p
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlock.List(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlock.List(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, "", false, err
 	}
@@ -227,7 +226,7 @@ func (c *Client) ListDocxBlocks(ctx context.Context, token, documentID string, p
 	return resp.Data.Items, nextToken, hasMore, nil
 }
 
-func (c *Client) GetDocxBlockChildren(ctx context.Context, token, documentID, blockID string, pageSize int, pageToken string, revisionID int, withDescendants bool, userIDType string) ([]*larkdocx.Block, string, bool, error) {
+func (c *Client) GetDocxBlockChildren(ctx context.Context, token string, tokenType AccessTokenType, documentID, blockID string, pageSize int, pageToken string, revisionID int, withDescendants bool, userIDType string) ([]*larkdocx.Block, string, bool, error) {
 	if !c.available() {
 		return nil, "", false, ErrUnavailable
 	}
@@ -237,9 +236,9 @@ func (c *Client) GetDocxBlockChildren(ctx context.Context, token, documentID, bl
 	if blockID == "" {
 		return nil, "", false, errors.New("block id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, "", false, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, "", false, err
 	}
 	if !c.docxBlockChildrenSDKAvailable() {
 		return nil, "", false, errors.New("docx block children sdk unavailable")
@@ -262,7 +261,7 @@ func (c *Client) GetDocxBlockChildren(ctx context.Context, token, documentID, bl
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlockChildren.Get(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlockChildren.Get(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, "", false, err
 	}
@@ -283,7 +282,7 @@ func (c *Client) GetDocxBlockChildren(ctx context.Context, token, documentID, bl
 	return resp.Data.Items, nextToken, hasMore, nil
 }
 
-func (c *Client) CreateDocxBlockChildren(ctx context.Context, token, documentID, blockID string, body *larkdocx.CreateDocumentBlockChildrenReqBody, revisionID int, clientToken, userIDType string) (*larkdocx.CreateDocumentBlockChildrenRespData, error) {
+func (c *Client) CreateDocxBlockChildren(ctx context.Context, token string, tokenType AccessTokenType, documentID, blockID string, body *larkdocx.CreateDocumentBlockChildrenReqBody, revisionID int, clientToken, userIDType string) (*larkdocx.CreateDocumentBlockChildrenRespData, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -296,9 +295,9 @@ func (c *Client) CreateDocxBlockChildren(ctx context.Context, token, documentID,
 	if body == nil {
 		return nil, errors.New("request body is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxBlockChildrenSDKAvailable() {
 		return nil, errors.New("docx block children sdk unavailable")
@@ -318,7 +317,7 @@ func (c *Client) CreateDocxBlockChildren(ctx context.Context, token, documentID,
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlockChildren.Create(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlockChildren.Create(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +330,7 @@ func (c *Client) CreateDocxBlockChildren(ctx context.Context, token, documentID,
 	return resp.Data, nil
 }
 
-func (c *Client) CreateDocxBlockDescendant(ctx context.Context, token, documentID, blockID string, body *larkdocx.CreateDocumentBlockDescendantReqBody, revisionID int, clientToken, userIDType string) (*larkdocx.CreateDocumentBlockDescendantRespData, error) {
+func (c *Client) CreateDocxBlockDescendant(ctx context.Context, token string, tokenType AccessTokenType, documentID, blockID string, body *larkdocx.CreateDocumentBlockDescendantReqBody, revisionID int, clientToken, userIDType string) (*larkdocx.CreateDocumentBlockDescendantRespData, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -344,9 +343,9 @@ func (c *Client) CreateDocxBlockDescendant(ctx context.Context, token, documentI
 	if body == nil {
 		return nil, errors.New("request body is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxBlockDescendantSDKAvailable() {
 		return nil, errors.New("docx block descendant sdk unavailable")
@@ -366,7 +365,7 @@ func (c *Client) CreateDocxBlockDescendant(ctx context.Context, token, documentI
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlockDescendant.Create(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlockDescendant.Create(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +378,7 @@ func (c *Client) CreateDocxBlockDescendant(ctx context.Context, token, documentI
 	return resp.Data, nil
 }
 
-func (c *Client) PatchDocxBlock(ctx context.Context, token, documentID, blockID string, update *larkdocx.UpdateBlockRequest, revisionID int, clientToken, userIDType string) (*larkdocx.PatchDocumentBlockRespData, error) {
+func (c *Client) PatchDocxBlock(ctx context.Context, token string, tokenType AccessTokenType, documentID, blockID string, update *larkdocx.UpdateBlockRequest, revisionID int, clientToken, userIDType string) (*larkdocx.PatchDocumentBlockRespData, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -392,9 +391,9 @@ func (c *Client) PatchDocxBlock(ctx context.Context, token, documentID, blockID 
 	if update == nil {
 		return nil, errors.New("update request is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxBlockSDKAvailable() {
 		return nil, errors.New("docx block sdk unavailable")
@@ -414,7 +413,7 @@ func (c *Client) PatchDocxBlock(ctx context.Context, token, documentID, blockID 
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlock.Patch(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlock.Patch(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +426,7 @@ func (c *Client) PatchDocxBlock(ctx context.Context, token, documentID, blockID 
 	return resp.Data, nil
 }
 
-func (c *Client) BatchUpdateDocxBlocks(ctx context.Context, token, documentID string, requests []*larkdocx.UpdateBlockRequest, revisionID int, clientToken, userIDType string) (*larkdocx.BatchUpdateDocumentBlockRespData, error) {
+func (c *Client) BatchUpdateDocxBlocks(ctx context.Context, token string, tokenType AccessTokenType, documentID string, requests []*larkdocx.UpdateBlockRequest, revisionID int, clientToken, userIDType string) (*larkdocx.BatchUpdateDocumentBlockRespData, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -437,9 +436,9 @@ func (c *Client) BatchUpdateDocxBlocks(ctx context.Context, token, documentID st
 	if len(requests) == 0 {
 		return nil, errors.New("update requests are required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxBlockSDKAvailable() {
 		return nil, errors.New("docx block sdk unavailable")
@@ -459,7 +458,7 @@ func (c *Client) BatchUpdateDocxBlocks(ctx context.Context, token, documentID st
 		builder.UserIdType(userIDType)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlock.BatchUpdate(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlock.BatchUpdate(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +471,7 @@ func (c *Client) BatchUpdateDocxBlocks(ctx context.Context, token, documentID st
 	return resp.Data, nil
 }
 
-func (c *Client) BatchDeleteDocxBlockChildren(ctx context.Context, token, documentID, blockID string, startIndex, endIndex int, revisionID int, clientToken string) (*larkdocx.BatchDeleteDocumentBlockChildrenRespData, error) {
+func (c *Client) BatchDeleteDocxBlockChildren(ctx context.Context, token string, tokenType AccessTokenType, documentID, blockID string, startIndex, endIndex int, revisionID int, clientToken string) (*larkdocx.BatchDeleteDocumentBlockChildrenRespData, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -482,9 +481,9 @@ func (c *Client) BatchDeleteDocxBlockChildren(ctx context.Context, token, docume
 	if blockID == "" {
 		return nil, errors.New("block id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxBlockChildrenSDKAvailable() {
 		return nil, errors.New("docx block children sdk unavailable")
@@ -505,7 +504,7 @@ func (c *Client) BatchDeleteDocxBlockChildren(ctx context.Context, token, docume
 		builder.ClientToken(clientToken)
 	}
 
-	resp, err := c.sdk.Docx.V1.DocumentBlockChildren.BatchDelete(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.DocumentBlockChildren.BatchDelete(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +517,7 @@ func (c *Client) BatchDeleteDocxBlockChildren(ctx context.Context, token, docume
 	return resp.Data, nil
 }
 
-func (c *Client) ConvertDocxContent(ctx context.Context, token, contentType, content string) (*larkdocx.ConvertDocumentRespData, error) {
+func (c *Client) ConvertDocxContent(ctx context.Context, token string, tokenType AccessTokenType, contentType, content string) (*larkdocx.ConvertDocumentRespData, error) {
 	if !c.available() {
 		return nil, ErrUnavailable
 	}
@@ -528,9 +527,9 @@ func (c *Client) ConvertDocxContent(ctx context.Context, token, contentType, con
 	if content == "" {
 		return nil, errors.New("content is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return nil, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return nil, err
 	}
 	if !c.docxSDKAvailable() {
 		return nil, errors.New("docx sdk unavailable")
@@ -542,7 +541,7 @@ func (c *Client) ConvertDocxContent(ctx context.Context, token, contentType, con
 		Build()
 	builder := larkdocx.NewConvertDocumentReqBuilder().Body(body)
 
-	resp, err := c.sdk.Docx.V1.Document.Convert(ctx, builder.Build(), larkcore.WithTenantAccessToken(tenantToken))
+	resp, err := c.sdk.Docx.V1.Document.Convert(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}

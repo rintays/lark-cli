@@ -45,7 +45,7 @@ You can also pass a file path with @:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				records, err := parseBaseRecordBatchCreateRecords(recordsRaw, recordsFile)
 				if err != nil {
 					return nil, "", err

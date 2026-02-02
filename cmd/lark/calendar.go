@@ -48,24 +48,24 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			var startTime time.Time
 			var endTime time.Time
 			if start != "" || end != "" {
 				if start == "" || end == "" {
-					return errors.New("start and end must be provided together")
+					return flagUsage(cmd, "start and end must be provided together")
 				}
-				parsedStart, err := time.Parse(time.RFC3339, start)
+				parsedStart, err := parseCalendarTimeArg(start)
 				if err != nil {
-					return fmt.Errorf("invalid start time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid start time: %v", err))
 				}
-				parsedEnd, err := time.Parse(time.RFC3339, end)
+				parsedEnd, err := parseCalendarTimeArg(end)
 				if err != nil {
-					return fmt.Errorf("invalid end time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 				}
 				if !parsedEnd.After(parsedStart) {
-					return errors.New("end time must be after start time")
+					return flagUsage(cmd, "end time must be after start time")
 				}
 				startTime = parsedStart
 				endTime = parsedEnd
@@ -179,23 +179,23 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if summary == "" {
-				return errors.New("summary is required")
+				return argsUsageError(cmd, errors.New("summary is required"))
 			}
 			if start == "" || end == "" {
-				return errors.New("start and end times are required")
+				return argsUsageError(cmd, errors.New("start and end times are required"))
 			}
 			var startTime time.Time
 			var endTime time.Time
-			startTime, err := time.Parse(time.RFC3339, start)
+			startTime, err := parseCalendarTimeArg(start)
 			if err != nil {
-				return fmt.Errorf("invalid start time: %w", err)
+				return flagUsage(cmd, fmt.Sprintf("invalid start time: %v", err))
 			}
-			endTime, err = time.Parse(time.RFC3339, end)
+			endTime, err = parseCalendarTimeArg(end)
 			if err != nil {
-				return fmt.Errorf("invalid end time: %w", err)
+				return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 			}
 			if !endTime.After(startTime) {
-				return errors.New("end time must be after start time")
+				return flagUsage(cmd, "end time must be after start time")
 			}
 			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
@@ -351,30 +351,30 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 			}
 			query = strings.TrimSpace(args[0])
 			if query == "" {
-				return errors.New("query is required")
+				return argsUsageError(cmd, errors.New("query is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			var startTime time.Time
 			var endTime time.Time
 			if start != "" || end != "" {
 				if start == "" || end == "" {
-					return errors.New("start and end must be provided together")
+					return flagUsage(cmd, "start and end must be provided together")
 				}
-				parsedStart, err := time.Parse(time.RFC3339, start)
+				parsedStart, err := parseCalendarTimeArg(start)
 				if err != nil {
-					return fmt.Errorf("invalid start time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid start time: %v", err))
 				}
-				parsedEnd, err := time.Parse(time.RFC3339, end)
+				parsedEnd, err := parseCalendarTimeArg(end)
 				if err != nil {
-					return fmt.Errorf("invalid end time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 				}
 				if !parsedEnd.After(parsedStart) {
-					return errors.New("end time must be after start time")
+					return flagUsage(cmd, "end time must be after start time")
 				}
 				startTime = parsedStart
 				endTime = parsedEnd
@@ -470,7 +470,7 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 			}
 			eventID = strings.TrimSpace(args[0])
 			if eventID == "" {
-				return errors.New("event-id is required")
+				return argsUsageError(cmd, errors.New("event-id is required"))
 			}
 			return nil
 		},
@@ -597,7 +597,7 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 			}
 			eventID = strings.TrimSpace(args[0])
 			if eventID == "" {
-				return errors.New("event-id is required")
+				return argsUsageError(cmd, errors.New("event-id is required"))
 			}
 			return nil
 		},
@@ -628,24 +628,24 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				cmd.Flags().Changed("check-in-end-duration") ||
 				cmd.Flags().Changed("check-in-notify-attendees")
 			if !hasUpdate {
-				return errors.New("at least one field must be provided")
+				return flagUsage(cmd, "at least one field must be provided")
 			}
 			var startTime time.Time
 			var endTime time.Time
 			if start != "" || end != "" {
 				if start == "" || end == "" {
-					return errors.New("start and end must be provided together")
+					return flagUsage(cmd, "start and end must be provided together")
 				}
-				parsedStart, err := time.Parse(time.RFC3339, start)
+				parsedStart, err := parseCalendarTimeArg(start)
 				if err != nil {
-					return fmt.Errorf("invalid start time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid start time: %v", err))
 				}
-				parsedEnd, err := time.Parse(time.RFC3339, end)
+				parsedEnd, err := parseCalendarTimeArg(end)
 				if err != nil {
-					return fmt.Errorf("invalid end time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 				}
 				if !parsedEnd.After(parsedStart) {
-					return errors.New("end time must be after start time")
+					return flagUsage(cmd, "end time must be after start time")
 				}
 				startTime = parsedStart
 				endTime = parsedEnd
@@ -775,11 +775,14 @@ func newCalendarDeleteCmd(state *appState) *cobra.Command {
 			}
 			eventID = strings.TrimSpace(args[0])
 			if eventID == "" {
-				return errors.New("event-id is required")
+				return argsUsageError(cmd, errors.New("event-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete calendar event %s", eventID)); err != nil {
+				return err
+			}
 			token, tokenType, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
@@ -1252,6 +1255,25 @@ func formatEventTimeDetail(eventTime larksdk.CalendarEventTime) string {
 		parts = append(parts, "date="+eventTime.Date)
 	}
 	return strings.Join(parts, " | ")
+}
+
+func parseCalendarTimeArg(raw string) (time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, nil
+	}
+	parsed, err := parseTimeArg(raw, time.Now())
+	if err != nil {
+		return time.Time{}, err
+	}
+	if parsed == "" {
+		return time.Time{}, nil
+	}
+	seconds, err := strconv.ParseInt(parsed, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time %q", raw)
+	}
+	return time.Unix(seconds, 0).UTC(), nil
 }
 
 func formatLocation(location *larksdk.CalendarEventLocation) string {

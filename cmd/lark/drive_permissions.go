@@ -50,27 +50,41 @@ Arguments:
 			if err := cobra.ExactArgs(3)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			fileToken = strings.TrimSpace(args[0])
+			refToken, refKind, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			fileToken = strings.TrimSpace(refToken)
 			memberType = strings.TrimSpace(args[1])
 			memberID = strings.TrimSpace(args[2])
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
 			}
 			if memberType == "" {
-				return errors.New("member-type is required")
+				return argsUsageError(cmd, errors.New("member-type is required"))
 			}
+			normalizedType, ok := normalizeDriveMemberType(memberType)
+			if !ok {
+				return argsUsageError(cmd, fmt.Errorf("member-type must be one of %s", strings.Join(driveMemberTypeValues, ", ")))
+			}
+			memberType = normalizedType
 			if memberID == "" {
-				return errors.New("member-id is required")
+				return argsUsageError(cmd, errors.New("member-id is required"))
+			}
+			if refKind != "" && !cmd.Flags().Changed("type") {
+				_ = cmd.Flags().Set("type", refKind)
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
+			if err := validateOneOf(cmd, "perm", perm, drivePermValues); err != nil {
 				return err
 			}
-			if strings.TrimSpace(fileToken) == "" {
-				return usageError(cmd, "file-token is required", `Example:
-  lark drive permissions add <file-token> openid ou_xxx --type docx --perm view --member-kind user`)
+			if err := validateOneOf(cmd, "perm-type", permType, drivePermTypeValues); err != nil {
+				return err
+			}
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
@@ -122,6 +136,8 @@ Arguments:
 	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after adding permissions (user token only)")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("perm")
+	registerEnumCompletion(cmd, "perm", drivePermValues)
+	registerEnumCompletion(cmd, "perm-type", drivePermTypeValues)
 	return cmd
 }
 
@@ -139,10 +155,17 @@ func newDrivePermissionListCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			fileToken = strings.TrimSpace(args[0])
+			refToken, refKind, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			fileToken = strings.TrimSpace(refToken)
 			if fileToken == "" {
 				return usageError(cmd, "file-token is required", `Example:
   lark drive permissions list <file-token> --type docx`)
+			}
+			if refKind != "" && !cmd.Flags().Changed("type") {
+				_ = cmd.Flags().Set("type", refKind)
 			}
 			return nil
 		},
@@ -212,27 +235,41 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(3)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			fileToken = strings.TrimSpace(args[0])
+			refToken, refKind, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			fileToken = strings.TrimSpace(refToken)
 			memberType = strings.TrimSpace(args[1])
 			memberID = strings.TrimSpace(args[2])
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
 			}
 			if memberType == "" {
-				return errors.New("member-type is required")
+				return argsUsageError(cmd, errors.New("member-type is required"))
 			}
+			normalizedType, ok := normalizeDriveMemberType(memberType)
+			if !ok {
+				return argsUsageError(cmd, fmt.Errorf("member-type must be one of %s", strings.Join(driveMemberTypeValues, ", ")))
+			}
+			memberType = normalizedType
 			if memberID == "" {
-				return errors.New("member-id is required")
+				return argsUsageError(cmd, errors.New("member-id is required"))
+			}
+			if refKind != "" && !cmd.Flags().Changed("type") {
+				_ = cmd.Flags().Set("type", refKind)
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
+			if err := validateOneOf(cmd, "perm", perm, drivePermValues); err != nil {
 				return err
 			}
-			if strings.TrimSpace(fileToken) == "" {
-				return usageError(cmd, "file-token is required", `Example:
-  lark drive permissions update <file-token> email fred@srv.work --type docx --perm edit`)
+			if err := validateOneOf(cmd, "perm-type", permType, drivePermTypeValues); err != nil {
+				return err
+			}
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			if strings.TrimSpace(perm) == "" && strings.TrimSpace(permType) == "" && strings.TrimSpace(memberKind) == "" {
 				return usageError(cmd, "at least one of --perm, --perm-type, or --member-kind is required", `Example:
@@ -287,6 +324,8 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&memberKind, "member-kind", "", "collaborator type (user, chat, department, group, wiki_space_member, wiki_space_viewer, wiki_space_editor)")
 	cmd.Flags().BoolVar(&needNotification, "need-notification", false, "notify the member after updating permissions (user token only)")
 	_ = cmd.MarkFlagRequired("type")
+	registerEnumCompletion(cmd, "perm", drivePermValues)
+	registerEnumCompletion(cmd, "perm-type", drivePermTypeValues)
 	return cmd
 }
 
@@ -306,27 +345,38 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(3)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			fileToken = strings.TrimSpace(args[0])
+			refToken, refKind, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			fileToken = strings.TrimSpace(refToken)
 			memberType = strings.TrimSpace(args[1])
 			memberID = strings.TrimSpace(args[2])
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
 			}
 			if memberType == "" {
-				return errors.New("member-type is required")
+				return argsUsageError(cmd, errors.New("member-type is required"))
 			}
+			normalizedType, ok := normalizeDriveMemberType(memberType)
+			if !ok {
+				return argsUsageError(cmd, fmt.Errorf("member-type must be one of %s", strings.Join(driveMemberTypeValues, ", ")))
+			}
+			memberType = normalizedType
 			if memberID == "" {
-				return errors.New("member-id is required")
+				return argsUsageError(cmd, errors.New("member-id is required"))
+			}
+			if refKind != "" && !cmd.Flags().Changed("type") {
+				_ = cmd.Flags().Set("type", refKind)
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := requireSDK(state); err != nil {
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete permission for %s on %s", memberID, fileToken)); err != nil {
 				return err
 			}
-			if strings.TrimSpace(fileToken) == "" {
-				return usageError(cmd, "file-token is required", `Example:
-  lark drive permissions delete <file-token> email fred@srv.work --type docx`)
+			if _, err := requireSDK(state); err != nil {
+				return err
 			}
 			ctx := cmd.Context()
 			token, tokenType, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)

@@ -52,7 +52,7 @@ func newWikiSpaceUpdateSettingCmd(state *appState) *cobra.Command {
 				SecuritySettingSet: cmd.Flags().Changed("security-setting"),
 				CommentSettingSet:  cmd.Flags().Changed("comment-setting"),
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var setting larksdk.WikiSpaceSetting
 				var err error
 				switch tokenType {

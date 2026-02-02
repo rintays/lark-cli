@@ -171,6 +171,26 @@ func TableText(headers []string, rows [][]string) string {
 	return strings.Join(lines, "\n")
 }
 
+func TableTSV(headers []string, rows [][]string) string {
+	if len(headers) == 0 {
+		return ""
+	}
+	lines := make([]string, 0, len(rows)+1)
+	lines = append(lines, strings.Join(headers, "\t"))
+	for _, row := range rows {
+		if len(row) < len(headers) {
+			padded := make([]string, len(headers))
+			copy(padded, row)
+			row = padded
+		}
+		if len(row) > len(headers) {
+			row = row[:len(headers)]
+		}
+		lines = append(lines, strings.Join(row, "\t"))
+	}
+	return strings.Join(lines, "\n")
+}
+
 func TableTextFromLines(headers []string, lines []string) string {
 	if len(lines) == 0 {
 		return ""
@@ -180,4 +200,15 @@ func TableTextFromLines(headers []string, lines []string) string {
 		rows = append(rows, strings.Split(line, "\t"))
 	}
 	return TableText(headers, rows)
+}
+
+func TableTSVFromLines(headers []string, lines []string) string {
+	if len(lines) == 0 {
+		return ""
+	}
+	rows := make([][]string, 0, len(lines))
+	for _, line := range lines {
+		rows = append(rows, strings.Split(line, "\t"))
+	}
+	return TableTSV(headers, rows)
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -72,10 +71,10 @@ func newUsersSearchCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if pages <= 0 {
-				return errors.New("pages must be greater than 0")
+				return flagUsage(cmd, "pages must be greater than 0")
 			}
 			ctx := cmd.Context()
 			token, err := tokenFor(ctx, state, tokenTypesUser)

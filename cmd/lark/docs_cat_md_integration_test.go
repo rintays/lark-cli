@@ -26,7 +26,7 @@ func TestDocsGetMarkdownIntegration(t *testing.T) {
 	needle := integrationFixturePrefix + "hello-md-" + time.Now().Format("150405.000")
 
 	if documentID == "" {
-		doc, err := fx.SDK.CreateDocxDocument(ctx, fx.Token, larksdk.CreateDocxDocumentRequest{
+		doc, err := fx.SDK.CreateDocxDocument(ctx, fx.Token, larksdk.AccessTokenTenant, larksdk.CreateDocxDocumentRequest{
 			Title:       title,
 			FolderToken: fx.DriveFolderToken,
 		})
@@ -53,7 +53,7 @@ func TestDocsGetMarkdownIntegration(t *testing.T) {
 		})
 	}
 
-	if _, err := fx.SDK.AppendDocxTextBlock(ctx, fx.Token, documentID, needle); err != nil {
+	if _, err := fx.SDK.AppendDocxTextBlock(ctx, fx.Token, larksdk.AccessTokenTenant, documentID, needle); err != nil {
 		t.Fatalf("append docx text block: %v", err)
 	}
 

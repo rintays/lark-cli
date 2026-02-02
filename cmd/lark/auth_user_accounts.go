@@ -76,11 +76,11 @@ func newAuthUserAccountsSetCmd(state *appState) *cobra.Command {
 		Use:   "set <account>",
 		Short: "Set the default user OAuth account",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return errors.New("account is required")
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return argsUsageError(cmd, err)
 			}
 			if normalizeAccountName(args[0]) == "" {
-				return errors.New("account must not be empty")
+				return argsUsageError(cmd, errors.New("account must not be empty"))
 			}
 			return nil
 		},
@@ -108,11 +108,11 @@ func newAuthUserAccountsRemoveCmd(state *appState) *cobra.Command {
 		Use:   "remove <account>",
 		Short: "Remove stored user OAuth account",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return errors.New("account is required")
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return argsUsageError(cmd, err)
 			}
 			if normalizeAccountName(args[0]) == "" {
-				return errors.New("account must not be empty")
+				return argsUsageError(cmd, errors.New("account must not be empty"))
 			}
 			return nil
 		},
@@ -121,6 +121,9 @@ func newAuthUserAccountsRemoveCmd(state *appState) *cobra.Command {
 				return errors.New("config is required")
 			}
 			account := normalizeAccountName(args[0])
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("remove account %s", account)); err != nil {
+				return err
+			}
 			if userTokenBackend(state.Config) == "keychain" {
 				if err := deleteKeyringToken(state, account); err != nil {
 					return err

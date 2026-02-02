@@ -23,7 +23,11 @@ type appState struct {
 	Config         *config.Config
 	Profile        string
 	JSON           bool
+	Plain          bool
+	Color          string
 	Verbose        bool
+	Force          bool
+	NoInput        bool
 	TokenType      string
 	UserAccount    string
 	Printer        output.Printer
@@ -48,6 +52,26 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			state.Command = canonicalCommandPath(cmd)
+			out := cmd.OutOrStdout()
+			state.ErrWriter = cmd.ErrOrStderr()
+			if state.ErrWriter == nil {
+				state.ErrWriter = os.Stderr
+			}
+			colorMode, err := normalizeColorMode(state.Color)
+			if err != nil {
+				return usageErrorWithUsage(cmd, err.Error(), "", cmd.UsageString())
+			}
+			plain := state.Plain
+			styled := resolveStyledOutput(out, state.JSON, plain, colorMode)
+			state.Printer = output.Printer{
+				Writer: out,
+				JSON:   state.JSON,
+				Styled: styled,
+			}
+			tablePlain = plain
+			if shouldSkipConfigLoad(state.Command) {
+				return nil
+			}
 			if state.Profile == "" {
 				state.Profile = strings.TrimSpace(os.Getenv("LARK_PROFILE"))
 			}
@@ -76,16 +100,6 @@ func newRootCmd() *cobra.Command {
 			if err := hydrateAppSecretFromKeyring(state); err != nil {
 				return err
 			}
-			out := cmd.OutOrStdout()
-			state.ErrWriter = cmd.ErrOrStderr()
-			if state.ErrWriter == nil {
-				state.ErrWriter = os.Stderr
-			}
-			state.Printer = output.Printer{
-				Writer: out,
-				JSON:   state.JSON,
-				Styled: output.AutoStyle(out) && !state.JSON,
-			}
 			handleAutoUpdate(state)
 			sdkClient, err := larksdk.New(cfg)
 			if err == nil {
@@ -113,11 +127,16 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&state.ConfigPath, "config", "", "config path (default: ~/.config/lark/config.json; uses profile path when --profile or LARK_PROFILE is set)")
 	cmd.PersistentFlags().StringVar(&state.Profile, "profile", "", "config profile (env: LARK_PROFILE)")
 	cmd.PersistentFlags().BoolVar(&state.JSON, "json", false, "output JSON")
+	cmd.PersistentFlags().BoolVar(&state.Plain, "plain", false, "output plain TSV (no styles)")
+	cmd.PersistentFlags().StringVar(&state.Color, "color", "auto", "color mode (auto|always|never)")
 	cmd.PersistentFlags().BoolVar(&state.Verbose, "verbose", false, "verbose output")
+	cmd.PersistentFlags().BoolVar(&state.Force, "force", false, "skip confirmation prompts")
+	cmd.PersistentFlags().BoolVar(&state.NoInput, "no-input", false, "disable prompts (use --force to proceed)")
 	cmd.PersistentFlags().StringVar(&state.TokenType, "token-type", "auto", "access token type (auto|tenant|user)")
 	cmd.PersistentFlags().StringVar(&state.UserAccount, "account", "", "user account label (default: config default or LARK_ACCOUNT)")
 	cmd.PersistentFlags().StringVar(&state.Platform, "platform", "", "platform (feishu|lark)")
 	cmd.PersistentFlags().StringVar(&state.BaseURL, "base-url", "", "base URL override")
+	cmd.MarkFlagsMutuallyExclusive("json", "plain")
 
 	cmd.AddCommand(newVersionCmd(state))
 	cmd.AddCommand(newUpgradeCmd(state))
@@ -195,6 +214,42 @@ func platformFromBaseURL(baseURL string) string {
 		return "lark"
 	default:
 		return "custom"
+	}
+}
+
+func normalizeColorMode(raw string) (string, error) {
+	mode := strings.ToLower(strings.TrimSpace(raw))
+	if mode == "" {
+		mode = "auto"
+	}
+	switch mode {
+	case "auto", "always", "never":
+		return mode, nil
+	default:
+		return "", fmt.Errorf("invalid value for --color %q (expected auto|always|never)", raw)
+	}
+}
+
+func resolveStyledOutput(out io.Writer, json bool, plain bool, colorMode string) bool {
+	if json || plain {
+		return false
+	}
+	switch colorMode {
+	case "always":
+		return true
+	case "never":
+		return false
+	default:
+		return output.AutoStyle(out)
+	}
+}
+
+func shouldSkipConfigLoad(command string) bool {
+	switch strings.TrimSpace(command) {
+	case "completion", "version":
+		return true
+	default:
+		return false
 	}
 }
 

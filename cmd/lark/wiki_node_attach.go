@@ -56,7 +56,7 @@ func newWikiNodeAttachCmd(state *appState) *cobra.Command {
 				Apply:           apply,
 				ApplySet:        cmd.Flags().Changed("apply"),
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var result larksdk.MoveDocsToWikiResult
 				var err error
 				switch tokenType {

@@ -167,3 +167,5 @@
 - 2026-02-02: Added concepts sections for Docs/Drive/Sheets/Wiki/Mail/Calendar/Meetings/Minutes/Tasks/IM in README.
 - 2026-02-02: Simplified Homebrew install command in README to use `brew install lark`.
 - 2026-02-02: Restored Homebrew install command to `brew install rintays/tap/lark` in README.
+- 2026-02-02: Added global output modes (`--plain`/`--color`) and confirmation controls (`--force`/`--no-input`), plus plain TSV table rendering and destructive-operation prompts.
+- 2026-02-02: Standardized authregistry-driven token selection with token-type-aware SDK calls (drive/docs/sheets/export), expanded resource URL parsing/root folder normalization, and updated usage errors/enums/tests.

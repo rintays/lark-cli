@@ -19,7 +19,7 @@ type batchUpdateSpreadsheetResponse struct {
 
 func (r *batchUpdateSpreadsheetResponse) Success() bool { return r.Code == 0 }
 
-func (c *Client) UpdateSpreadsheetSheetTitle(ctx context.Context, token, spreadsheetToken, sheetID, title string) error {
+func (c *Client) UpdateSpreadsheetSheetTitle(ctx context.Context, token string, tokenType AccessTokenType, spreadsheetToken, sheetID, title string) error {
 	if !c.available() || c.coreConfig == nil {
 		return ErrUnavailable
 	}
@@ -33,9 +33,9 @@ func (c *Client) UpdateSpreadsheetSheetTitle(ctx context.Context, token, spreads
 	if title == "" {
 		return errors.New("sheet title is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return err
 	}
 	payload := map[string]any{
 		"requests": []map[string]any{
@@ -60,7 +60,7 @@ func (c *Client) UpdateSpreadsheetSheetTitle(ctx context.Context, token, spreads
 	}
 	req.PathParams.Set("spreadsheet_token", spreadsheetToken)
 
-	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, req, c.coreConfig, option)
 	if err != nil {
 		return err
 	}

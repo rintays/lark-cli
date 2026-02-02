@@ -23,7 +23,7 @@ func newBaseAppCreateCmd(state *appState) *cobra.Command {
 		Short: "Create a Bitable app",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenant, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var customizedConfigPtr *bool
 				if cmd.Flags().Changed("customized-config") {
 					customizedConfigPtr = &customizedConfig

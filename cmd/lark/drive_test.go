@@ -26,7 +26,7 @@ func TestDriveListCommandWithSDK(t *testing.T) {
 		if r.URL.Query().Get("page_size") != "2" {
 			t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
 		}
-		if r.URL.Query().Get("folder_token") != "root" {
+		if r.URL.Query().Get("folder_token") != "0" {
 			t.Fatalf("unexpected folder_token: %s", r.URL.Query().Get("folder_token"))
 		}
 		if r.Header.Get("Authorization") != "Bearer token" {

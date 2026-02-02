@@ -64,6 +64,7 @@ func TestMeetingInfoCommand(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))

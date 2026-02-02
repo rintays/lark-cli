@@ -45,15 +45,15 @@ Value formats (write):
 			tableID = strings.TrimSpace(args[0])
 			recordID = strings.TrimSpace(args[1])
 			if tableID == "" {
-				return errors.New("table-id is required")
+				return argsUsageError(cmd, errors.New("table-id is required"))
 			}
 			if recordID == "" {
-				return errors.New("record-id is required")
+				return argsUsageError(cmd, errors.New("record-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				fieldsMap, err := parseBaseRecordFields(fieldsJSON, fields)
 				if err != nil {
 					return nil, "", err

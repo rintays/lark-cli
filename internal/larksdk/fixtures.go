@@ -98,16 +98,16 @@ type SpreadsheetInfo struct {
 func (r *createSpreadsheetResponse) Success() bool { return r.Code == 0 }
 
 // CreateSpreadsheet creates a new spreadsheet and returns its spreadsheet_token.
-func (c *Client) CreateSpreadsheet(ctx context.Context, token string, title string, folderToken string) (string, error) {
+func (c *Client) CreateSpreadsheet(ctx context.Context, token string, tokenType AccessTokenType, title string, folderToken string) (string, error) {
 	if !c.available() || c.coreConfig == nil {
 		return "", ErrUnavailable
 	}
 	if title == "" {
 		return "", errors.New("spreadsheet title is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return "", errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return "", err
 	}
 
 	payload := map[string]any{
@@ -126,7 +126,7 @@ func (c *Client) CreateSpreadsheet(ctx context.Context, token string, title stri
 		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return "", err
 	}

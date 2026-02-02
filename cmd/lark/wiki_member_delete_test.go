@@ -127,6 +127,7 @@ func TestWikiMemberDeleteCommandUsesV2EndpointAndOutputsJSON(t *testing.T) {
 			TenantAccessToken:          "token",
 			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
 		},
+		Force:   true,
 		Printer: output.Printer{Writer: &buf, JSON: true},
 	}
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))

@@ -49,10 +49,17 @@ func newDriveListCmd(state *appState) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
+			}
+			folderID = strings.TrimSpace(folderID)
+			if strings.EqualFold(folderID, "root") {
+				folderID = "0"
+			}
+			if strings.EqualFold(folderID, "root") {
+				folderID = "0"
 			}
 			ctx := cmd.Context()
-			token, err := tokenFor(ctx, state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -69,7 +76,7 @@ func newDriveListCmd(state *appState) *cobra.Command {
 				if pageSize > maxDrivePageSize {
 					pageSize = maxDrivePageSize
 				}
-				result, err := state.SDK.ListDriveFiles(ctx, token, larksdk.ListDriveFilesRequest{
+				result, err := state.SDK.ListDriveFiles(ctx, token, larksdk.AccessTokenType(tokenTypeValue), larksdk.ListDriveFilesRequest{
 					FolderToken: folderID,
 					PageSize:    pageSize,
 					PageToken:   pageToken,
@@ -127,16 +134,16 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			}
 			query = strings.TrimSpace(args[0])
 			if query == "" {
-				return errors.New("query is required")
+				return argsUsageError(cmd, errors.New("query is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			if pages <= 0 {
-				return errors.New("pages must be greater than 0")
+				return flagUsage(cmd, "pages must be greater than 0")
 			}
 			ctx := cmd.Context()
 			token, err := resolveDriveSearchToken(ctx, state)
@@ -192,7 +199,7 @@ func newDriveInfoCmd(state *appState) *cobra.Command {
 			}
 			fileToken = strings.TrimSpace(token)
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
 			}
 			return nil
 		},
@@ -232,12 +239,12 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 			}
 			if len(args) == 0 {
 				if strings.TrimSpace(filePath) == "" {
-					return errors.New("file is required")
+					return argsUsageError(cmd, errors.New("file is required"))
 				}
 				return nil
 			}
 			if filePath != "" && filePath != args[0] {
-				return errors.New("file provided twice")
+				return argsUsageError(cmd, errors.New("file provided twice"))
 			}
 			return cmd.Flags().Set("file", args[0])
 		},
@@ -257,7 +264,7 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 				return err
 			}
 			defer file.Close()
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
@@ -268,7 +275,7 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 				// Lark/Feishu Drive root folder token is "0".
 				folderToken = "0"
 			}
-			result, err := state.SDK.UploadDriveFile(cmd.Context(), token, larksdk.UploadDriveFileRequest{
+			result, err := state.SDK.UploadDriveFile(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), larksdk.UploadDriveFileRequest{
 				FileName:    uploadName,
 				FolderToken: folderToken,
 				Size:        info.Size(),
@@ -286,7 +293,7 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 				return errors.New("upload response missing file token")
 			}
 			if fileInfo.Name == "" || fileInfo.FileType == "" || fileInfo.URL == "" {
-				meta, err := state.SDK.GetDriveFileMetadata(cmd.Context(), token, larksdk.GetDriveFileRequest{FileToken: fileInfo.Token})
+				meta, err := driveFileMetadataWithToken(cmd.Context(), state.SDK, tokenTypeValue, token, fileInfo.Token)
 				if err != nil {
 					return err
 				}
@@ -305,7 +312,9 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&filePath, "file", "", "path to local file (or provide as positional argument)")
-	cmd.Flags().StringVar(&folderToken, "folder-token", "", "Drive folder token (default: 0 (root))")
+	cmd.Flags().StringVar(&folderToken, "folder-id", "", "Drive folder token (default: root)")
+	cmd.Flags().StringVar(&folderToken, "folder-token", "", "Drive folder token (deprecated; use --folder-id)")
+	_ = cmd.Flags().MarkDeprecated("folder-token", "use --folder-id")
 	cmd.Flags().StringVar(&uploadName, "name", "", "override the uploaded file name")
 	return cmd
 }
@@ -327,7 +336,7 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 			}
 			fileToken = strings.TrimSpace(token)
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
 			}
 			return nil
 		},
@@ -339,14 +348,14 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 					return fmt.Errorf("output path is a directory: %s", outPath)
 				}
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			reader, err := state.SDK.DownloadDriveFile(cmd.Context(), token, fileToken)
+			reader, err := state.SDK.DownloadDriveFile(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), fileToken)
 			if err != nil {
 				return err
 			}
@@ -398,8 +407,9 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 	var outPath string
 
 	cmd := &cobra.Command{
-		Use:   "export <file-token>",
-		Short: "Export a Drive file",
+		Use:     "export <file-token> --type <type> --format <format> --out <path>",
+		Short:   "Export a Drive file",
+		Example: "  lark drive export <file-token> --type docx --format pdf --out ./doc.pdf",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
@@ -410,7 +420,7 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 			}
 			fileToken = strings.TrimSpace(token)
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
 			}
 			if kind != "" && !cmd.Flags().Changed("type") {
 				_ = cmd.Flags().Set("type", kind)
@@ -426,14 +436,14 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 				}
 			}
 			format = strings.ToLower(format)
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			ticket, err := state.SDK.CreateExportTask(cmd.Context(), token, larksdk.CreateExportTaskRequest{
+			ticket, err := state.SDK.CreateExportTask(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), larksdk.CreateExportTaskRequest{
 				Token:         fileToken,
 				Type:          fileType,
 				FileExtension: format,
@@ -441,11 +451,11 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(cmd.Context(), state.SDK, token, ticket)
+			result, err := pollExportTask(cmd.Context(), state.SDK, token, larksdk.AccessTokenType(tokenTypeValue), ticket)
 			if err != nil {
 				return err
 			}
-			reader, err := state.SDK.DownloadExportedFile(cmd.Context(), token, result.FileToken)
+			reader, err := state.SDK.DownloadExportedFile(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), result.FileToken)
 			if err != nil {
 				return err
 			}
@@ -557,9 +567,16 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			fileToken = strings.TrimSpace(args[0])
+			refToken, refKind, err := parseResourceRef(args[0])
+			if err != nil {
+				return err
+			}
+			fileToken = strings.TrimSpace(refToken)
 			if fileToken == "" {
-				return errors.New("file-token is required")
+				return argsUsageError(cmd, errors.New("file-token is required"))
+			}
+			if refKind != "" && !cmd.Flags().Changed("type") {
+				_ = cmd.Flags().Set("type", refKind)
 			}
 			return nil
 		},

@@ -82,7 +82,7 @@ func newWikiNodeCreateCmd(state *appState) *cobra.Command {
 				OriginSpaceID:   strings.TrimSpace(originSpaceID),
 				Title:           strings.TrimSpace(title),
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var node larksdk.WikiNode
 				var err error
 				switch tokenType {

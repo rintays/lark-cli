@@ -42,7 +42,7 @@ func newWikiNodeMoveCmd(state *appState) *cobra.Command {
 				TargetParentNodeToken: targetParentNodeToken,
 				TargetSpaceID:         targetSpaceID,
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var node larksdk.WikiNode
 				var err error
 				switch tokenType {

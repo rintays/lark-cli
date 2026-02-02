@@ -109,7 +109,7 @@ func newBaseTableListCmd(state *appState) *cobra.Command {
 		Use:   "list",
 		Short: "List Bitable tables",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				result, err := sdk.ListBaseTables(ctx, token, appToken)
 				if err != nil {
 					return nil, "", err
@@ -149,7 +149,7 @@ func newBaseFieldListCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				result, err := sdk.ListBaseFields(ctx, token, appToken, tableID)
 				if err != nil {
 					return nil, "", err
@@ -189,7 +189,7 @@ func newBaseViewListCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				result, err := sdk.ListBaseViews(ctx, token, appToken, tableID)
 				if err != nil {
 					return nil, "", err
@@ -234,7 +234,7 @@ func newBaseRecordInfoCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				record, err := sdk.GetBaseRecord(ctx, token, appToken, tableID, recordID)
 				if err != nil {
 					return nil, "", err

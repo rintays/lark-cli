@@ -42,15 +42,18 @@ Or pass a file path with @:
 			}
 			tableID = strings.TrimSpace(args[0])
 			if tableID == "" {
-				return errors.New("table-id is required")
+				return argsUsageError(cmd, errors.New("table-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete records from table %s", tableID)); err != nil {
+				return err
+			}
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				ids, err := parseBaseRecordBatchDeleteRecordIDs(recordIDs, recordIDsJSON, recordIDsFile)
 				if err != nil {
-					return nil, "", err
+					return nil, "", usageErrorWithUsage(cmd, err.Error(), "", cmd.UsageString())
 				}
 				results, err := sdk.BatchDeleteBaseRecords(ctx, token, appToken, tableID, ids)
 				if err != nil {

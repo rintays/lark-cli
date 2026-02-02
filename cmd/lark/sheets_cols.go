@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"lark/internal/larksdk"
 )
 
 func newSheetsColsCmd(state *appState) *cobra.Command {
@@ -38,14 +40,14 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 			spreadsheetID = strings.TrimSpace(token)
 			sheetID = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
-				return errors.New("spreadsheet-token is required")
+				return argsUsageError(cmd, errors.New("spreadsheet-token is required"))
 			}
 			if sheetID == "" {
-				return errors.New("sheet-id is required")
+				return argsUsageError(cmd, errors.New("sheet-id is required"))
 			}
 			if len(args) > 2 {
 				if cmd.Flags().Changed("start-index") && fmt.Sprint(startIndex) != args[2] {
-					return errors.New("start-index provided twice")
+					return argsUsageError(cmd, errors.New("start-index provided twice"))
 				}
 				if err := cmd.Flags().Set("start-index", args[2]); err != nil {
 					return err
@@ -53,7 +55,7 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 			}
 			if len(args) > 3 {
 				if cmd.Flags().Changed("count") && fmt.Sprint(count) != args[3] {
-					return errors.New("count provided twice")
+					return argsUsageError(cmd, errors.New("count provided twice"))
 				}
 				if err := cmd.Flags().Set("count", args[3]); err != nil {
 					return err
@@ -63,19 +65,19 @@ func newSheetsColsInsertCmd(state *appState) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if startIndex < 0 {
-				return errors.New("start-index must be >= 0")
+				return usageErrorWithUsage(cmd, "start-index must be >= 0", "", cmd.UsageString())
 			}
 			if count <= 0 {
-				return errors.New("count must be greater than 0")
+				return usageErrorWithUsage(cmd, "count must be greater than 0", "", cmd.UsageString())
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			result, err := state.SDK.InsertSheetCols(cmd.Context(), token, spreadsheetID, sheetID, startIndex, count)
+			result, err := state.SDK.InsertSheetCols(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID, sheetID, startIndex, count)
 			if err != nil {
 				return err
 			}
@@ -112,14 +114,14 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 			spreadsheetID = strings.TrimSpace(token)
 			sheetID = strings.TrimSpace(args[1])
 			if spreadsheetID == "" {
-				return errors.New("spreadsheet-token is required")
+				return argsUsageError(cmd, errors.New("spreadsheet-token is required"))
 			}
 			if sheetID == "" {
-				return errors.New("sheet-id is required")
+				return argsUsageError(cmd, errors.New("sheet-id is required"))
 			}
 			if len(args) > 2 {
 				if cmd.Flags().Changed("start-index") && fmt.Sprint(startIndex) != args[2] {
-					return errors.New("start-index provided twice")
+					return argsUsageError(cmd, errors.New("start-index provided twice"))
 				}
 				if err := cmd.Flags().Set("start-index", args[2]); err != nil {
 					return err
@@ -127,7 +129,7 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 			}
 			if len(args) > 3 {
 				if cmd.Flags().Changed("count") && fmt.Sprint(count) != args[3] {
-					return errors.New("count provided twice")
+					return argsUsageError(cmd, errors.New("count provided twice"))
 				}
 				if err := cmd.Flags().Set("count", args[3]); err != nil {
 					return err
@@ -137,19 +139,22 @@ func newSheetsColsDeleteCmd(state *appState) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if startIndex < 0 {
-				return errors.New("start-index must be >= 0")
+				return usageErrorWithUsage(cmd, "start-index must be >= 0", "", cmd.UsageString())
 			}
 			if count <= 0 {
-				return errors.New("count must be greater than 0")
+				return usageErrorWithUsage(cmd, "count must be greater than 0", "", cmd.UsageString())
 			}
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			if err := confirmDestructive(cmd, state, fmt.Sprintf("delete columns from %s/%s", spreadsheetID, sheetID)); err != nil {
+				return err
+			}
+			token, tokenTypeValue, err := resolveAccessToken(cmd.Context(), state, tokenTypesTenantOrUser, nil)
 			if err != nil {
 				return err
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			result, err := state.SDK.DeleteSheetCols(cmd.Context(), token, spreadsheetID, sheetID, startIndex, count)
+			result, err := state.SDK.DeleteSheetCols(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetID, sheetID, startIndex, count)
 			if err != nil {
 				return err
 			}

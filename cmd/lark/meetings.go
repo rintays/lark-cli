@@ -44,13 +44,13 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 				return argsUsageError(cmd, err)
 			}
 			if strings.TrimSpace(args[0]) == "" {
-				return errors.New("meeting-id is required")
+				return argsUsageError(cmd, errors.New("meeting-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if queryMode < 0 || queryMode > 1 {
-				return errors.New("query-mode must be 0 or 1")
+				return flagUsage(cmd, "query-mode must be 0 or 1")
 			}
 			meetingID := strings.TrimSpace(args[0])
 			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
@@ -110,7 +110,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 		Short: "List meetings",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if limit <= 0 {
-				return errors.New("limit must be greater than 0")
+				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			var startUnix int64
 			var endUnix int64
@@ -122,18 +122,18 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 				useTimeRange = true
 			} else {
 				if start == "" || end == "" {
-					return errors.New("start and end must be provided together")
+					return flagUsage(cmd, "start and end must be provided together")
 				}
 				parsedStart, err := parseMeetingTime(start)
 				if err != nil {
-					return fmt.Errorf("invalid start time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid start time: %v", err))
 				}
 				parsedEnd, err := parseMeetingTime(end)
 				if err != nil {
-					return fmt.Errorf("invalid end time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 				}
 				if parsedEnd <= parsedStart {
-					return errors.New("end time must be after start time")
+					return flagUsage(cmd, "end time must be after start time")
 				}
 				startUnix = parsedStart
 				endUnix = parsedEnd
@@ -153,7 +153,7 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 				filterCount++
 			}
 			if filterCount > 1 {
-				return errors.New("meeting-no, user-id, room-id, and meeting-type are mutually exclusive")
+				return flagUsage(cmd, "meeting-no, user-id, room-id, and meeting-type are mutually exclusive")
 			}
 			if _, err := requireSDK(state); err != nil {
 				return err
@@ -267,11 +267,11 @@ func newMeetingCreateCmd(state *appState) *cobra.Command {
 				return err
 			}
 			if tokenType == tokenTypeTenant && ownerID == "" {
-				return errors.New("owner-id is required when using tenant access token")
+				return flagUsage(cmd, "owner-id is required when using tenant access token")
 			}
 			endUnix, err := parseMeetingTime(endTime)
 			if err != nil {
-				return fmt.Errorf("invalid end time: %w", err)
+				return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 			}
 			settings := buildReserveMeetingSettings(cmd, topic, meetingInitialType, autoRecord, password)
 			reserve, correction, err := state.SDK.ApplyReserve(cmd.Context(), token, larksdk.ApplyReserveRequest{
@@ -324,7 +324,7 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 			}
 			reserveID = strings.TrimSpace(args[0])
 			if reserveID == "" {
-				return errors.New("reserve-id is required")
+				return argsUsageError(cmd, errors.New("reserve-id is required"))
 			}
 			return nil
 		},
@@ -340,13 +340,13 @@ func newMeetingUpdateCmd(state *appState) *cobra.Command {
 			if cmd.Flags().Changed("end-time") {
 				parsed, err := parseMeetingTime(endTime)
 				if err != nil {
-					return fmt.Errorf("invalid end time: %w", err)
+					return flagUsage(cmd, fmt.Sprintf("invalid end time: %v", err))
 				}
 				endUnix = strconv.FormatInt(parsed, 10)
 			}
 			settings := buildReserveMeetingSettings(cmd, topic, meetingInitialType, autoRecord, password)
 			if endUnix == "" && settings == nil {
-				return errors.New("no fields to update")
+				return flagUsage(cmd, "no fields to update")
 			}
 			reserve, correction, err := state.SDK.UpdateReserve(cmd.Context(), token, larksdk.UpdateReserveRequest{
 				ReserveID:       reserveID,

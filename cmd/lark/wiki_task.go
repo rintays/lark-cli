@@ -37,7 +37,7 @@ func newWikiTaskInfoCmd(state *appState) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			taskID := strings.TrimSpace(args[0])
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var result larksdk.WikiTaskResult
 				var err error
 				req := larksdk.GetWikiTaskRequest{

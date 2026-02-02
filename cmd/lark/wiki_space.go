@@ -33,7 +33,7 @@ func newWikiSpaceListCmd(state *appState) *cobra.Command {
 			if limit <= 0 {
 				limit = 50
 			}
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				items := make([]larksdk.WikiSpace, 0, limit)
 				pageToken := ""
 				remaining := limit
@@ -102,7 +102,7 @@ func newWikiSpaceInfoCmd(state *appState) *cobra.Command {
 		Short: "Show a Wiki space (v2)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			spaceID = strings.TrimSpace(spaceID)
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				var space larksdk.WikiSpace
 				var err error
 				switch tokenType {

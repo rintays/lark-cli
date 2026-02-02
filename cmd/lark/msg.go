@@ -46,11 +46,16 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 			}
 			receiveID = strings.TrimSpace(args[0])
 			if receiveID == "" {
-				return errors.New("receive-id is required")
+				return argsUsageError(cmd, errors.New("receive-id is required"))
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			normalizedType, ok := normalizeReceiveIDType(receiveIDType)
+			if !ok {
+				return flagUsage(cmd, "receive-id-type must be one of chat_id, open_id, user_id, email")
+			}
+			receiveIDType = normalizedType
 			msgType, content, err := resolveMessageContent(contentOpts)
 			if err != nil {
 				return err
@@ -80,5 +85,6 @@ func newMsgSendCmd(state *appState) *cobra.Command {
 
 	cmd.Flags().StringVar(&receiveIDType, "receive-id-type", "chat_id", "receive ID type (chat_id, open_id, user_id, email)")
 	addMessageContentFlags(cmd, &contentOpts)
+	registerEnumCompletion(cmd, "receive-id-type", receiveIDTypeValues)
 	return cmd
 }

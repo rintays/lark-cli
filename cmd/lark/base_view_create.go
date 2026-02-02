@@ -44,7 +44,7 @@ func newBaseViewCreateCmd(state *appState) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runWithToken(cmd, state, tokenTypesTenantOrUser, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
+			return runWithToken(cmd, state, nil, nil, func(ctx context.Context, sdk *larksdk.Client, token string, tokenType tokenType) (any, string, error) {
 				view, err := sdk.CreateBaseView(ctx, token, appToken, tableID, viewName, viewType)
 				if err != nil {
 					return nil, "", err

@@ -22,7 +22,7 @@ func TestSheetsListCommandUsesDriveListEndpoint(t *testing.T) {
 		if r.URL.Path != "/open-apis/drive/v1/files" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		if r.URL.Query().Get("folder_token") != "root" {
+		if r.URL.Query().Get("folder_token") != "0" {
 			t.Fatalf("unexpected folder_token: %s", r.URL.Query().Get("folder_token"))
 		}
 		if r.URL.Query().Get("page_size") != "2" {
