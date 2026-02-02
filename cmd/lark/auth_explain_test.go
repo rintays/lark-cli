@@ -145,8 +145,13 @@ func TestAuthExplainChatsList(t *testing.T) {
 	if !strings.Contains(payload.SuggestedUserLoginCommand, "im:chat.group_info:readonly") {
 		t.Fatalf("expected suggested_user_login_command to include im:chat.group_info:readonly, got %q", payload.SuggestedUserLoginCommand)
 	}
-	if len(payload.SuggestedUserLoginScopes) == 0 || payload.SuggestedUserLoginScopes[0] != defaultUserOAuthScope {
-		t.Fatalf("expected suggested scopes to include %q first, got %v", defaultUserOAuthScope, payload.SuggestedUserLoginScopes)
+	// chats list does not require offline access, so we should not force
+	// offline_access into the suggested scopes.
+	if len(payload.SuggestedUserLoginScopes) == 0 {
+		t.Fatalf("expected suggested_user_login_scopes")
+	}
+	if payload.SuggestedUserLoginScopes[0] == defaultUserOAuthScope {
+		t.Fatalf("did not expect %q for a non-offline command, got %v", defaultUserOAuthScope, payload.SuggestedUserLoginScopes)
 	}
 }
 
