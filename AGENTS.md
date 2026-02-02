@@ -50,6 +50,8 @@
 - Never commit real credentials or tokens.
 
 ## Agent Notes
+- 2026-02-03: Drive download now accepts output directories, resolves filenames from headers/metadata fallback, and uses user tokens when selected; added download tests for directory output and user-token auth.
+- 2026-02-03: Added AI agent skills docs, aligned structure to `skills/lark-cli/` with references, and expanded workflows across core commands (Drive/Minutes/Calendars/Meetings/Chats/Messages/Contacts/Tasks/Tasklists/Users/Config + Docs/Sheets/Bases/Mail/Wiki) with token/endpoint notes.
 - 2026-01-30: Unified CLI command naming (messages/contacts users), moved required flag validation to Cobra MarkFlagRequired/Args, added CLI flag validation tests, updated README examples.
 - 2026-01-30: Removed legacy HTTP client, migrated whoami/calendar to SDK, added SDK coverage matrix.
 - 2026-01-31: Added user OAuth scope management (scopes/services/readonly/drive-scope/force-consent), user-scope hints for missing permissions, and updated drive/docs/sheets search to require user tokens with `search_key`.
