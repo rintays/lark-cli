@@ -60,6 +60,16 @@ Move-Item .\lark.exe $env:USERPROFILE\bin\lark.exe
 
 ---
 
+## AI Agent Skills
+
+Install the lark CLI skills pack:
+
+```bash
+npx skills add github.com/rintays/lark-cli
+```
+
+---
+
 ## Quickstart
 
 ### 1) Store app credentials

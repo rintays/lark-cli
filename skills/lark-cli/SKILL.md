@@ -80,9 +80,3 @@ See `references/RECIPES.md` for common tasks (send message, search users, read d
 - Config: `references/CONFIG.md`
 - Whoami: `references/WHOAMI.md`
 - Wiki: `references/WIKI.md`
-
-## Repo hints (for agents working in this codebase)
-
-- Build: `go build -o lark ./cmd/lark`
-- Tests: `go test ./...`
-- SDK docs: `go doc ./internal/larksdk`
