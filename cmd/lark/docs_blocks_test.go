@@ -3,7 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -262,6 +265,157 @@ func TestDocsOverwriteCommand(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 	if !strings.Contains(buf.String(), "inserted_blocks") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestDocsOverwriteUploadsImages(t *testing.T) {
+	imageContent := []byte("fake-image")
+	var baseURL string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/docx/v1/documents/blocks/convert":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"first_level_block_ids": []string{"img1"},
+					"blocks": []map[string]any{
+						{
+							"block_id":   "img1",
+							"block_type": 27,
+							"image": map[string]any{
+								"width":  100,
+								"height": 80,
+							},
+						},
+					},
+					"block_id_to_image_urls": []map[string]any{
+						{"block_id": "img1", "image_url": baseURL + "/image.png"},
+					},
+				},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/image.png":
+			w.Header().Set("Content-Type", "image/png")
+			_, _ = w.Write(imageContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/medias/upload_all":
+			if !strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data; boundary=") {
+				t.Fatalf("unexpected content type: %s", r.Header.Get("Content-Type"))
+			}
+			if err := r.ParseMultipartForm(4 << 20); err != nil {
+				t.Fatalf("parse multipart: %v", err)
+			}
+			if r.FormValue("file_name") != "image.png" {
+				t.Fatalf("unexpected file_name: %s", r.FormValue("file_name"))
+			}
+			if r.FormValue("parent_type") != "docx_image" {
+				t.Fatalf("unexpected parent_type: %s", r.FormValue("parent_type"))
+			}
+			if r.FormValue("parent_node") != "doc1" {
+				t.Fatalf("unexpected parent_node: %s", r.FormValue("parent_node"))
+			}
+			if r.FormValue("size") != fmt.Sprintf("%d", len(imageContent)) {
+				t.Fatalf("unexpected size: %s", r.FormValue("size"))
+			}
+			files := r.MultipartForm.File["file"]
+			if len(files) != 1 {
+				t.Fatalf("expected 1 file part, got %d", len(files))
+			}
+			part, err := files[0].Open()
+			if err != nil {
+				t.Fatalf("open file part: %v", err)
+			}
+			defer part.Close()
+			data, err := io.ReadAll(part)
+			if err != nil {
+				t.Fatalf("read file part: %v", err)
+			}
+			if string(data) != string(imageContent) {
+				t.Fatalf("unexpected file content: %q", string(data))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"file_token": "imgtoken",
+				},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/docx/v1/documents/doc1/blocks/doc1/children":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items":      []map[string]any{},
+					"has_more":   false,
+					"page_token": "",
+				},
+			})
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/docx/v1/documents/doc1/blocks/doc1/descendant":
+			var payload map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+			descendants, ok := payload["descendants"].([]any)
+			if !ok || len(descendants) == 0 {
+				t.Fatalf("missing descendants: %#v", payload)
+			}
+			block, ok := descendants[0].(map[string]any)
+			if !ok {
+				t.Fatalf("unexpected descendant: %#v", descendants[0])
+			}
+			image, ok := block["image"].(map[string]any)
+			if !ok {
+				t.Fatalf("missing image block: %#v", block)
+			}
+			if image["token"] != "imgtoken" {
+				t.Fatalf("unexpected image token: %#v", image["token"])
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"document_revision_id": 3,
+					"block_id_relations": []map[string]any{
+						{"temporary_block_id": "img1", "block_id": "new1"},
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+	baseURL = server.URL
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(server.Client()))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"overwrite", "doc1", "--content", "![img](" + baseURL + "/image.png)"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs overwrite error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "image_uploads: 1") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

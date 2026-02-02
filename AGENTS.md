@@ -169,3 +169,5 @@
 - 2026-02-02: Restored Homebrew install command to `brew install rintays/tap/lark` in README.
 - 2026-02-02: Added global output modes (`--plain`/`--color`) and confirmation controls (`--force`/`--no-input`), plus plain TSV table rendering and destructive-operation prompts.
 - 2026-02-02: Standardized authregistry-driven token selection with token-type-aware SDK calls (drive/docs/sheets/export), expanded resource URL parsing/root folder normalization, and updated usage errors/enums/tests.
+- 2026-02-02: Docs overwrite now uploads image blocks via Drive media (docx_image) and replaces image tokens, with best-effort upload summaries; README updated.
+- 2026-02-02: Rendered styled table output via lipgloss/table auto-wrapping with terminal width (lipgloss v1.1.0).
