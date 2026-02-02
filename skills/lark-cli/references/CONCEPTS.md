@@ -4,7 +4,7 @@ This primer is for agents new to Feishu/Lark.
 
 ## Feishu vs Lark
 
-- Feishu (飞书) is the China brand.
+- Feishu is the China brand.
 - Lark is the global brand.
 - API surface and identifiers are the same; UI labels may differ.
 - API endpoints differ by brand/region; use `--platform feishu|lark` to select.
