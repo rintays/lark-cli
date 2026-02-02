@@ -209,12 +209,15 @@ func buildMessageDisplay(message larksdk.Message, styles messageFormatStyles, se
 		contentLines = []string{"(no content)"}
 	}
 	rightLines := make([]string, 0, len(contentLines)+2)
-	rightLines = append(rightLines, styles.renderContent(contentLines[0]))
+	firstLine := styles.renderContent(contentLines[0])
 	meta := formatMessageMetaLine(message, styles)
 	if meta == "" {
 		meta = styles.renderMeta("type - | message id: -")
 	}
-	rightLines = append(rightLines, meta)
+	if meta != "" {
+		firstLine = firstLine + "  " + meta
+	}
+	rightLines = append(rightLines, firstLine)
 	for _, line := range contentLines[1:] {
 		rightLines = append(rightLines, styles.renderContent(line))
 	}
@@ -239,6 +242,7 @@ func renderMessageTable(displays []messageDisplay, styles messageFormatStyles) s
 		Rows(rows...).
 		Border(lipgloss.NormalBorder()).
 		BorderHeader(false).
+		BorderRow(true).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			return cell
 		})
