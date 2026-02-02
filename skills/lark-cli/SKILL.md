@@ -5,7 +5,7 @@ description: Operate Feishu/Lark via the lark CLI (IM, Drive, Docs, Sheets, Mail
 
 # Lark CLI
 
-本技能用于通过 `lark` CLI 操作飞书/Lark 的各类产品能力（IM、Drive、Docs、Sheets、Mail、Calendar、Wiki、Bitable、Tasks 等），并提供最短路径的命令示例与参考资料索引。
+This skill uses the `lark` CLI to operate Feishu/Lark products (IM, Drive, Docs, Sheets, Mail, Calendar, Wiki, Bitable, Tasks, and more), with the shortest-path examples and reference links.
 
 ## What this repo provides
 
@@ -30,7 +30,7 @@ lark users search "Ada" --json
 
 ## Core concepts (tl;dr)
 
-- Feishu (飞书) = Lark (global brand). Same API surface, different API endpoints.
+- Feishu = Lark (global brand). Same API surface, different API endpoints.
 - Most commands follow: `lark <product> <action> [args] [flags]`.
 - Required IDs are positional args (no required `--id` flags).
 - Many commands accept a Lark/Feishu web URL in place of IDs.
@@ -44,6 +44,21 @@ See `references/CONCEPTS.md` for a longer primer.
 - User token: user-scoped operations on behalf of a specific user.
 
 If a command fails with scope errors, check `references/TROUBLESHOOTING.md`.
+
+## Token Type Usage
+
+Use `--token-type` to force the access token type:
+
+- `--token-type auto`: default, auto-select based on command needs.
+- `--token-type tenant`: force tenant token.
+- `--token-type user`: force user token.
+
+Examples:
+
+```bash
+lark whoami --token-type tenant
+lark drive list --token-type user
+```
 
 ## Agent-friendly workflow
 
