@@ -66,9 +66,9 @@ func newAuthExplainCmd(state *appState) *cobra.Command {
 						}
 					}
 				}
-				if requiresOffline {
-					suggestedScopes = ensureOfflineAccess(suggestedScopes)
-				}
+				// Keep backward-compatible behavior: always include offline_access
+				// in suggested user login scopes.
+				suggestedScopes = ensureOfflineAccess(suggestedScopes)
 				scopeArg := strings.Join(suggestedScopes, " ")
 				if scopeArg != "" {
 					suggestedCmd = fmt.Sprintf("lark auth user login --scopes %q", scopeArg)
