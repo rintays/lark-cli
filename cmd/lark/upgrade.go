@@ -71,11 +71,12 @@ func upgradeToLatest(ctx context.Context, state *appState, opts upgradeOptions) 
 			return errors.New("latest version not found")
 		}
 		if opts.CheckOnly {
-			if latest == current {
+			// creativeprojects/go-selfupdate returns version without leading "v".
+			if strings.TrimPrefix(current, "v") == strings.TrimPrefix(latest, "v") {
 				fmt.Fprintln(errWriter(state), "Already up to date.")
 				return nil
 			}
-			fmt.Fprintf(errWriter(state), "Update available: %s -> %s (run: brew upgrade rintays/tap/lark)\n", current, latest)
+			fmt.Fprintf(errWriter(state), "Update available: %s -> v%s (run: brew upgrade rintays/tap/lark)\n", current, strings.TrimPrefix(latest, "v"))
 			return nil
 		}
 		if !opts.Yes {
@@ -93,11 +94,11 @@ func upgradeToLatest(ctx context.Context, state *appState, opts upgradeOptions) 
 	}
 
 	if opts.CheckOnly {
-		if latest == current {
+		if strings.TrimPrefix(current, "v") == strings.TrimPrefix(latest, "v") {
 			fmt.Fprintln(errWriter(state), "Already up to date.")
 			return nil
 		}
-		fmt.Fprintf(errWriter(state), "Update available: %s -> %s\n", current, latest)
+		fmt.Fprintf(errWriter(state), "Update available: %s -> v%s\n", current, strings.TrimPrefix(latest, "v"))
 		return nil
 	}
 
