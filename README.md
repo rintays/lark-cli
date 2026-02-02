@@ -310,6 +310,7 @@ Bitable is Lark/Feishu's database product. In the API, a **base** is also called
 
 - **Drive file:** generic file entity; identified by a **file token**. Folder is identified by **folder token**.
 - **Docs (docx):** document is composed of **blocks** (list/get/update). `DOCUMENT_ID` is a Drive file token.
+- **Docs overwrite:** uploads images referenced in Markdown/HTML (HTTP(S)/file/data URI) and replaces image blocks by default; use `--upload-images=false` to skip.
 - **Sheets:** spreadsheet token identifies the file; **sheet_id** identifies a tab; ranges use A1 notation.
 
 ---

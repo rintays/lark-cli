@@ -63,6 +63,20 @@ type DriveUploadResult struct {
 	File      DriveFile
 }
 
+type UploadDriveMediaRequest struct {
+	FileName   string
+	ParentType string
+	ParentNode string
+	Size       int64
+	File       io.Reader
+	Checksum   string
+	Extra      string
+}
+
+type DriveMediaUploadResult struct {
+	FileToken string
+}
+
 type ListDriveFilesRequest struct {
 	FolderToken string
 	PageSize    int

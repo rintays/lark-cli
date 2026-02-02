@@ -66,6 +66,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 	var contentType string
 	var content string
 	var contentFile string
+	var uploadImages bool
 
 	cmd := &cobra.Command{
 		Use:   "overwrite <document-id>",
@@ -110,6 +111,14 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 			}
 			scrubDocxTableMergeInfo(convertResp.Blocks)
 
+			var imageSummary docxImageUploadSummary
+			if uploadImages && len(convertResp.BlockIdToImageUrls) > 0 {
+				imageSummary, err = uploadDocxImageBlocks(cmd.Context(), state.SDK, accessToken, documentID, contentFile, convertResp)
+				if err != nil {
+					return err
+				}
+			}
+
 			deleted, err := clearDocxBlockChildren(cmd.Context(), state.SDK, accessToken, documentID, documentID)
 			if err != nil {
 				return err
@@ -142,6 +151,12 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 				"image_block_url_map":   convertResp.BlockIdToImageUrls,
 				"first_level_block_ids": convertResp.FirstLevelBlockIds,
 			}
+			if len(imageSummary.Records) > 0 {
+				payload["image_block_uploads"] = imageSummary.Records
+			}
+			if len(imageSummary.TokenMap) > 0 {
+				payload["image_block_token_map"] = imageSummary.TokenMap
+			}
 			revision := ""
 			if created != nil {
 				payload["block_id_relations"] = created.BlockIdRelations
@@ -156,7 +171,11 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 				[]string{documentID, fmt.Sprintf("%d", deleted), fmt.Sprintf("%d", len(convertResp.Blocks)), revision},
 			)
 			if len(convertResp.BlockIdToImageUrls) > 0 {
-				text = fmt.Sprintf("%s\nimage_blocks: %d (upload and replace required)", text, len(convertResp.BlockIdToImageUrls))
+				if uploadImages {
+					text = fmt.Sprintf("%s\nimage_blocks: %d\nimage_uploads: %d\nimage_upload_errors: %d", text, imageSummary.Total, imageSummary.Uploaded, imageSummary.Failed)
+				} else {
+					text = fmt.Sprintf("%s\nimage_blocks: %d (upload and replace required)", text, len(convertResp.BlockIdToImageUrls))
+				}
 			}
 			return state.Printer.Print(payload, text)
 		},
@@ -165,6 +184,7 @@ func newDocsOverwriteCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&contentType, "content-type", "markdown", "content type (markdown|html)")
 	cmd.Flags().StringVar(&content, "content", "", "raw markdown/html content")
 	cmd.Flags().StringVar(&contentFile, "content-file", "", "path to file containing markdown/html content")
+	cmd.Flags().BoolVar(&uploadImages, "upload-images", true, "upload and replace image blocks (best-effort)")
 	return cmd
 }
 

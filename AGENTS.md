@@ -167,3 +167,4 @@
 - 2026-02-02: Added concepts sections for Docs/Drive/Sheets/Wiki/Mail/Calendar/Meetings/Minutes/Tasks/IM in README.
 - 2026-02-02: Simplified Homebrew install command in README to use `brew install lark`.
 - 2026-02-02: Restored Homebrew install command to `brew install rintays/tap/lark` in README.
+- 2026-02-02: Docs overwrite now uploads image blocks via Drive media (docx_image) and replaces image tokens, with best-effort upload summaries; README updated.
