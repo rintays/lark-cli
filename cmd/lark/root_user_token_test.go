@@ -52,31 +52,11 @@ func TestEnsureUserTokenUsesCache(t *testing.T) {
 }
 
 func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
-	sawAppToken := false
 	sawRefresh := false
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/open-apis/auth/v3/app_access_token/internal":
-			sawAppToken = true
-			var payload map[string]string
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-				t.Fatalf("decode payload: %v", err)
-			}
-			if payload["app_id"] != "app" || payload["app_secret"] != "secret" {
-				t.Fatalf("unexpected credentials: %v", payload)
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"code":             0,
-				"msg":              "ok",
-				"app_access_token": "app-token",
-				"expire":           3600,
-			})
-		case "/open-apis/authen/v1/refresh_access_token":
+		case "/open-apis/authen/v2/oauth/token":
 			sawRefresh = true
-			if authHeader := r.Header.Get("Authorization"); authHeader != "Bearer app-token" {
-				t.Fatalf("unexpected authorization: %s", authHeader)
-			}
 			var payload map[string]string
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				t.Fatalf("decode refresh payload: %v", err)
@@ -84,18 +64,18 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 			if payload["grant_type"] != "refresh_token" {
 				t.Fatalf("unexpected grant_type: %s", payload["grant_type"])
 			}
+			if payload["client_id"] != "app" || payload["client_secret"] != "secret" {
+				t.Fatalf("unexpected credentials: %v", payload)
+			}
 			if payload["refresh_token"] != "refresh-me" {
 				t.Fatalf("unexpected refresh_token: %s", payload["refresh_token"])
 			}
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"code": 0,
-				"msg":  "ok",
-				"data": map[string]any{
-					"access_token":  "new-user-token",
-					"expires_in":    3600,
-					"refresh_token": "new-refresh-token",
-				},
+				"code":          0,
+				"access_token":  "new-user-token",
+				"expires_in":    3600,
+				"refresh_token": "new-refresh-token",
 			})
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -136,8 +116,8 @@ func TestEnsureUserTokenRefreshesAndSaves(t *testing.T) {
 	if token != "new-user-token" {
 		t.Fatalf("expected refreshed token, got %s", token)
 	}
-	if !sawAppToken || !sawRefresh {
-		t.Fatalf("expected refresh flow, app token: %v refresh: %v", sawAppToken, sawRefresh)
+	if !sawRefresh {
+		t.Fatalf("expected refresh flow")
 	}
 
 	data, err := os.ReadFile(configPath)
@@ -221,19 +201,12 @@ func TestEnsureUserTokenMissingRefreshTokenClears(t *testing.T) {
 func TestEnsureUserTokenRefreshFailureClears(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/open-apis/auth/v3/app_access_token/internal":
+		case "/open-apis/authen/v2/oauth/token":
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"code":             0,
-				"msg":              "ok",
-				"app_access_token": "app-token",
-				"expire":           3600,
-			})
-		case "/open-apis/authen/v1/refresh_access_token":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"code": 999,
-				"msg":  "invalid refresh_token",
+				"code":              999,
+				"error":             "invalid_request",
+				"error_description": "invalid refresh_token",
 			})
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)

@@ -50,6 +50,7 @@
 - Never commit real credentials or tokens.
 
 ## Agent Notes
+- 2026-02-03: Switched user access token refresh to the OAuth v2 token endpoint (client_id/client_secret) and updated refresh token tests accordingly.
 - 2026-02-03: Drive download now accepts output directories, resolves filenames from headers/metadata fallback, and uses user tokens when selected; added download tests for directory output and user-token auth.
 - 2026-02-03: Added AI agent skills docs, aligned structure to `skills/lark-cli/` with references, and expanded skills coverage across core commands (Drive/Minutes/Calendars/Meetings/Chats/Messages/Contacts/Tasks/Tasklists/Users/Config + Docs/Sheets/Bases/Mail/Wiki) with token/endpoint notes; added README skills install hint and direct GitHub Releases download steps in skills install.
 - 2026-02-03: Removed unused skills proposal reference and documented `--token-type` usage in skills entry.

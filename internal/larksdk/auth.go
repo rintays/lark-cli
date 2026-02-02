@@ -1,14 +1,17 @@
 package larksdk
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
-	larkauthen "github.com/larksuite/oapi-sdk-go/v3/service/authen/v1"
 )
 
 type RefreshAccessTokenError struct {
@@ -57,49 +60,98 @@ func (c *Client) RefreshUserAccessToken(ctx context.Context, refreshToken string
 	if refreshToken == "" {
 		return "", "", 0, errors.New("refresh token is required")
 	}
-	appAccessToken, err := c.appAccessToken(ctx)
+	endpoint, err := c.oauthTokenURL()
 	if err != nil {
 		return "", "", 0, err
 	}
-	body := larkauthen.NewCreateRefreshAccessTokenReqBodyBuilder().
-		GrantType("refresh_token").
-		RefreshToken(refreshToken).
-		Build()
-	req := larkauthen.NewCreateRefreshAccessTokenReqBuilder().Body(body).Build()
-	resp, err := c.sdk.Authen.V1.RefreshAccessToken.Create(ctx, req, func(option *larkcore.RequestOption) {
-		option.AppAccessToken = appAccessToken
-	})
+	payload := map[string]string{
+		"grant_type":    "refresh_token",
+		"client_id":     c.coreConfig.AppId,
+		"client_secret": c.coreConfig.AppSecret,
+		"refresh_token": refreshToken,
+	}
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", "", 0, err
 	}
-	if resp == nil {
-		return "", "", 0, errors.New("refresh access token failed: empty response")
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return "", "", 0, err
 	}
-	if !resp.Success() {
-		return "", "", 0, &RefreshAccessTokenError{Code: resp.Code, Msg: resp.Msg}
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	httpClient := http.DefaultClient
+	if c.coreConfig != nil && c.coreConfig.HttpClient != nil {
+		httpClient = c.coreConfig.HttpClient
 	}
-	if resp.Data == nil {
-		return "", "", 0, errors.New("refresh access token failed: missing data")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", "", 0, err
 	}
-	accessToken := ""
-	if resp.Data.AccessToken != nil {
-		accessToken = *resp.Data.AccessToken
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", 0, err
 	}
-	if accessToken == "" {
+	var parsed oauthTokenResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		if resp.StatusCode < 200 || resp.StatusCode > 299 {
+			return "", "", 0, fmt.Errorf("refresh access token failed: %s", strings.TrimSpace(string(data)))
+		}
+		return "", "", 0, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		msg := parsed.ErrorDescription
+		if msg == "" {
+			msg = parsed.Error
+		}
+		if msg == "" {
+			msg = parsed.Msg
+		}
+		if msg == "" {
+			msg = strings.TrimSpace(string(data))
+		}
+		return "", "", 0, &RefreshAccessTokenError{Code: parsed.Code, Msg: msg}
+	}
+	if parsed.Code != 0 || parsed.Error != "" {
+		msg := parsed.ErrorDescription
+		if msg == "" {
+			msg = parsed.Error
+		}
+		if msg == "" {
+			msg = parsed.Msg
+		}
+		return "", "", 0, &RefreshAccessTokenError{Code: parsed.Code, Msg: msg}
+	}
+	if parsed.AccessToken == "" {
 		return "", "", 0, errors.New("refresh access token failed: missing access_token")
 	}
-	expiresIn := int64(0)
-	if resp.Data.ExpiresIn != nil {
-		expiresIn = int64(*resp.Data.ExpiresIn)
-	}
-	if expiresIn <= 0 {
+	if parsed.ExpiresIn <= 0 {
 		return "", "", 0, errors.New("refresh access token failed: invalid expires_in")
 	}
-	newRefreshToken := ""
-	if resp.Data.RefreshToken != nil {
-		newRefreshToken = *resp.Data.RefreshToken
+	return parsed.AccessToken, parsed.RefreshToken, parsed.ExpiresIn, nil
+}
+
+type oauthTokenResponse struct {
+	Code             int    `json:"code"`
+	Msg              string `json:"msg"`
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int64  `json:"expires_in"`
+	RefreshToken     string `json:"refresh_token"`
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+func (c *Client) oauthTokenURL() (string, error) {
+	if c == nil || c.coreConfig == nil {
+		return "", errors.New("sdk config is required")
 	}
-	return accessToken, newRefreshToken, expiresIn, nil
+	base, err := url.Parse(c.coreConfig.BaseUrl)
+	if err != nil {
+		return "", err
+	}
+	base.Path = "/open-apis/authen/v2/oauth/token"
+	return base.String(), nil
 }
 
 func (c *Client) appAccessToken(ctx context.Context) (string, error) {
