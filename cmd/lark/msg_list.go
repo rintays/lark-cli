@@ -209,16 +209,12 @@ func buildMessageDisplay(message larksdk.Message, styles messageFormatStyles, se
 		contentLines = []string{"(no content)"}
 	}
 	rightLines := make([]string, 0, len(contentLines)+2)
-	firstLine := styles.renderContent(contentLines[0])
 	meta := formatMessageMetaLine(message, styles)
 	if meta == "" {
 		meta = styles.renderMeta("type - | message id: -")
 	}
-	if meta != "" {
-		firstLine = firstLine + "  " + meta
-	}
-	rightLines = append(rightLines, firstLine)
-	for _, line := range contentLines[1:] {
+	rightLines = append(rightLines, meta)
+	for _, line := range contentLines {
 		rightLines = append(rightLines, styles.renderContent(line))
 	}
 	return messageDisplay{
