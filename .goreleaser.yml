@@ -57,7 +57,7 @@ brews:
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
-    homepage: https://github.com/rintays/lark
+    homepage: https://github.com/rintays/lark-cli
     description: A Go CLI for Feishu/Lark inspired by gog
     license: MIT
     install: |

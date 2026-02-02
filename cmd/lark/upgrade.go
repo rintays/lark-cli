@@ -133,7 +133,7 @@ func upgradeToLatest(ctx context.Context, state *appState, opts upgradeOptions) 
 		return fmt.Errorf("could not locate executable path: %w", err)
 	}
 
-	repo := selfupdate.ParseSlug("rintays/lark")
+	repo := selfupdate.ParseSlug("rintays/lark-cli")
 	updated, err := selfupdate.UpdateCommand(ctx, exe, current, repo)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func upgradeToLatest(ctx context.Context, state *appState, opts upgradeOptions) 
 }
 
 func detectLatest(ctx context.Context, prerelease bool) (string, bool, error) {
-	repo := selfupdate.ParseSlug("rintays/lark")
+	repo := selfupdate.ParseSlug("rintays/lark-cli")
 	if !prerelease {
 		rel, found, err := selfupdate.DetectLatest(ctx, repo)
 		if err != nil {

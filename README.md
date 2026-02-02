@@ -23,7 +23,7 @@ brew install rintays/tap/lark
 ### Build from source
 
 ```bash
-git clone https://github.com/rintays/lark.git
+git clone https://github.com/rintays/lark-cli.git
 cd lark
 go install ./cmd/lark
 lark --help
@@ -39,12 +39,12 @@ go build -o lark ./cmd/lark
 
 ### Download from GitHub Releases
 
-Download the archive for your OS from `https://github.com/rintays/lark/releases`, extract it, and move `lark` to your PATH.
+Download the archive for your OS from `https://github.com/rintays/lark-cli/releases`, extract it, and move `lark` to your PATH.
 
 macOS/Linux example:
 
 ```bash
-curl -L https://github.com/rintays/lark/releases/latest/download/lark_<VERSION>_darwin_arm64.tar.gz -o lark.tar.gz
+curl -L https://github.com/rintays/lark-cli/releases/latest/download/lark_<VERSION>_darwin_arm64.tar.gz -o lark.tar.gz
 tar -xzf lark.tar.gz
 chmod +x lark
 sudo mv lark /usr/local/bin/lark
@@ -53,7 +53,7 @@ sudo mv lark /usr/local/bin/lark
 Windows (PowerShell) example:
 
 ```powershell
-Invoke-WebRequest -Uri https://github.com/rintays/lark/releases/latest/download/lark_<VERSION>_windows_amd64.zip -OutFile lark.zip
+Invoke-WebRequest -Uri https://github.com/rintays/lark-cli/releases/latest/download/lark_<VERSION>_windows_amd64.zip -OutFile lark.zip
 Expand-Archive lark.zip -DestinationPath .
 Move-Item .\lark.exe $env:USERPROFILE\bin\lark.exe
 ```
