@@ -103,7 +103,8 @@ func TestMsgSearchCommandWithSDK(t *testing.T) {
 		t.Fatalf("msg search error: %v", err)
 	}
 	outputText := buf.String()
-	// The human-readable format is a small table; keep assertions resilient.
+	// Output is rendered as a table; assert on stable substrings rather than
+	// exact formatting.
 	if !strings.Contains(outputText, "message id: m1") {
 		t.Fatalf("unexpected output: %q", outputText)
 	}
