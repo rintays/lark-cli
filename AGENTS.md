@@ -166,3 +166,4 @@
 - 2026-02-02: Clarified build-from-source usage by separating go install vs local binary commands in README.
 - 2026-02-02: Added concepts sections for Docs/Drive/Sheets/Wiki/Mail/Calendar/Meetings/Minutes/Tasks/IM in README.
 - 2026-02-02: Simplified Homebrew install command in README to use `brew install lark`.
+- 2026-02-02: Restored Homebrew install command to `brew install rintays/tap/lark` in README.

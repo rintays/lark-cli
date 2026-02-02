@@ -17,7 +17,7 @@ One CLI for **Feishu (飞书)** / **Lark**: IM, Drive, Docs, Sheets, Mail, Calen
 
 ```bash
 brew tap rintays/tap
-brew install lark
+brew install rintays/tap/lark
 ```
 
 ### Build from source
