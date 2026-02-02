@@ -234,9 +234,12 @@ func renderMessageTable(displays []messageDisplay, styles messageFormatStyles) s
 		rows = append(rows, []string{left, right})
 	}
 	cell := lipgloss.NewStyle().Padding(0, 1).Align(lipgloss.Left)
+	borderStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "245", Dark: "240"})
 	table := liptable.New().
 		Rows(rows...).
 		Border(lipgloss.NormalBorder()).
+		BorderStyle(borderStyle).
 		BorderHeader(false).
 		BorderRow(true).
 		StyleFunc(func(row, col int) lipgloss.Style {
