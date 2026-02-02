@@ -168,3 +168,4 @@
 - 2026-02-02: Simplified Homebrew install command in README to use `brew install lark`.
 - 2026-02-02: Restored Homebrew install command to `brew install rintays/tap/lark` in README.
 - 2026-02-02: Docs overwrite now uploads image blocks via Drive media (docx_image) and replaces image tokens, with best-effort upload summaries; README updated.
+- 2026-02-02: Rendered styled table output via lipgloss/table auto-wrapping with terminal width (lipgloss v1.1.0).
