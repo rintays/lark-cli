@@ -378,8 +378,15 @@ func TestDocsExportCommand(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer token" {
 			t.Fatalf("missing auth header")
 		}
-		if r.URL.RawQuery != "" {
-			t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+		// Get export task requires the original file token as query parameter.
+		if r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1" {
+			if r.URL.RawQuery != "token=doc1" {
+				t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+			}
+		} else {
+			if r.URL.RawQuery != "" {
+				t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+			}
 		}
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
@@ -656,5 +663,100 @@ func TestDocsExportCommandRequiresSDK(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "app_id and app_secret") && !strings.Contains(err.Error(), "missing app credentials") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDocsExportFallsBackToUserTokenOnFieldValidation(t *testing.T) {
+	calls := make([]string, 0, 8)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		calls = append(calls, r.Method+" "+r.URL.Path+" "+auth)
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
+			w.Header().Set("Content-Type", "application/json")
+			if auth == "Bearer tenant" {
+				_ = json.NewEncoder(w).Encode(map[string]any{"code": 99992402, "msg": "field validation failed", "data": map[string]any{}})
+				return
+			}
+			if auth == "Bearer user" {
+				_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "msg": "ok", "data": map[string]any{"ticket": "t1"}})
+				return
+			}
+			t.Fatalf("unexpected auth header: %q", auth)
+
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/t1":
+			if r.URL.Query().Get("token") != "doc1" {
+				t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+			}
+			if auth != "Bearer user" {
+				t.Fatalf("expected user auth for polling, got %q", auth)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "msg": "ok", "data": map[string]any{"result": map[string]any{"job_status": 0, "file_token": "f1", "file_extension": "pdf", "type": "docx"}}})
+			return
+
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/file/f1/download":
+			if auth != "Bearer user" {
+				t.Fatalf("expected user auth for download, got %q", auth)
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("hello"))
+			return
+
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.String())
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "out.pdf")
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "tenant",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			KeyringBackend:             "file",
+			DefaultUserAccount:         "default",
+			UserAccounts: map[string]*config.UserAccount{
+				"default": {
+					UserAccessToken:          "user",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+					UserAccessTokenScope:     "offline_access drive:export:readonly",
+				},
+			},
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs export error: %v", err)
+	}
+
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	if string(data) != "hello" {
+		t.Fatalf("unexpected output: %q", string(data))
+	}
+
+	joined := strings.Join(calls, "\n")
+	if !strings.Contains(joined, "POST /open-apis/drive/v1/export_tasks Bearer tenant") {
+		t.Fatalf("expected tenant create call, got:\n%s", joined)
+	}
+	if !strings.Contains(joined, "POST /open-apis/drive/v1/export_tasks Bearer user") {
+		t.Fatalf("expected user create call, got:\n%s", joined)
 	}
 }
