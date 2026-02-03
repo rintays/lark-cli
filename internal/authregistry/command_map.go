@@ -8,7 +8,9 @@ import "strings"
 // Keys are space-separated command paths. Values are service names.
 var commandServiceMap = map[string][]string{
 	"drive":                 {"drive"},
+	"drive export":          {"drive-export"},
 	"docs":                  {"docs"},
+	"docs export":           {"drive-export"},
 	"sheets":                {"sheets"},
 	"mail":                  {"mail"},
 	"mail send":             {"mail-send"},

@@ -178,7 +178,7 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ticket, err := state.SDK.CreateExportTask(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), larksdk.CreateExportTaskRequest{
+			ticket, token, tokenTypeValue, err := createExportTaskWithFallback(cmd.Context(), state, token, tokenTypeValue, larksdk.CreateExportTaskRequest{
 				Token:         documentID,
 				Type:          "docx",
 				FileExtension: format,
@@ -186,11 +186,11 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := pollExportTask(cmd.Context(), state.SDK, token, larksdk.AccessTokenType(tokenTypeValue), ticket)
+			result, token, tokenTypeValue, err := pollExportTaskWithFallback(cmd.Context(), state, token, tokenTypeValue, ticket, documentID)
 			if err != nil {
 				return err
 			}
-			reader, err := state.SDK.DownloadExportedFile(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), result.FileToken)
+			reader, token, tokenTypeValue, err := downloadExportedFileWithFallback(cmd.Context(), state, token, tokenTypeValue, result.FileToken)
 			if err != nil {
 				return err
 			}
@@ -449,16 +449,16 @@ func stripDocxTitlePrefix(content, title string) string {
 }
 
 type exportTaskClient interface {
-	GetExportTask(ctx context.Context, token string, tokenType larksdk.AccessTokenType, ticket string) (larksdk.ExportTaskResult, error)
+	GetExportTask(ctx context.Context, token string, tokenType larksdk.AccessTokenType, ticket string, exportToken string) (larksdk.ExportTaskResult, error)
 }
 
-func pollExportTask(ctx context.Context, client exportTaskClient, token string, tokenType larksdk.AccessTokenType, ticket string) (larksdk.ExportTaskResult, error) {
+func pollExportTask(ctx context.Context, client exportTaskClient, token string, tokenType larksdk.AccessTokenType, ticket string, exportToken string) (larksdk.ExportTaskResult, error) {
 	var lastResult larksdk.ExportTaskResult
 	for attempt := 0; attempt < exportTaskMaxAttempts; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return larksdk.ExportTaskResult{}, err
 		}
-		result, err := client.GetExportTask(ctx, token, tokenType, ticket)
+		result, err := client.GetExportTask(ctx, token, tokenType, ticket, exportToken)
 		if err != nil {
 			return larksdk.ExportTaskResult{}, err
 		}

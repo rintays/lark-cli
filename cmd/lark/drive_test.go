@@ -1188,8 +1188,15 @@ func TestDriveExportCommand(t *testing.T) {
 				if r.Header.Get("Authorization") != "Bearer token" {
 					t.Fatalf("missing auth header")
 				}
-				if r.URL.RawQuery != "" {
-					t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+				// Get export task requires the original file token as query parameter.
+				if r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1" {
+					if r.URL.RawQuery != "token=f1" {
+						t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+					}
+				} else {
+					if r.URL.RawQuery != "" {
+						t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+					}
 				}
 				switch {
 				case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
