@@ -106,7 +106,7 @@ func TableText(headers []string, rows [][]string) string {
 		}
 	}
 
-	lines := make([]string, 0, len(rows)+2)
+	lines := make([]string, 0, len(rows))
 	lines = append(lines, strings.Join(headers, "\t"))
 	separator := make([]string, len(headers))
 	for i, width := range widths {
@@ -134,7 +134,7 @@ func TableTSV(headers []string, rows [][]string) string {
 	if len(headers) == 0 {
 		return ""
 	}
-	lines := make([]string, 0, len(rows)+1)
+	lines := make([]string, 0, len(rows))
 	lines = append(lines, strings.Join(headers, "\t"))
 	for _, row := range rows {
 		if len(row) < len(headers) {
