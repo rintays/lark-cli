@@ -581,6 +581,87 @@ func TestSheetsCreateCommandWithSheetTitle(t *testing.T) {
 	}
 }
 
+func TestSheetsCreateCommandSkipsSheetTitleUpdateWhenUnchanged(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		switch r.URL.Path {
+		case "/open-apis/sheets/v3/spreadsheets":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"spreadsheet_token": "spreadsheet",
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"spreadsheet": map[string]any{
+						"title":    "Budget Q1",
+						"token":    "spreadsheet",
+						"owner_id": "ou_1",
+					},
+				},
+			})
+		case "/open-apis/sheets/v3/spreadsheets/spreadsheet/sheets/query":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"sheets": []map[string]any{
+						{
+							"sheet_id": "sheet_1",
+							"title":    "Sheet1",
+							"index":    0,
+							"hidden":   false,
+						},
+					},
+				},
+			})
+		case "/open-apis/sheets/v2/spreadsheets/spreadsheet/sheets_batch_update":
+			t.Fatalf("unexpected sheet title update request")
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newSheetsCmd(state)
+	cmd.SetArgs([]string{"create", "--title", "Budget Q1", "--sheet-title", "Sheet1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("sheets create error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Sheet1") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
 func TestSheetsCreateCommandRequiresTitle(t *testing.T) {
 	requests := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

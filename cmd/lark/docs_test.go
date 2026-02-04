@@ -483,6 +483,99 @@ func TestDocsExportCommand(t *testing.T) {
 	}
 }
 
+func TestDocsExportCommandFailureDetails(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer token" {
+			t.Fatalf("missing auth header")
+		}
+		if r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1" {
+			if r.URL.RawQuery != "token=doc1" {
+				t.Fatalf("unexpected query: %q", r.URL.RawQuery)
+			}
+		}
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/open-apis/drive/v1/export_tasks":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"ticket": "ticket1",
+				},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/ticket1":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"result": map[string]any{
+						"file_extension": "pdf",
+						"type":           "docx",
+						"file_name":      "Doc.pdf",
+						"file_token":     "",
+						"file_size":      0,
+						"job_error_msg":  "job failed",
+						"job_status":     2,
+					},
+				},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/open-apis/drive/v1/export_tasks/file/file1/download":
+			t.Fatalf("unexpected export download request")
+		default:
+			t.Fatalf("unexpected path: %s %s", r.Method, r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	state := &appState{
+		Config: &config.Config{
+			AppID:                      "app",
+			AppSecret:                  "secret",
+			BaseURL:                    baseURL,
+			TenantAccessToken:          "token",
+			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+		},
+		Printer: output.Printer{Writer: &bytes.Buffer{}},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	outDir := t.TempDir()
+	outPath := filepath.Join(outDir, "export.pdf")
+	prevInterval := exportTaskPollInterval
+	exportTaskPollInterval = 0
+	defer func() {
+		exportTaskPollInterval = prevInterval
+	}()
+
+	cmd := newDocsCmd(state)
+	cmd.SetArgs([]string{"export", "doc1", "--format", "pdf", "--out", outPath})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "job_status=2") {
+		t.Fatalf("expected job_status details, got: %v", err)
+	}
+	if !strings.Contains(errMsg, "job_error_msg=\"job failed\"") {
+		t.Fatalf("expected job_error_msg details, got: %v", err)
+	}
+	if !strings.Contains(errMsg, "file_name=\"Doc.pdf\"") {
+		t.Fatalf("expected file_name details, got: %v", err)
+	}
+	if !strings.Contains(errMsg, "type=\"docx\"") {
+		t.Fatalf("expected type details, got: %v", err)
+	}
+	if !strings.Contains(errMsg, "file_extension=\"pdf\"") {
+		t.Fatalf("expected file_extension details, got: %v", err)
+	}
+}
+
 func TestDocsInfoCommandRequiresSDK(t *testing.T) {
 	state := &appState{
 		Config: &config.Config{

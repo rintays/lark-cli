@@ -59,8 +59,12 @@ func userOAuthReloginCommandForCommand(command string) (reloginCmd string, note 
 		return "", "", ok, err
 	}
 
-	scopeArg := strings.Join(scopes, " ")
-	reloginCmd = fmt.Sprintf("lark auth user login --scopes %q --force-consent", scopeArg)
+	if len(services) > 0 && len(undeclared) == 0 {
+		reloginCmd = fmt.Sprintf("lark auth user login --services %q --force-consent", strings.Join(services, ","))
+	} else {
+		scopeArg := strings.Join(scopes, " ")
+		reloginCmd = fmt.Sprintf("lark auth user login --scopes %q --force-consent", scopeArg)
+	}
 
 	command = strings.TrimSpace(command)
 	note = fmt.Sprintf("required by command %q (services: %s)", command, strings.Join(services, ", "))

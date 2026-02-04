@@ -47,14 +47,17 @@ func newSheetsCreateCmd(state *appState) *cobra.Command {
 					defaultSheetTitle = strings.TrimSpace(metadata.Sheets[0].Title)
 				}
 			}
-			if strings.TrimSpace(sheetTitle) != "" {
+			normalizedSheetTitle := strings.TrimSpace(sheetTitle)
+			if normalizedSheetTitle != "" {
 				if defaultSheetID == "" {
 					return errors.New("sheet id is required to set --sheet-title")
 				}
-				if err := state.SDK.UpdateSpreadsheetSheetTitle(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetToken, defaultSheetID, sheetTitle); err != nil {
-					return err
+				if strings.TrimSpace(defaultSheetTitle) != normalizedSheetTitle {
+					if err := state.SDK.UpdateSpreadsheetSheetTitle(cmd.Context(), token, larksdk.AccessTokenType(tokenTypeValue), spreadsheetToken, defaultSheetID, normalizedSheetTitle); err != nil {
+						return err
+					}
 				}
-				defaultSheetTitle = sheetTitle
+				defaultSheetTitle = normalizedSheetTitle
 			}
 			payload := map[string]any{
 				"spreadsheet_token": spreadsheetToken,

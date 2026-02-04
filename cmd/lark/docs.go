@@ -466,15 +466,12 @@ func pollExportTask(ctx context.Context, client exportTaskClient, token string, 
 		switch result.JobStatus {
 		case 0:
 			if result.FileToken == "" {
-				return larksdk.ExportTaskResult{}, errors.New("export task completed without file token")
+				return larksdk.ExportTaskResult{}, fmt.Errorf("export task completed without file token (%s)", exportTaskFailureDetails(result))
 			}
 			return result, nil
 		case 1:
 		default:
-			if result.JobErrorMsg != "" {
-				return larksdk.ExportTaskResult{}, fmt.Errorf("export task failed: %s", result.JobErrorMsg)
-			}
-			return larksdk.ExportTaskResult{}, fmt.Errorf("export task failed with status %d", result.JobStatus)
+			return larksdk.ExportTaskResult{}, fmt.Errorf("export task failed (%s)", exportTaskFailureDetails(result))
 		}
 		if exportTaskPollInterval > 0 {
 			select {
@@ -484,8 +481,15 @@ func pollExportTask(ctx context.Context, client exportTaskClient, token string, 
 			}
 		}
 	}
-	if lastResult.JobErrorMsg != "" {
-		return larksdk.ExportTaskResult{}, fmt.Errorf("export task not ready: %s", lastResult.JobErrorMsg)
-	}
-	return larksdk.ExportTaskResult{}, fmt.Errorf("export task not ready after %d attempts", exportTaskMaxAttempts)
+	return larksdk.ExportTaskResult{}, fmt.Errorf("export task not ready after %d attempts (%s)", exportTaskMaxAttempts, exportTaskFailureDetails(lastResult))
+}
+
+func exportTaskFailureDetails(result larksdk.ExportTaskResult) string {
+	return fmt.Sprintf("job_status=%d job_error_msg=%q file_name=%q type=%q file_extension=%q",
+		result.JobStatus,
+		result.JobErrorMsg,
+		result.FileName,
+		result.Type,
+		result.FileExtension,
+	)
 }

@@ -70,7 +70,12 @@ func newAuthExplainCmd(state *appState) *cobra.Command {
 				// in suggested user login scopes.
 				suggestedScopes = ensureOfflineAccess(suggestedScopes)
 				scopeArg := strings.Join(suggestedScopes, " ")
-				if scopeArg != "" {
+				if len(services) > 0 && len(missingScopeDecls) == 0 {
+					suggestedCmd = fmt.Sprintf("lark auth user login --services %q", strings.Join(services, ","))
+					if readonly {
+						suggestedCmd += " --readonly"
+					}
+				} else if scopeArg != "" {
 					suggestedCmd = fmt.Sprintf("lark auth user login --scopes %q", scopeArg)
 				}
 			}

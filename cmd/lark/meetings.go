@@ -12,6 +12,11 @@ import (
 	"lark/internal/larksdk"
 )
 
+const (
+	meetingListMinPageSize = 20
+	meetingListMaxPageSize = 200
+)
+
 func newMeetingsCmd(state *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "meetings",
@@ -183,7 +188,10 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 				includeWebinarPtr = &includeWebinar
 			}
 			for {
-				pageSize := remaining
+				pageSize := meetingListPageSize(remaining)
+				if pageSize <= 0 {
+					break
+				}
 				req := larksdk.ListMeetingsRequest{
 					MeetingStatus:           meetingStatusPtr,
 					MeetingNo:               meetingNo,
@@ -458,4 +466,18 @@ func parseMeetingTime(raw string) (int64, error) {
 		return 0, err
 	}
 	return parsed.Unix(), nil
+}
+
+func meetingListPageSize(remaining int) int {
+	if remaining <= 0 {
+		return 0
+	}
+	pageSize := remaining
+	if pageSize < meetingListMinPageSize {
+		pageSize = meetingListMinPageSize
+	}
+	if pageSize > meetingListMaxPageSize {
+		pageSize = meetingListMaxPageSize
+	}
+	return pageSize
 }

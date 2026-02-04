@@ -27,10 +27,15 @@ func withUserScopeHintForCommand(state *appState, err error) error {
 	}
 
 	scopes := extractScopesFromErrorMessage(msg)
-	if len(scopes) == 0 && state != nil {
-		_, inferred, _, ok, inferErr := userOAuthScopesForCommand(state.Command)
+	fromError := len(scopes) > 0
+	var services []string
+	var undeclared []string
+	if !fromError && state != nil {
+		inferredServices, inferred, missingDecls, ok, inferErr := userOAuthScopesForCommand(state.Command)
 		if inferErr == nil && ok {
 			scopes = inferred
+			services = inferredServices
+			undeclared = missingDecls
 		}
 	}
 	if len(scopes) == 0 {
@@ -39,7 +44,14 @@ func withUserScopeHintForCommand(state *appState, err error) error {
 
 	scopes = ensureOfflineAccess(selectPreferredScopes(scopes))
 	scopeArg := strings.Join(scopes, " ")
-	hint := fmt.Sprintf("Missing user OAuth scopes: %s.\nRe-authorize with:\n  lark auth user login --scopes %q --force-consent", strings.Join(scopes, ", "), scopeArg)
+	reloginCmd := ""
+	if !fromError && len(services) > 0 && len(undeclared) == 0 {
+		reloginCmd = fmt.Sprintf("lark auth user login --services %q --force-consent", strings.Join(services, ","))
+	}
+	if reloginCmd == "" {
+		reloginCmd = fmt.Sprintf("lark auth user login --scopes %q --force-consent", scopeArg)
+	}
+	hint := fmt.Sprintf("Missing user OAuth scopes: %s.\nRe-authorize with:\n  %s", strings.Join(scopes, ", "), reloginCmd)
 	return fmt.Errorf("%s\n%s", msg, hint)
 }
 

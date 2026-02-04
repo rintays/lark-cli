@@ -125,7 +125,8 @@ func TestMeetingListCommand(t *testing.T) {
 			if r.URL.Query().Get("end_time") != endUnix {
 				t.Fatalf("unexpected end_time: %s", r.URL.Query().Get("end_time"))
 			}
-			if r.URL.Query().Get("page_size") != "2" {
+			expectedPageSize := strconv.Itoa(meetingListPageSize(2))
+			if r.URL.Query().Get("page_size") != expectedPageSize {
 				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
 			}
 			if r.Header.Get("Authorization") != "Bearer token" {
@@ -176,6 +177,45 @@ func TestMeetingListCommand(t *testing.T) {
 
 		if !strings.Contains(buf.String(), "meet_1\tWeekly Sync\t2\t1700000000\t1700003600") {
 			t.Fatalf("unexpected output: %q", buf.String())
+		}
+	})
+
+	t.Run("includes error code", func(t *testing.T) {
+		startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+		endTime := time.Date(2024, time.January, 2, 0, 0, 0, 0, time.UTC)
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 123,
+				"msg":  "field validation failed",
+			})
+		})
+		httpClient, baseURL := testutil.NewTestClient(handler)
+
+		state := &appState{
+			Config: &config.Config{
+				AppID:                      "app",
+				AppSecret:                  "secret",
+				BaseURL:                    baseURL,
+				TenantAccessToken:          "token",
+				TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			},
+			Printer: output.Printer{Writer: &bytes.Buffer{}},
+		}
+		sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+		if err != nil {
+			t.Fatalf("sdk client error: %v", err)
+		}
+		state.SDK = sdkClient
+
+		cmd := newMeetingsCmd(state)
+		cmd.SetArgs([]string{"list", "--limit", "2", "--start", startTime.Format(time.RFC3339), "--end", endTime.Format(time.RFC3339)})
+		err = cmd.Execute()
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !strings.Contains(err.Error(), "code=123") {
+			t.Fatalf("expected error code, got: %v", err)
 		}
 	})
 

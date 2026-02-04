@@ -168,7 +168,7 @@ func (c *Client) ListMeetings(ctx context.Context, token string, req ListMeeting
 		return ListMeetingsResult{}, err
 	}
 	if !resp.Success() {
-		return ListMeetingsResult{}, fmt.Errorf("list meetings failed: %s", resp.Msg)
+		return ListMeetingsResult{}, fmt.Errorf("list meetings failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 
 	result := ListMeetingsResult{}

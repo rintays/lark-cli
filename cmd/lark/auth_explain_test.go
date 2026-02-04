@@ -57,6 +57,9 @@ func TestAuthExplainDriveSearchJSON(t *testing.T) {
 	if !strings.Contains(payload.SuggestedUserLoginCommand, "lark auth user login") {
 		t.Fatalf("unexpected suggested_user_login_command: %q", payload.SuggestedUserLoginCommand)
 	}
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"drive,search-docs\"") {
+		t.Fatalf("unexpected suggested_user_login_command: %q", payload.SuggestedUserLoginCommand)
+	}
 	if strings.Join(payload.SuggestedUserLoginScopes, " ") == "" {
 		t.Fatalf("expected suggested_user_login_scopes")
 	}
@@ -106,8 +109,11 @@ func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
 	if !foundSearchDocs {
 		t.Fatalf("expected suggested scopes to include search:docs:read, got %v", payload.SuggestedUserLoginScopes)
 	}
-	if !strings.Contains(payload.SuggestedUserLoginCommand, "drive:drive:readonly") {
-		t.Fatalf("expected suggested_user_login_command to include drive:drive:readonly, got %q", payload.SuggestedUserLoginCommand)
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"drive,search-docs\"") {
+		t.Fatalf("expected suggested_user_login_command to include services, got %q", payload.SuggestedUserLoginCommand)
+	}
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "--readonly") {
+		t.Fatalf("expected suggested_user_login_command to include --readonly, got %q", payload.SuggestedUserLoginCommand)
 	}
 }
 
@@ -142,8 +148,8 @@ func TestAuthExplainChatsList(t *testing.T) {
 	if payload.SuggestedUserLoginCommand == "" {
 		t.Fatalf("expected suggested_user_login_command")
 	}
-	if !strings.Contains(payload.SuggestedUserLoginCommand, "im:chat.group_info:readonly") {
-		t.Fatalf("expected suggested_user_login_command to include im:chat.group_info:readonly, got %q", payload.SuggestedUserLoginCommand)
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"im\"") {
+		t.Fatalf("expected suggested_user_login_command to include services, got %q", payload.SuggestedUserLoginCommand)
 	}
 	// Backward-compatible behavior: always suggest offline_access first.
 	if len(payload.SuggestedUserLoginScopes) == 0 {

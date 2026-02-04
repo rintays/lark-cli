@@ -78,7 +78,7 @@ func TestUserOAuthReloginCommandForCommand(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected ok")
 		}
-		if cmd != "lark auth user login --scopes \"offline_access mail:user_mailbox.message:send\" --force-consent" {
+		if cmd != "lark auth user login --services \"mail-send\" --force-consent" {
 			t.Fatalf("cmd=%q", cmd)
 		}
 		if note == "" {
@@ -94,7 +94,7 @@ func TestUserOAuthReloginCommandForCommand(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected ok=true")
 		}
-		if cmd != "lark auth user login --scopes \"offline_access im:chat.group_info:readonly\" --force-consent" {
+		if cmd != "lark auth user login --services \"im\" --force-consent" {
 			t.Fatalf("cmd=%q", cmd)
 		}
 		if note == "" {
