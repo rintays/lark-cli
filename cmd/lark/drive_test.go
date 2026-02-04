@@ -222,7 +222,7 @@ func TestDriveSearchCommandRequiresQuery(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err.Error() != "accepts 1 arg(s), received 0" {
+	if err.Error() != "requires at least 1 arg(s), only received 0" {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

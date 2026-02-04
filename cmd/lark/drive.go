@@ -129,10 +129,11 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 		Use:   "search <query>",
 		Short: "Search Drive files by text",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+			if err := cobra.MinimumNArgs(1)(cmd, args); err != nil {
 				return argsUsageError(cmd, err)
 			}
-			query = strings.TrimSpace(args[0])
+			// Allow multi-word queries without requiring shell quoting.
+			query = strings.TrimSpace(strings.Join(args, " "))
 			if query == "" {
 				return argsUsageError(cmd, errors.New("query is required"))
 			}
