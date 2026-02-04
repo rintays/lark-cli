@@ -180,14 +180,15 @@ var Registry = map[string]ServiceDef{
 	"vc-meeting": {
 		Name:       "vc meeting",
 		TokenTypes: []TokenType{TokenUser},
+		// NOTE: Some Feishu VC privilege strings appear in error messages but do not
+		// surface as selectable OAuth scopes in the developer console. Keep the
+		// registry limited to confirmed OAuth scopes.
 		RequiredUserScopes: []string{
 			"vc:meeting:readonly",
-			"vc:meeting.meetingevent:read",
 		},
 		UserScopes: ServiceScopeSet{
 			Readonly: []string{
 				"vc:meeting:readonly",
-				"vc:meeting.meetingevent:read",
 			},
 		},
 		RequiresOffline: true,
