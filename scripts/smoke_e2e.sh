@@ -119,7 +119,7 @@ cleanup() {
   # In CI, the temp file isn't accessible after the job ends, so print a redacted
   # tail when failing to make debugging possible.
   if [[ $exit_code -ne 0 ]]; then
-    printf '\n---- smoke-e2e log tail (last 200 lines; redacted) ----\n' >&2
+    printf -- '\n---- smoke-e2e log tail (last 200 lines; redacted) ----\n' >&2
     tail -n 200 "$LOG_FILE" 2>/dev/null | sed -E \
       -e 's/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' \
       -e 's/(Authorization: )[A-Za-z]+ [A-Za-z0-9._-]+/\1[REDACTED]/g' \
@@ -128,7 +128,7 @@ cleanup() {
       -e 's/(refresh[_-]?token"?:")[^"]+"/\1[REDACTED]"/gi' \
       -e 's/(access[_-]?token"?:")[^"]+"/\1[REDACTED]"/gi' \
       >&2
-    printf '---- end ----\n' >&2
+    printf -- '---- end ----\n' >&2
   fi
 
   exit "$exit_code"
@@ -138,8 +138,19 @@ trap cleanup EXIT
 
 run_cmd go build -o lark ./cmd/lark
 
-if ! ./lark auth user status >>"$LOG_FILE" 2>&1; then
+auth_out=""
+auth_code=0
+set +e
+auth_out="$(./lark auth user status 2>&1)"
+auth_code=$?
+set -e
+printf '%s\n' "$auth_out" >>"$LOG_FILE"
+if [[ $auth_code -ne 0 ]]; then
   log "Skipping smoke E2E: user auth status unavailable (missing credentials?)"
+  exit 0
+fi
+if printf '%s\n' "$auth_out" | grep -qE 'refresh_token_present: false|user_access_token_present: false'; then
+  log "Skipping smoke E2E: missing user credentials (refresh/user token not present)"
   exit 0
 fi
 
