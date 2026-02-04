@@ -51,7 +51,8 @@ func TestCalendarListCommand(t *testing.T) {
 			if r.URL.Query().Get("end_time") != strconv.FormatInt(endUnix, 10) {
 				t.Fatalf("unexpected end_time: %s", r.URL.Query().Get("end_time"))
 			}
-			if r.URL.Query().Get("page_size") != "2" {
+			// Feishu Calendar v4 requires page_size >= 50.
+			if r.URL.Query().Get("page_size") != "50" {
 				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -93,6 +94,105 @@ func TestCalendarListCommand(t *testing.T) {
 		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newCalendarCmd(state)
+	cmd.SetArgs([]string{"list", "--start", start, "--end", end, "--limit", "2"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("calendar list error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tStandup\tconfirmed") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestCalendarListCommandWithUserToken(t *testing.T) {
+	start := "2026-01-02T03:04:05Z"
+	end := "2026-01-02T04:04:05Z"
+	startUnix := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC).Unix()
+	endUnix := time.Date(2026, 1, 2, 4, 4, 5, 0, time.UTC).Unix()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/open-apis/calendar/v4/calendars/primary":
+			if r.Header.Get("Authorization") != "Bearer user-token" {
+				t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"calendars": []map[string]any{
+						{
+							"calendar": map[string]any{
+								"calendar_id": "cal_1",
+							},
+						},
+					},
+				},
+			})
+		case "/open-apis/calendar/v4/calendars/cal_1/events":
+			if r.Header.Get("Authorization") != "Bearer user-token" {
+				t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+			}
+			if r.Method != http.MethodGet {
+				t.Fatalf("expected GET, got %s", r.Method)
+			}
+			if r.URL.Query().Get("start_time") != strconv.FormatInt(startUnix, 10) {
+				t.Fatalf("unexpected start_time: %s", r.URL.Query().Get("start_time"))
+			}
+			if r.URL.Query().Get("end_time") != strconv.FormatInt(endUnix, 10) {
+				t.Fatalf("unexpected end_time: %s", r.URL.Query().Get("end_time"))
+			}
+			// Feishu Calendar v4 requires page_size >= 50.
+			if r.URL.Query().Get("page_size") != "50" {
+				t.Fatalf("unexpected page_size: %s", r.URL.Query().Get("page_size"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items": []map[string]any{
+						{
+							"event_id": "evt_1",
+							"summary":  "Standup",
+							"status":   "confirmed",
+							"start_time": map[string]any{
+								"timestamp": strconv.FormatInt(startUnix, 10),
+							},
+							"end_time": map[string]any{
+								"timestamp": strconv.FormatInt(endUnix, 10),
+							},
+						},
+					},
+					"has_more": false,
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		TokenType: "user",
+		Config: &config.Config{
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
+		},
+		Force:   true,
+		Printer: output.Printer{Writer: &buf},
+	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)
@@ -255,7 +355,8 @@ func TestCalendarSearchCommand(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid page_size: %q", pageSizeStr)
 			}
-			if pageSize <= 0 || pageSize > 2 {
+			// Feishu Calendar v4 requires page_size >= 50.
+			if pageSize != 50 {
 				t.Fatalf("unexpected page_size: %s", pageSizeStr)
 			}
 			var payload map[string]any
@@ -312,6 +413,119 @@ func TestCalendarSearchCommand(t *testing.T) {
 		Force:   true,
 		Printer: output.Printer{Writer: &buf},
 	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newCalendarCmd(state)
+	cmd.SetArgs([]string{"search", "Demo", "--start", start, "--end", end, "--limit", "2"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("calendar search error: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "evt_1\t"+start+"\t"+end+"\tStandup\tconfirmed") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestCalendarSearchCommandWithUserToken(t *testing.T) {
+	start := "2026-01-02T03:04:05Z"
+	end := "2026-01-02T04:04:05Z"
+	startUnix := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC).Unix()
+	endUnix := time.Date(2026, 1, 2, 4, 4, 5, 0, time.UTC).Unix()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/open-apis/calendar/v4/calendars/primary":
+			if r.Header.Get("Authorization") != "Bearer user-token" {
+				t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"calendars": []map[string]any{
+						{
+							"calendar": map[string]any{
+								"calendar_id": "cal_1",
+							},
+						},
+					},
+				},
+			})
+		case "/open-apis/calendar/v4/calendars/cal_1/events/search":
+			if r.Header.Get("Authorization") != "Bearer user-token" {
+				t.Fatalf("unexpected authorization: %s", r.Header.Get("Authorization"))
+			}
+			if r.Method != http.MethodPost {
+				t.Fatalf("expected POST, got %s", r.Method)
+			}
+			pageSizeStr := r.URL.Query().Get("page_size")
+			pageSize, err := strconv.Atoi(pageSizeStr)
+			if err != nil {
+				t.Fatalf("invalid page_size: %q", pageSizeStr)
+			}
+			// Feishu Calendar v4 requires page_size >= 50.
+			if pageSize != 50 {
+				t.Fatalf("unexpected page_size: %s", pageSizeStr)
+			}
+			var payload map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+			if payload["query"] != "Demo" {
+				t.Fatalf("unexpected query: %+v", payload["query"])
+			}
+			filter := payload["filter"].(map[string]any)
+			startPayload := filter["start_time"].(map[string]any)
+			if startPayload["timestamp"] != strconv.FormatInt(startUnix, 10) {
+				t.Fatalf("unexpected start_time: %+v", filter["start_time"])
+			}
+			endPayload := filter["end_time"].(map[string]any)
+			if endPayload["timestamp"] != strconv.FormatInt(endUnix, 10) {
+				t.Fatalf("unexpected end_time: %+v", filter["end_time"])
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"items": []map[string]any{
+						{
+							"event_id": "evt_1",
+							"summary":  "Standup",
+							"status":   "confirmed",
+							"start_time": map[string]any{
+								"timestamp": strconv.FormatInt(startUnix, 10),
+							},
+							"end_time": map[string]any{
+								"timestamp": strconv.FormatInt(endUnix, 10),
+							},
+						},
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		TokenType: "user",
+		Config: &config.Config{
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
+		},
+		Force:   true,
+		Printer: output.Printer{Writer: &buf},
+	}
+	withUserAccount(state.Config, defaultUserAccountName, "user-token", "", time.Now().Add(2*time.Hour).Unix(), "")
 	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
 	if err != nil {
 		t.Fatalf("sdk client error: %v", err)

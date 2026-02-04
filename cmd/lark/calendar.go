@@ -86,6 +86,12 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 			remaining := limit
 			for {
 				pageSize := remaining
+				if pageSize < 50 {
+					pageSize = 50
+				}
+				if pageSize > 1000 {
+					pageSize = 1000
+				}
 				req := larksdk.ListCalendarEventsRequest{
 					CalendarID: resolvedCalendarID,
 					PageSize:   pageSize,
@@ -95,7 +101,7 @@ func newCalendarListCmd(state *appState) *cobra.Command {
 					req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
 					req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
 				}
-				result, err := state.SDK.ListCalendarEvents(cmd.Context(), token, req)
+				result, err := state.SDK.ListCalendarEvents(cmd.Context(), token, larksdk.AccessTokenType(tokenType), req)
 				if err != nil {
 					return err
 				}
@@ -246,7 +252,7 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 			}
 			req.StartTime = startTime.Unix()
 			req.EndTime = endTime.Unix()
-			event, err := state.SDK.CreateCalendarEvent(cmd.Context(), token, req)
+			event, err := state.SDK.CreateCalendarEvent(cmd.Context(), token, larksdk.AccessTokenType(tokenType), req)
 			if err != nil {
 				return err
 			}
@@ -261,7 +267,7 @@ func newCalendarCreateCmd(state *appState) *cobra.Command {
 				})
 			}
 			if len(attendeeRecords) > 0 {
-				if err := state.SDK.CreateCalendarEventAttendees(cmd.Context(), token, larksdk.CreateCalendarEventAttendeesRequest{
+				if err := state.SDK.CreateCalendarEventAttendees(cmd.Context(), token, larksdk.AccessTokenType(tokenType), larksdk.CreateCalendarEventAttendeesRequest{
 					CalendarID: resolvedCalendarID,
 					EventID:    event.EventID,
 					Attendees:  attendeeRecords,
@@ -396,6 +402,12 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 			remaining := limit
 			for {
 				pageSize := remaining
+				if pageSize < 50 {
+					pageSize = 50
+				}
+				if pageSize > 1000 {
+					pageSize = 1000
+				}
 				req := larksdk.SearchCalendarEventsRequest{
 					CalendarID: resolvedCalendarID,
 					Query:      query,
@@ -409,7 +421,7 @@ func newCalendarSearchCmd(state *appState) *cobra.Command {
 					req.StartTime = strconv.FormatInt(startTime.Unix(), 10)
 					req.EndTime = strconv.FormatInt(endTime.Unix(), 10)
 				}
-				result, err := state.SDK.SearchCalendarEvents(cmd.Context(), token, req)
+				result, err := state.SDK.SearchCalendarEvents(cmd.Context(), token, larksdk.AccessTokenType(tokenType), req)
 				if err != nil {
 					return err
 				}
@@ -508,7 +520,7 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 					req.MaxAttendeeNum = &valueNum
 				}
 			}
-			event, err := state.SDK.GetCalendarEvent(cmd.Context(), token, req)
+			event, err := state.SDK.GetCalendarEvent(cmd.Context(), token, larksdk.AccessTokenType(tokenType), req)
 			var extraErr error
 			if err != nil && (needAttendee || needMeetingSettings) && !attendeeFlagChanged && !meetingFlagChanged {
 				extraErr = err
@@ -517,7 +529,7 @@ func newCalendarGetCmd(state *appState) *cobra.Command {
 					EventID:    eventID,
 					UserIDType: userIDType,
 				}
-				event, err = state.SDK.GetCalendarEvent(cmd.Context(), token, fallbackReq)
+				event, err = state.SDK.GetCalendarEvent(cmd.Context(), token, larksdk.AccessTokenType(tokenType), fallbackReq)
 			}
 			if err != nil {
 				return err
@@ -704,7 +716,7 @@ func newCalendarUpdateCmd(state *appState) *cobra.Command {
 				req.StartTime = &startUnix
 				req.EndTime = &endUnix
 			}
-			event, err := state.SDK.UpdateCalendarEvent(cmd.Context(), token, req)
+			event, err := state.SDK.UpdateCalendarEvent(cmd.Context(), token, larksdk.AccessTokenType(tokenType), req)
 			if err != nil {
 				return err
 			}
@@ -794,7 +806,7 @@ func newCalendarDeleteCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := state.SDK.DeleteCalendarEvent(cmd.Context(), token, larksdk.DeleteCalendarEventRequest{
+			result, err := state.SDK.DeleteCalendarEvent(cmd.Context(), token, larksdk.AccessTokenType(tokenType), larksdk.DeleteCalendarEventRequest{
 				CalendarID:       resolvedCalendarID,
 				EventID:          eventID,
 				NeedNotification: notify,

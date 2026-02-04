@@ -197,16 +197,16 @@ func (c *Client) primaryCalendar(ctx context.Context, option larkcore.RequestOpt
 	return calendar, nil
 }
 
-func (c *Client) ListCalendarEvents(ctx context.Context, token string, req ListCalendarEventsRequest) (ListCalendarEventsResult, error) {
+func (c *Client) ListCalendarEvents(ctx context.Context, token string, tokenType AccessTokenType, req ListCalendarEventsRequest) (ListCalendarEventsResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return ListCalendarEventsResult{}, ErrUnavailable
 	}
 	if req.CalendarID == "" {
 		return ListCalendarEventsResult{}, errors.New("calendar id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return ListCalendarEventsResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return ListCalendarEventsResult{}, err
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -233,7 +233,7 @@ func (c *Client) ListCalendarEvents(ctx context.Context, token string, req ListC
 		apiReq.QueryParams.Set("sync_token", req.SyncToken)
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return ListCalendarEventsResult{}, err
 	}
@@ -245,7 +245,7 @@ func (c *Client) ListCalendarEvents(ctx context.Context, token string, req ListC
 		return ListCalendarEventsResult{}, err
 	}
 	if !resp.Success() {
-		return ListCalendarEventsResult{}, fmt.Errorf("list calendar events failed: %s", resp.Msg)
+		return ListCalendarEventsResult{}, fmt.Errorf("list calendar events failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 
 	result := ListCalendarEventsResult{}
@@ -262,16 +262,16 @@ func (c *Client) ListCalendarEvents(ctx context.Context, token string, req ListC
 	return result, nil
 }
 
-func (c *Client) SearchCalendarEvents(ctx context.Context, token string, req SearchCalendarEventsRequest) (SearchCalendarEventsResult, error) {
+func (c *Client) SearchCalendarEvents(ctx context.Context, token string, tokenType AccessTokenType, req SearchCalendarEventsRequest) (SearchCalendarEventsResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return SearchCalendarEventsResult{}, ErrUnavailable
 	}
 	if req.CalendarID == "" {
 		return SearchCalendarEventsResult{}, errors.New("calendar id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return SearchCalendarEventsResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return SearchCalendarEventsResult{}, err
 	}
 
 	payload := map[string]any{
@@ -317,7 +317,7 @@ func (c *Client) SearchCalendarEvents(ctx context.Context, token string, req Sea
 		apiReq.QueryParams.Set("page_token", req.PageToken)
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return SearchCalendarEventsResult{}, err
 	}
@@ -329,7 +329,7 @@ func (c *Client) SearchCalendarEvents(ctx context.Context, token string, req Sea
 		return SearchCalendarEventsResult{}, err
 	}
 	if !resp.Success() {
-		return SearchCalendarEventsResult{}, fmt.Errorf("search calendar events failed: %s", resp.Msg)
+		return SearchCalendarEventsResult{}, fmt.Errorf("search calendar events failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 
 	result := SearchCalendarEventsResult{}
@@ -340,7 +340,7 @@ func (c *Client) SearchCalendarEvents(ctx context.Context, token string, req Sea
 	return result, nil
 }
 
-func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCalendarEventRequest) (CalendarEvent, error) {
+func (c *Client) GetCalendarEvent(ctx context.Context, token string, tokenType AccessTokenType, req GetCalendarEventRequest) (CalendarEvent, error) {
 	if !c.available() || c.coreConfig == nil {
 		return CalendarEvent{}, ErrUnavailable
 	}
@@ -350,9 +350,9 @@ func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCale
 	if req.EventID == "" {
 		return CalendarEvent{}, errors.New("event id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return CalendarEvent{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return CalendarEvent{}, err
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -377,7 +377,7 @@ func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCale
 		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return CalendarEvent{}, err
 	}
@@ -389,7 +389,7 @@ func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCale
 		return CalendarEvent{}, err
 	}
 	if !resp.Success() {
-		return CalendarEvent{}, fmt.Errorf("get calendar event failed: %s", resp.Msg)
+		return CalendarEvent{}, fmt.Errorf("get calendar event failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 	if resp.Data == nil {
 		return CalendarEvent{}, errors.New("get calendar event response missing data")
@@ -401,7 +401,7 @@ func (c *Client) GetCalendarEvent(ctx context.Context, token string, req GetCale
 	return result, nil
 }
 
-func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req UpdateCalendarEventRequest) (CalendarEvent, error) {
+func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, tokenType AccessTokenType, req UpdateCalendarEventRequest) (CalendarEvent, error) {
 	if !c.available() || c.coreConfig == nil {
 		return CalendarEvent{}, ErrUnavailable
 	}
@@ -411,9 +411,9 @@ func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req Upda
 	if req.EventID == "" {
 		return CalendarEvent{}, errors.New("event id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return CalendarEvent{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return CalendarEvent{}, err
 	}
 
 	payload := map[string]any{}
@@ -509,7 +509,7 @@ func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req Upda
 		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return CalendarEvent{}, err
 	}
@@ -521,7 +521,7 @@ func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req Upda
 		return CalendarEvent{}, err
 	}
 	if !resp.Success() {
-		return CalendarEvent{}, fmt.Errorf("update calendar event failed: %s", resp.Msg)
+		return CalendarEvent{}, fmt.Errorf("update calendar event failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 	if resp.Data == nil {
 		return CalendarEvent{}, errors.New("update calendar event response missing data")
@@ -533,7 +533,7 @@ func (c *Client) UpdateCalendarEvent(ctx context.Context, token string, req Upda
 	return result, nil
 }
 
-func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, req DeleteCalendarEventRequest) (DeleteCalendarEventResult, error) {
+func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, tokenType AccessTokenType, req DeleteCalendarEventRequest) (DeleteCalendarEventResult, error) {
 	if !c.available() || c.coreConfig == nil {
 		return DeleteCalendarEventResult{}, ErrUnavailable
 	}
@@ -543,9 +543,9 @@ func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, req Dele
 	if req.EventID == "" {
 		return DeleteCalendarEventResult{}, errors.New("event id is required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return DeleteCalendarEventResult{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return DeleteCalendarEventResult{}, err
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -559,7 +559,7 @@ func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, req Dele
 	apiReq.PathParams.Set("event_id", req.EventID)
 	apiReq.QueryParams.Set("need_notification", fmt.Sprintf("%t", req.NeedNotification))
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return DeleteCalendarEventResult{}, err
 	}
@@ -571,7 +571,7 @@ func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, req Dele
 		return DeleteCalendarEventResult{}, err
 	}
 	if !resp.Success() {
-		return DeleteCalendarEventResult{}, fmt.Errorf("delete calendar event failed: %s", resp.Msg)
+		return DeleteCalendarEventResult{}, fmt.Errorf("delete calendar event failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 	result := DeleteCalendarEventResult{EventID: req.EventID, Deleted: true}
 	if resp.Data != nil {
@@ -585,7 +585,7 @@ func (c *Client) DeleteCalendarEvent(ctx context.Context, token string, req Dele
 	return result, nil
 }
 
-func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req CreateCalendarEventRequest) (CalendarEvent, error) {
+func (c *Client) CreateCalendarEvent(ctx context.Context, token string, tokenType AccessTokenType, req CreateCalendarEventRequest) (CalendarEvent, error) {
 	if !c.available() || c.coreConfig == nil {
 		return CalendarEvent{}, ErrUnavailable
 	}
@@ -605,9 +605,9 @@ func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req Crea
 			return CalendarEvent{}, errors.New("start_time and end_time must be provided together")
 		}
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return CalendarEvent{}, errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return CalendarEvent{}, err
 	}
 
 	payload := map[string]any{}
@@ -695,7 +695,7 @@ func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req Crea
 		apiReq.QueryParams.Set("user_id_type", req.UserIDType)
 	}
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return CalendarEvent{}, err
 	}
@@ -707,7 +707,7 @@ func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req Crea
 		return CalendarEvent{}, err
 	}
 	if !resp.Success() {
-		return CalendarEvent{}, fmt.Errorf("create calendar event failed: %s", resp.Msg)
+		return CalendarEvent{}, fmt.Errorf("create calendar event failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 	if resp.Data == nil {
 		return CalendarEvent{}, errors.New("create calendar event response missing data")
@@ -722,7 +722,7 @@ func (c *Client) CreateCalendarEvent(ctx context.Context, token string, req Crea
 	return result, nil
 }
 
-func (c *Client) CreateCalendarEventAttendees(ctx context.Context, token string, req CreateCalendarEventAttendeesRequest) error {
+func (c *Client) CreateCalendarEventAttendees(ctx context.Context, token string, tokenType AccessTokenType, req CreateCalendarEventAttendeesRequest) error {
 	if !c.available() || c.coreConfig == nil {
 		return ErrUnavailable
 	}
@@ -735,9 +735,9 @@ func (c *Client) CreateCalendarEventAttendees(ctx context.Context, token string,
 	if len(req.Attendees) == 0 {
 		return errors.New("attendees are required")
 	}
-	tenantToken := c.tenantToken(token)
-	if tenantToken == "" {
-		return errors.New("tenant access token is required")
+	option, _, err := c.accessTokenOption(token, tokenType)
+	if err != nil {
+		return err
 	}
 
 	apiReq := &larkcore.ApiReq{
@@ -751,7 +751,7 @@ func (c *Client) CreateCalendarEventAttendees(ctx context.Context, token string,
 	apiReq.PathParams.Set("calendar_id", req.CalendarID)
 	apiReq.PathParams.Set("event_id", req.EventID)
 
-	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, option)
 	if err != nil {
 		return err
 	}
@@ -763,7 +763,7 @@ func (c *Client) CreateCalendarEventAttendees(ctx context.Context, token string,
 		return err
 	}
 	if !resp.Success() {
-		return fmt.Errorf("create calendar event attendees failed: %s", resp.Msg)
+		return fmt.Errorf("create calendar event attendees failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 	return nil
 }
