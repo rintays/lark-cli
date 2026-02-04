@@ -58,11 +58,16 @@ func TestMeetingInfoCommand(t *testing.T) {
 	var buf bytes.Buffer
 	state := &appState{
 		Config: &config.Config{
-			AppID:                      "app",
-			AppSecret:                  "secret",
-			BaseURL:                    baseURL,
-			TenantAccessToken:          "token",
-			TenantAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
+			UserAccounts: map[string]*config.UserAccount{
+				"default": {
+					UserAccessToken:          "token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+					RefreshToken:             "refresh",
+				},
+			},
 		},
 		Force:   true,
 		Printer: output.Printer{Writer: &buf},

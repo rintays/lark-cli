@@ -58,7 +58,8 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 				return flagUsage(cmd, "query-mode must be 0 or 1")
 			}
 			meetingID := strings.TrimSpace(args[0])
-			token, err := tokenFor(cmd.Context(), state, tokenTypesTenantOrUser)
+			// NOTE: Feishu VC meeting detail APIs often require a user access token.
+			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
 				return err
 			}
@@ -73,7 +74,7 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 				QueryMode:          queryMode,
 			})
 			if err != nil {
-				return err
+				return withUserScopeHintForCommand(state, err)
 			}
 			payload := map[string]any{"meeting": meeting}
 			text := tableTextRow(

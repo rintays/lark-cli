@@ -92,7 +92,7 @@ func (c *Client) GetMeeting(ctx context.Context, token string, req GetMeetingReq
 		return Meeting{}, err
 	}
 	if !resp.Success() {
-		return Meeting{}, fmt.Errorf("get meeting failed: %s", resp.Msg)
+		return Meeting{}, fmt.Errorf("get meeting failed: %s (code=%d)", resp.Msg, resp.Code)
 	}
 	if resp.Data == nil || resp.Data.Meeting == nil || resp.Data.Meeting.ID == "" {
 		return Meeting{}, errors.New("get meeting response missing meeting")
