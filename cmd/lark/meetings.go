@@ -57,7 +57,7 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 			if queryMode < 0 || queryMode > 1 {
 				return flagUsage(cmd, "query-mode must be 0 or 1")
 			}
-			meetingID := strings.TrimSpace(args[0])
+			input := strings.TrimSpace(args[0])
 			// NOTE: Feishu VC meeting detail APIs often require a user access token.
 			token, err := tokenFor(cmd.Context(), state, tokenTypesUser)
 			if err != nil {
@@ -66,6 +66,30 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
+
+			meetingID := input
+			// If the user provided a meeting number (commonly 9 digits), resolve it to
+			// a meeting_id via the documented list_by_no API.
+			if isLikelyMeetingNo(input) {
+				now := time.Now().UTC()
+				// list_by_no requires a bounded time window; use a recent window by default.
+				startUnix := now.AddDate(0, 0, -30).Unix()
+				endUnix := now.Unix()
+				resolved, resolveErr := state.SDK.ListMeetingsByNo(cmd.Context(), token, larksdk.ListMeetingsByNoRequest{
+					MeetingNo: input,
+					StartTime: strconv.FormatInt(startUnix, 10),
+					EndTime:   strconv.FormatInt(endUnix, 10),
+					PageSize:  20,
+				})
+				if resolveErr != nil {
+					return withUserScopeHintForCommand(state, resolveErr)
+				}
+				if len(resolved.Items) == 0 || strings.TrimSpace(resolved.Items[0].ID) == "" {
+					return fmt.Errorf("meeting not found for meeting_no %q", input)
+				}
+				meetingID = resolved.Items[0].ID
+			}
+
 			meeting, err := state.SDK.GetMeeting(cmd.Context(), token, larksdk.GetMeetingRequest{
 				MeetingID:          meetingID,
 				WithParticipants:   withParticipants,
@@ -78,9 +102,10 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 			}
 			payload := map[string]any{"meeting": meeting}
 			text := tableTextRow(
-				[]string{"meeting_id", "topic", "status", "start_time", "end_time"},
+				[]string{"meeting_id", "meeting_no", "topic", "status", "start_time", "end_time"},
 				[]string{
 					meeting.ID,
+					meeting.MeetingNo,
 					meeting.Topic,
 					fmt.Sprintf("%d", meeting.Status),
 					meeting.StartTime,
@@ -96,6 +121,22 @@ func newMeetingInfoCmd(state *appState) *cobra.Command {
 	cmd.Flags().StringVar(&userIDType, "user-id-type", "", "user ID type (user_id, union_id, open_id)")
 	cmd.Flags().IntVar(&queryMode, "query-mode", 0, "query mode: 0 for meeting info, 1 for related artifacts")
 	return cmd
+}
+
+func isLikelyMeetingNo(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return false
+	}
+	if len(value) < 6 || len(value) > 12 {
+		return false
+	}
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func newMeetingListCmd(state *appState) *cobra.Command {
@@ -233,9 +274,14 @@ func newMeetingListCmd(state *appState) *cobra.Command {
 				if meeting.Status != nil {
 					status = fmt.Sprintf("%d", *meeting.Status)
 				}
-				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s\t%s", meeting.ID, meeting.Topic, status, meeting.StartTime, meeting.EndTime))
+				// meeting_id returned by the underlying list API may actually be meeting_no.
+				meetingNo := meeting.MeetingNo
+				if meetingNo == "" {
+					meetingNo = meeting.ID
+				}
+				lines = append(lines, fmt.Sprintf("%s\t%s\t%s\t%s\t%s", meetingNo, meeting.Topic, status, meeting.StartTime, meeting.EndTime))
 			}
-			text := tableText([]string{"meeting_id", "topic", "status", "start_time", "end_time"}, lines, "no meetings found")
+			text := tableText([]string{"meeting_no", "topic", "status", "start_time", "end_time"}, lines, "no meetings found")
 			return state.Printer.Print(payload, text)
 		},
 	}
