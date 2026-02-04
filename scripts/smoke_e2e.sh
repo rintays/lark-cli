@@ -88,6 +88,12 @@ PY
 }
 
 cleanup() {
+  local exit_code=$?
+
+  # Preserve the original exit code and avoid errexit inside cleanup.
+  trap - EXIT
+  set +e
+
   if [[ ${#cleanup_sheets[@]} -gt 0 ]]; then
     for token in "${cleanup_sheets[@]}"; do
       local -a cmd=(./lark --force sheets delete "$token")
@@ -107,7 +113,25 @@ cleanup() {
       log "  $note"
     done
   fi
+
   log "Log file: $LOG_FILE"
+
+  # In CI, the temp file isn't accessible after the job ends, so print a redacted
+  # tail when failing to make debugging possible.
+  if [[ $exit_code -ne 0 ]]; then
+    printf '\n---- smoke-e2e log tail (last 200 lines; redacted) ----\n' >&2
+    tail -n 200 "$LOG_FILE" 2>/dev/null | sed -E \
+      -e 's/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' \
+      -e 's/(Authorization: )[A-Za-z]+ [A-Za-z0-9._-]+/\1[REDACTED]/g' \
+      -e 's/(tenant_access_token"?:")[^"]+"/\1[REDACTED]"/gi' \
+      -e 's/(user_access_token"?:")[^"]+"/\1[REDACTED]"/gi' \
+      -e 's/(refresh[_-]?token"?:")[^"]+"/\1[REDACTED]"/gi' \
+      -e 's/(access[_-]?token"?:")[^"]+"/\1[REDACTED]"/gi' \
+      >&2
+    printf '---- end ----\n' >&2
+  fi
+
+  exit "$exit_code"
 }
 
 trap cleanup EXIT
