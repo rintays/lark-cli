@@ -294,11 +294,39 @@ type GetMeetingRequest struct {
 }
 
 type MeetingListItem struct {
-	ID        string `json:"id"`
+	// ID is the meeting identifier used by the meeting detail API.
+	//
+	// NOTE: Some list APIs return meeting_no in the meeting_id field; callers
+	// should not assume this is always a detail-ready id.
+	ID string `json:"id"`
+
+	// MeetingNo is the join number (often 9 digits).
+	MeetingNo string `json:"meeting_no,omitempty"`
+
 	Topic     string `json:"topic"`
 	Status    *int   `json:"status,omitempty"`
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
+}
+
+type MeetingBrief struct {
+	ID        string `json:"id"`
+	MeetingNo string `json:"meeting_no"`
+	Topic     string `json:"topic"`
+}
+
+type ListMeetingsByNoRequest struct {
+	MeetingNo string
+	StartTime string
+	EndTime   string
+	PageSize  int
+	PageToken string
+}
+
+type ListMeetingsByNoResult struct {
+	Items     []MeetingBrief
+	PageToken string
+	HasMore   bool
 }
 
 type ListMeetingsRequest struct {

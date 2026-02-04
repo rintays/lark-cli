@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 )
@@ -36,6 +37,8 @@ type listMeetingsResponseData struct {
 }
 
 type meetingListInfo struct {
+	// NOTE: This field name suggests a meeting id, but in practice this may
+	// contain the meeting number for certain list APIs.
 	ID        *string `json:"meeting_id"`
 	Topic     *string `json:"meeting_topic"`
 	Status    *int    `json:"meeting_status,omitempty"`
@@ -43,8 +46,112 @@ type meetingListInfo struct {
 	EndTime   *string `json:"meeting_end_time"`
 }
 
+type listMeetingsByNoResponse struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *listMeetingsByNoResponseData `json:"data"`
+}
+
+type listMeetingsByNoResponseData struct {
+	MeetingBriefs []*meetingBrief `json:"meeting_briefs"`
+	PageToken     *string         `json:"page_token"`
+	HasMore       *bool           `json:"has_more"`
+}
+
+type meetingBrief struct {
+	ID        *string `json:"id"`
+	MeetingNo *string `json:"meeting_no"`
+	Topic     *string `json:"topic"`
+}
+
+func (r *listMeetingsByNoResponse) Success() bool {
+	return r.Code == 0
+}
+
 func (r *listMeetingsResponse) Success() bool {
 	return r.Code == 0
+}
+
+func (c *Client) ListMeetingsByNo(ctx context.Context, token string, req ListMeetingsByNoRequest) (ListMeetingsByNoResult, error) {
+	if !c.available() || c.coreConfig == nil {
+		return ListMeetingsByNoResult{}, ErrUnavailable
+	}
+	if strings.TrimSpace(req.MeetingNo) == "" {
+		return ListMeetingsByNoResult{}, errors.New("meeting_no is required")
+	}
+	if (req.StartTime == "") != (req.EndTime == "") {
+		return ListMeetingsByNoResult{}, errors.New("start and end must be provided together")
+	}
+	tenantToken := c.tenantToken(token)
+	if tenantToken == "" {
+		return ListMeetingsByNoResult{}, errors.New("tenant access token is required")
+	}
+
+	apiReq := &larkcore.ApiReq{
+		ApiPath:                   "/open-apis/vc/v1/meetings/list_by_no",
+		HttpMethod:                http.MethodGet,
+		PathParams:                larkcore.PathParams{},
+		QueryParams:               larkcore.QueryParams{},
+		SupportedAccessTokenTypes: []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser},
+	}
+	apiReq.QueryParams.Set("meeting_no", strings.TrimSpace(req.MeetingNo))
+	if req.StartTime != "" {
+		apiReq.QueryParams.Set("start_time", req.StartTime)
+	}
+	if req.EndTime != "" {
+		apiReq.QueryParams.Set("end_time", req.EndTime)
+	}
+	if req.PageSize > 0 {
+		apiReq.QueryParams.Set("page_size", fmt.Sprintf("%d", req.PageSize))
+	}
+	if req.PageToken != "" {
+		apiReq.QueryParams.Set("page_token", req.PageToken)
+	}
+
+	apiResp, err := larkcore.Request(ctx, apiReq, c.coreConfig, larkcore.WithTenantAccessToken(tenantToken))
+	if err != nil {
+		return ListMeetingsByNoResult{}, err
+	}
+	if apiResp == nil {
+		return ListMeetingsByNoResult{}, errors.New("list meetings by no failed: empty response")
+	}
+	resp := &listMeetingsByNoResponse{ApiResp: apiResp}
+	if err := apiResp.JSONUnmarshalBody(resp, c.coreConfig); err != nil {
+		return ListMeetingsByNoResult{}, err
+	}
+	if !resp.Success() {
+		return ListMeetingsByNoResult{}, fmt.Errorf("list meetings by no failed: %s (code=%d)", resp.Msg, resp.Code)
+	}
+
+	out := ListMeetingsByNoResult{}
+	if resp.Data != nil {
+		if resp.Data.MeetingBriefs != nil {
+			out.Items = make([]MeetingBrief, 0, len(resp.Data.MeetingBriefs))
+			for _, b := range resp.Data.MeetingBriefs {
+				if b == nil {
+					continue
+				}
+				item := MeetingBrief{}
+				if b.ID != nil {
+					item.ID = *b.ID
+				}
+				if b.MeetingNo != nil {
+					item.MeetingNo = *b.MeetingNo
+				}
+				if b.Topic != nil {
+					item.Topic = *b.Topic
+				}
+				out.Items = append(out.Items, item)
+			}
+		}
+		if resp.Data.PageToken != nil {
+			out.PageToken = *resp.Data.PageToken
+		}
+		if resp.Data.HasMore != nil {
+			out.HasMore = *resp.Data.HasMore
+		}
+	}
+	return out, nil
 }
 
 func (c *Client) GetMeeting(ctx context.Context, token string, req GetMeetingRequest) (Meeting, error) {
@@ -181,7 +288,9 @@ func (c *Client) ListMeetings(ctx context.Context, token string, req ListMeeting
 				}
 				item := MeetingListItem{}
 				if meeting.ID != nil {
+					// This may be a meeting id or a meeting number depending on API.
 					item.ID = *meeting.ID
+					item.MeetingNo = *meeting.ID
 				}
 				if meeting.Topic != nil {
 					item.Topic = *meeting.Topic

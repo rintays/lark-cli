@@ -94,7 +94,92 @@ func TestMeetingInfoCommand(t *testing.T) {
 		t.Fatalf("meetings info error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "meet_1\tDemo\t2\t1700000000\t1700003600") {
+	if !strings.Contains(buf.String(), "meet_1\t\tDemo\t2\t1700000000\t1700003600") {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}
+
+func TestMeetingInfoResolvesMeetingNo(t *testing.T) {
+	call := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		call++
+		w.Header().Set("Content-Type", "application/json")
+		switch call {
+		case 1:
+			if r.Method != http.MethodGet {
+				t.Fatalf("expected GET, got %s", r.Method)
+			}
+			if r.URL.Path != "/open-apis/vc/v1/meetings/list_by_no" {
+				t.Fatalf("unexpected path: %s", r.URL.Path)
+			}
+			if r.URL.Query().Get("meeting_no") != "406942228" {
+				t.Fatalf("unexpected meeting_no: %s", r.URL.Query().Get("meeting_no"))
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"has_more": false,
+					"meeting_briefs": []map[string]any{{
+						"id":         "mid_1",
+						"meeting_no": "406942228",
+						"topic":      "Demo",
+					}},
+				},
+			})
+		case 2:
+			if r.URL.Path != "/open-apis/vc/v1/meetings/mid_1" {
+				t.Fatalf("unexpected path: %s", r.URL.Path)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"msg":  "ok",
+				"data": map[string]any{
+					"meeting": map[string]any{
+						"id":         "mid_1",
+						"meeting_no": "406942228",
+						"topic":      "Demo",
+						"start_time": "1700000000",
+						"end_time":   "1700003600",
+						"status":     2,
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected call count: %d", call)
+		}
+	})
+	httpClient, baseURL := testutil.NewTestClient(handler)
+
+	var buf bytes.Buffer
+	state := &appState{
+		Config: &config.Config{
+			AppID:     "app",
+			AppSecret: "secret",
+			BaseURL:   baseURL,
+			UserAccounts: map[string]*config.UserAccount{
+				"default": {
+					UserAccessToken:          "token",
+					UserAccessTokenExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+					RefreshToken:             "refresh",
+				},
+			},
+		},
+		Force:   true,
+		Printer: output.Printer{Writer: &buf},
+	}
+	sdkClient, err := larksdk.New(state.Config, larksdk.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("sdk client error: %v", err)
+	}
+	state.SDK = sdkClient
+
+	cmd := newMeetingsCmd(state)
+	cmd.SetArgs([]string{"info", "406942228"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("meetings info error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "mid_1\t406942228\tDemo\t2\t1700000000\t1700003600") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
@@ -182,6 +267,9 @@ func TestMeetingListCommand(t *testing.T) {
 
 		if !strings.Contains(buf.String(), "meet_1\tWeekly Sync\t2\t1700000000\t1700003600") {
 			t.Fatalf("unexpected output: %q", buf.String())
+		}
+		if !strings.Contains(buf.String(), "meeting_no") {
+			t.Fatalf("expected meeting_no header, got %q", buf.String())
 		}
 	})
 
