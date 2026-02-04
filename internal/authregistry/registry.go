@@ -4,8 +4,8 @@ import "sort"
 
 // TokenType describes the type(s) of access token a given service may require.
 //
-// This is an internal registry used to drive gog-style auth UX (services → scopes
-// → credentials) and should remain stable/deterministic.
+// This is an internal registry used to drive a services→scopes→credentials auth UX
+// and should remain stable/deterministic.
 //
 // NOTE: Not all services currently declare OAuth scopes; those will be filled
 // in incrementally as we learn the correct Feishu/Lark scope strings.
@@ -24,7 +24,7 @@ type ServiceScopeSet struct {
 	Readonly []string `json:"readonly,omitempty"`
 }
 
-// ServiceDef is a gog-style service definition.
+// ServiceDef is a service definition for auth + capability mapping.
 //
 // Services are capabilities (drive/docs/mail/...) rather than concrete CLI
 // commands. Commands map to services at runtime (future work).
@@ -36,7 +36,7 @@ type ServiceDef struct {
 
 	// RequiredUserScopes is the minimal required user OAuth scope set (no variants).
 	//
-	// This is used by the gog-style “services → scopes” model and should remain
+	// This is used by the services→scopes model and should remain
 	// stable/deterministic.
 	RequiredUserScopes []string `json:"required_user_scopes,omitempty"`
 

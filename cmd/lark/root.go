@@ -47,7 +47,7 @@ func newRootCmd() *cobra.Command {
 	state := &appState{}
 	cmd := &cobra.Command{
 		Use:           "lark",
-		Short:         "A Go CLI for Feishu/Lark inspired by gog",
+		Short:         "A Go CLI for Feishu/Lark",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
