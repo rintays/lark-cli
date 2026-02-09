@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -76,7 +75,7 @@ func (c *Client) CreateWikiSpaceV2(ctx context.Context, token string, req Create
 		return WikiSpace{}, errors.New("wiki space create failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpace{}, fmt.Errorf("wiki space create failed: %s", resp.Msg)
+		return WikiSpace{}, apiError("wiki space create", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Space == nil {
 		return WikiSpace{}, errors.New("wiki space create failed: missing space")
@@ -104,7 +103,7 @@ func (c *Client) GetWikiSpaceV2(ctx context.Context, token string, req GetWikiSp
 		return WikiSpace{}, errors.New("wiki space get failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpace{}, fmt.Errorf("wiki space get failed: %s", resp.Msg)
+		return WikiSpace{}, apiError("wiki space get", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Space == nil {
 		return WikiSpace{}, errors.New("wiki space get failed: missing space")
@@ -132,7 +131,7 @@ func (c *Client) GetWikiSpaceV2WithUserToken(ctx context.Context, userAccessToke
 		return WikiSpace{}, errors.New("wiki space get failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpace{}, fmt.Errorf("wiki space get failed: %s", resp.Msg)
+		return WikiSpace{}, apiError("wiki space get", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Space == nil {
 		return WikiSpace{}, errors.New("wiki space get failed: missing space")
@@ -163,7 +162,7 @@ func (c *Client) ListWikiSpacesV2(ctx context.Context, token string, req ListWik
 		return ListWikiSpacesResult{}, errors.New("wiki space list failed: empty response")
 	}
 	if !resp.Success() {
-		return ListWikiSpacesResult{}, fmt.Errorf("wiki space list failed: %s", resp.Msg)
+		return ListWikiSpacesResult{}, apiError("wiki space list", resp.Code, resp.Msg)
 	}
 	out := ListWikiSpacesResult{}
 	if resp.Data == nil {
@@ -211,7 +210,7 @@ func (c *Client) ListWikiSpacesV2WithUserToken(ctx context.Context, userAccessTo
 		return ListWikiSpacesResult{}, errors.New("wiki space list failed: empty response")
 	}
 	if !resp.Success() {
-		return ListWikiSpacesResult{}, fmt.Errorf("wiki space list failed: %s", resp.Msg)
+		return ListWikiSpacesResult{}, apiError("wiki space list", resp.Code, resp.Msg)
 	}
 	out := ListWikiSpacesResult{}
 	if resp.Data == nil {
@@ -300,7 +299,7 @@ func (c *Client) GetWikiNodeV2(ctx context.Context, token string, req GetWikiNod
 		return WikiNode{}, errors.New("wiki node get failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiNode{}, fmt.Errorf("wiki node get failed: %s", resp.Msg)
+		return WikiNode{}, apiError("wiki node get", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Node == nil {
 		return WikiNode{}, errors.New("wiki node get failed: missing node")
@@ -332,7 +331,7 @@ func (c *Client) GetWikiNodeV2WithUserToken(ctx context.Context, userAccessToken
 		return WikiNode{}, errors.New("wiki node get failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiNode{}, fmt.Errorf("wiki node get failed: %s", resp.Msg)
+		return WikiNode{}, apiError("wiki node get", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Node == nil {
 		return WikiNode{}, errors.New("wiki node get failed: missing node")
@@ -384,7 +383,7 @@ func (c *Client) ListWikiNodesV2(ctx context.Context, token string, req ListWiki
 		return ListWikiNodesResult{}, errors.New("wiki node list failed: empty response")
 	}
 	if !resp.Success() {
-		return ListWikiNodesResult{}, fmt.Errorf("wiki node list failed: %s", resp.Msg)
+		return ListWikiNodesResult{}, apiError("wiki node list", resp.Code, resp.Msg)
 	}
 	out := ListWikiNodesResult{}
 	if resp.Data == nil {
@@ -440,7 +439,7 @@ func (c *Client) ListWikiNodesV2WithUserToken(ctx context.Context, userAccessTok
 		return ListWikiNodesResult{}, errors.New("wiki node list failed: empty response")
 	}
 	if !resp.Success() {
-		return ListWikiNodesResult{}, fmt.Errorf("wiki node list failed: %s", resp.Msg)
+		return ListWikiNodesResult{}, apiError("wiki node list", resp.Code, resp.Msg)
 	}
 	out := ListWikiNodesResult{}
 	if resp.Data == nil {
@@ -562,7 +561,7 @@ func (c *Client) ListWikiSpaceMembersV2(ctx context.Context, token string, req L
 		return ListWikiSpaceMembersResult{}, errors.New("wiki member list failed: empty response")
 	}
 	if !resp.Success() {
-		return ListWikiSpaceMembersResult{}, fmt.Errorf("wiki member list failed: %s", resp.Msg)
+		return ListWikiSpaceMembersResult{}, apiError("wiki member list", resp.Code, resp.Msg)
 	}
 
 	out := ListWikiSpaceMembersResult{}
@@ -616,7 +615,7 @@ func (c *Client) ListWikiSpaceMembersV2WithUserToken(ctx context.Context, userAc
 		return ListWikiSpaceMembersResult{}, errors.New("wiki member list failed: empty response")
 	}
 	if !resp.Success() {
-		return ListWikiSpaceMembersResult{}, fmt.Errorf("wiki member list failed: %s", resp.Msg)
+		return ListWikiSpaceMembersResult{}, apiError("wiki member list", resp.Code, resp.Msg)
 	}
 
 	out := ListWikiSpaceMembersResult{}
@@ -686,7 +685,7 @@ func (c *Client) CreateWikiSpaceMemberV2(ctx context.Context, token string, req 
 		return WikiSpaceMember{}, errors.New("wiki member create failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpaceMember{}, fmt.Errorf("wiki member create failed: %s", resp.Msg)
+		return WikiSpaceMember{}, apiError("wiki member create", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Member == nil {
 		return WikiSpaceMember{}, nil
@@ -729,7 +728,7 @@ func (c *Client) CreateWikiSpaceMemberV2WithUserToken(ctx context.Context, userA
 		return WikiSpaceMember{}, errors.New("wiki member create failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpaceMember{}, fmt.Errorf("wiki member create failed: %s", resp.Msg)
+		return WikiSpaceMember{}, apiError("wiki member create", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Member == nil {
 		return WikiSpaceMember{}, nil
@@ -771,7 +770,7 @@ func (c *Client) DeleteWikiSpaceMemberV2(ctx context.Context, token string, req 
 		return WikiSpaceMember{}, errors.New("wiki member delete failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpaceMember{}, fmt.Errorf("wiki member delete failed: %s", resp.Msg)
+		return WikiSpaceMember{}, apiError("wiki member delete", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Member == nil {
 		return WikiSpaceMember{}, nil
@@ -807,7 +806,7 @@ func (c *Client) DeleteWikiSpaceMemberV2WithUserToken(ctx context.Context, userA
 		return WikiSpaceMember{}, errors.New("wiki member delete failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpaceMember{}, fmt.Errorf("wiki member delete failed: %s", resp.Msg)
+		return WikiSpaceMember{}, apiError("wiki member delete", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Member == nil {
 		return WikiSpaceMember{}, nil

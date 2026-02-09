@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -33,7 +32,7 @@ func (c *Client) PinMessage(ctx context.Context, token string, messageID string)
 		return Pin{}, errors.New("pin message failed: empty response")
 	}
 	if !resp.Success() {
-		return Pin{}, fmt.Errorf("pin message failed: %s", resp.Msg)
+		return Pin{}, apiError("pin message", resp.Code, resp.Msg)
 	}
 	if resp.Data != nil && resp.Data.Pin != nil {
 		return mapPin(resp.Data.Pin), nil
@@ -63,7 +62,7 @@ func (c *Client) UnpinMessage(ctx context.Context, token string, messageID strin
 		return errors.New("unpin message failed: empty response")
 	}
 	if !resp.Success() {
-		return fmt.Errorf("unpin message failed: %s", resp.Msg)
+		return apiError("unpin message", resp.Code, resp.Msg)
 	}
 	return nil
 }

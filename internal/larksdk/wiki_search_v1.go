@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -90,7 +89,7 @@ func (c *Client) SearchWikiNodesV1(ctx context.Context, userAccessToken string, 
 		return WikiNodeSearchV1Result{}, err
 	}
 	if !resp.Success() {
-		baseErr := fmt.Errorf("wiki node search failed: %s", resp.Msg)
+		baseErr := apiError("wiki node search", resp.Code, resp.Msg)
 		return WikiNodeSearchV1Result{}, withInsufficientScopeRemediation(baseErr, resp.Msg)
 	}
 

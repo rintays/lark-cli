@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	larksheets "github.com/larksuite/oapi-sdk-go/v3/service/sheets/v3"
 )
@@ -30,7 +29,7 @@ func (c *Client) ListSpreadsheetSheets(ctx context.Context, token string, tokenT
 		return nil, errors.New("query spreadsheet sheets failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("query spreadsheet sheets failed: %s", resp.Msg)
+		return nil, apiError("query spreadsheet sheets", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Sheets == nil {
 		return nil, nil

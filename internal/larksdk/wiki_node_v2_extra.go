@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -91,7 +90,7 @@ func (c *Client) createWikiNodeV2(ctx context.Context, req CreateWikiNodeRequest
 		return WikiNode{}, errors.New("wiki node create failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiNode{}, fmt.Errorf("wiki node create failed: %s", resp.Msg)
+		return WikiNode{}, apiError("wiki node create", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Node == nil {
 		return WikiNode{}, errors.New("wiki node create failed: missing node")
@@ -163,7 +162,7 @@ func (c *Client) moveWikiNodeV2(ctx context.Context, req MoveWikiNodeRequest, op
 		return WikiNode{}, errors.New("wiki node move failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiNode{}, fmt.Errorf("wiki node move failed: %s", resp.Msg)
+		return WikiNode{}, apiError("wiki node move", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Node == nil {
 		return WikiNode{}, errors.New("wiki node move failed: missing node")
@@ -226,7 +225,7 @@ func (c *Client) updateWikiNodeTitleV2(ctx context.Context, req UpdateWikiNodeTi
 		return errors.New("wiki node update title failed: empty response")
 	}
 	if !resp.Success() {
-		return fmt.Errorf("wiki node update title failed: %s", resp.Msg)
+		return apiError("wiki node update title", resp.Code, resp.Msg)
 	}
 	return nil
 }
@@ -303,7 +302,7 @@ func (c *Client) moveDocsToWikiV2(ctx context.Context, req MoveDocsToWikiRequest
 		return MoveDocsToWikiResult{}, errors.New("wiki move docs to wiki failed: empty response")
 	}
 	if !resp.Success() {
-		return MoveDocsToWikiResult{}, fmt.Errorf("wiki move docs to wiki failed: %s", resp.Msg)
+		return MoveDocsToWikiResult{}, apiError("wiki move docs to wiki", resp.Code, resp.Msg)
 	}
 	out := MoveDocsToWikiResult{}
 	if resp.Data == nil {

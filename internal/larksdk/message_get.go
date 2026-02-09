@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -36,7 +35,7 @@ func (c *Client) GetMessage(ctx context.Context, userAccessToken, messageID, use
 		return Message{}, errors.New("get message failed: empty response")
 	}
 	if !resp.Success() {
-		return Message{}, fmt.Errorf("get message failed: %s", resp.Msg)
+		return Message{}, apiError("get message", resp.Code, resp.Msg)
 	}
 	if resp.Data != nil && len(resp.Data.Items) > 0 {
 		return mapMessage(resp.Data.Items[0]), nil

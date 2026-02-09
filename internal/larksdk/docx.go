@@ -74,7 +74,7 @@ func (c *Client) createDocxDocumentSDK(ctx context.Context, option larkcore.Requ
 		return DocxDocument{}, errors.New("create docx document failed: empty response")
 	}
 	if !resp.Success() {
-		return DocxDocument{}, fmt.Errorf("create docx document failed: %s", resp.Msg)
+		return DocxDocument{}, apiError("create docx document", resp.Code, resp.Msg)
 	}
 	if resp.ApiResp != nil {
 		raw := &createDocxDocumentResponse{ApiResp: resp.ApiResp}
@@ -121,7 +121,7 @@ func (c *Client) createDocxDocumentCore(ctx context.Context, option larkcore.Req
 		return DocxDocument{}, err
 	}
 	if !resp.Success() {
-		return DocxDocument{}, fmt.Errorf("create docx document failed: %s", resp.Msg)
+		return DocxDocument{}, apiError("create docx document", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Document == nil {
 		return DocxDocument{}, nil
@@ -162,7 +162,7 @@ func (c *Client) getDocxDocumentSDK(ctx context.Context, option larkcore.Request
 		return DocxDocument{}, errors.New("get docx document failed: empty response")
 	}
 	if !resp.Success() {
-		return DocxDocument{}, fmt.Errorf("get docx document failed: %s", resp.Msg)
+		return DocxDocument{}, apiError("get docx document", resp.Code, resp.Msg)
 	}
 	if resp.ApiResp != nil {
 		raw := &getDocxDocumentResponse{ApiResp: resp.ApiResp}
@@ -202,7 +202,7 @@ func (c *Client) getDocxDocumentCore(ctx context.Context, option larkcore.Reques
 		return DocxDocument{}, err
 	}
 	if !resp.Success() {
-		return DocxDocument{}, fmt.Errorf("get docx document failed: %s", resp.Msg)
+		return DocxDocument{}, apiError("get docx document", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Document == nil {
 		return DocxDocument{}, nil
@@ -257,7 +257,7 @@ func (c *Client) getDocxRawContentSDK(ctx context.Context, option larkcore.Reque
 		return "", errors.New("get docx raw content failed: empty response")
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("get docx raw content failed: %s", resp.Msg)
+		return "", apiError("get docx raw content", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Content == nil {
 		return "", nil
@@ -287,7 +287,7 @@ func (c *Client) getDocxRawContentCore(ctx context.Context, option larkcore.Requ
 		return "", err
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("get docx raw content failed: %s", resp.Msg)
+		return "", apiError("get docx raw content", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return "", nil

@@ -126,7 +126,7 @@ func (c *Client) addDrivePermissionMember(ctx context.Context, fileToken, fileTy
 		return DrivePermissionMember{}, err
 	}
 	if !resp.Success() {
-		return DrivePermissionMember{}, fmt.Errorf("add drive permission member failed: %s", resp.Msg)
+		return DrivePermissionMember{}, apiError("add drive permission member", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return DrivePermissionMember{}, nil
@@ -218,7 +218,7 @@ func (c *Client) listDrivePermissionMembers(ctx context.Context, fileToken, file
 		return ListDrivePermissionMembersResult{}, err
 	}
 	if !resp.Success() {
-		return ListDrivePermissionMembersResult{}, fmt.Errorf("list drive permission members failed: %s", resp.Msg)
+		return ListDrivePermissionMembersResult{}, apiError("list drive permission members", resp.Code, resp.Msg)
 	}
 	result := ListDrivePermissionMembersResult{}
 	if resp.Data != nil && resp.Data.Items != nil {
@@ -334,7 +334,7 @@ func (c *Client) updateDrivePermissionMember(ctx context.Context, fileToken, fil
 		return DrivePermissionMember{}, err
 	}
 	if !resp.Success() {
-		return DrivePermissionMember{}, fmt.Errorf("update drive permission member failed: %s", resp.Msg)
+		return DrivePermissionMember{}, apiError("update drive permission member", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return DrivePermissionMember{}, nil
@@ -424,7 +424,7 @@ func (c *Client) deleteDrivePermissionMember(ctx context.Context, fileToken, fil
 		return err
 	}
 	if resp.Code != 0 {
-		return fmt.Errorf("delete drive permission member failed: %s", resp.Msg)
+		return apiError("delete drive permission member", resp.Code, resp.Msg)
 	}
 	return nil
 }

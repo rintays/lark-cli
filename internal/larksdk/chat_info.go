@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -100,7 +99,7 @@ func (c *Client) CreateChatDetail(ctx context.Context, token string, req CreateC
 		return ChatInfo{}, errors.New("create chat failed: empty response")
 	}
 	if !resp.Success() {
-		return ChatInfo{}, fmt.Errorf("create chat failed: %s", resp.Msg)
+		return ChatInfo{}, apiError("create chat", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ChatInfo{}, errors.New("create chat failed: empty data")
@@ -133,7 +132,7 @@ func (c *Client) GetChatInfo(ctx context.Context, token string, req GetChatReque
 		return ChatInfo{}, errors.New("get chat failed: empty response")
 	}
 	if !resp.Success() {
-		return ChatInfo{}, fmt.Errorf("get chat failed: %s", resp.Msg)
+		return ChatInfo{}, apiError("get chat", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ChatInfo{}, errors.New("get chat failed: empty data")
@@ -229,7 +228,7 @@ func (c *Client) UpdateChatInfo(ctx context.Context, token string, req UpdateCha
 		return errors.New("update chat failed: empty response")
 	}
 	if !resp.Success() {
-		return fmt.Errorf("update chat failed: %s", resp.Msg)
+		return apiError("update chat", resp.Code, resp.Msg)
 	}
 	return nil
 }

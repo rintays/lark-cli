@@ -96,7 +96,7 @@ func (c *Client) SearchMessages(ctx context.Context, userAccessToken string, req
 		return MessageSearchResult{}, err
 	}
 	if !resp.Success() {
-		return MessageSearchResult{}, fmt.Errorf("message search failed (code=%d): %s", resp.Code, resp.Msg)
+		return MessageSearchResult{}, apiError("message search", resp.Code, resp.Msg)
 	}
 
 	result := MessageSearchResult{}

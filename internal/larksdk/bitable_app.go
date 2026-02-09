@@ -165,7 +165,7 @@ func (c *Client) CreateBitableApp(ctx context.Context, token string, name string
 		return BitableApp{}, err
 	}
 	if !resp.Success() {
-		return BitableApp{}, fmt.Errorf("create bitable app failed: %s", resp.Msg)
+		return BitableApp{}, apiError("create bitable app", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.App == nil {
 		return BitableApp{}, errors.New("create bitable app failed: missing app")
@@ -198,7 +198,7 @@ func (c *Client) GetBitableApp(ctx context.Context, token string, appToken strin
 			return BitableApp{}, errors.New("get bitable app failed: empty response")
 		}
 		if !resp.Success() {
-			return BitableApp{}, fmt.Errorf("get bitable app failed: %s", resp.Msg)
+			return BitableApp{}, apiError("get bitable app", resp.Code, resp.Msg)
 		}
 		if resp.Data == nil || resp.Data.App == nil {
 			return BitableApp{}, errors.New("get bitable app failed: missing app")
@@ -287,7 +287,7 @@ func (c *Client) UpdateBitableApp(ctx context.Context, token string, appToken st
 		return BitableApp{}, err
 	}
 	if !resp.Success() {
-		return BitableApp{}, fmt.Errorf("update bitable app failed: %s", resp.Msg)
+		return BitableApp{}, apiError("update bitable app", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.App == nil {
 		return BitableApp{}, errors.New("update bitable app failed: missing app")
@@ -346,7 +346,7 @@ func (c *Client) CopyBitableApp(ctx context.Context, token string, appToken stri
 		return BitableApp{}, err
 	}
 	if !resp.Success() {
-		return BitableApp{}, fmt.Errorf("copy bitable app failed: %s", resp.Msg)
+		return BitableApp{}, apiError("copy bitable app", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.App == nil {
 		return BitableApp{}, errors.New("copy bitable app failed: missing app")

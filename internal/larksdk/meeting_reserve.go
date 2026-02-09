@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -112,7 +111,7 @@ func (c *Client) ApplyReserve(ctx context.Context, token string, req ApplyReserv
 		return Reserve{}, nil, err
 	}
 	if !resp.Success() {
-		return Reserve{}, nil, fmt.Errorf("apply reserve failed: %s", resp.Msg)
+		return Reserve{}, nil, apiError("apply reserve", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Reserve == nil {
 		return Reserve{}, nil, errors.New("apply reserve response missing reserve")
@@ -172,7 +171,7 @@ func (c *Client) UpdateReserve(ctx context.Context, token string, req UpdateRese
 		return Reserve{}, nil, err
 	}
 	if !resp.Success() {
-		return Reserve{}, nil, fmt.Errorf("update reserve failed: %s", resp.Msg)
+		return Reserve{}, nil, apiError("update reserve", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Reserve == nil {
 		return Reserve{}, nil, errors.New("update reserve response missing reserve")
@@ -217,7 +216,7 @@ func (c *Client) DeleteReserve(ctx context.Context, token string, req DeleteRese
 		return err
 	}
 	if !resp.Success() {
-		return fmt.Errorf("delete reserve failed: %s", resp.Msg)
+		return apiError("delete reserve", resp.Code, resp.Msg)
 	}
 	return nil
 }

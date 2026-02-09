@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -52,7 +51,7 @@ func (c *Client) ListMessages(ctx context.Context, token string, req ListMessage
 		return ListMessagesResult{}, errors.New("list messages failed: empty response")
 	}
 	if !resp.Success() {
-		return ListMessagesResult{}, fmt.Errorf("list messages failed: %s", resp.Msg)
+		return ListMessagesResult{}, apiError("list messages", resp.Code, resp.Msg)
 	}
 
 	result := ListMessagesResult{}

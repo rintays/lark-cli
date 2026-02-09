@@ -82,14 +82,21 @@ func containsScopeToken(scopes []string) bool {
 }
 
 func shouldSuggestScopes(msg string) bool {
+	// Prefer structured classification.
+	// If we have a numeric OpenAPI error code, only suggest re-auth when it is the
+	// well-known "insufficient OAuth scopes" error.
 	if code := extractErrorCode(msg); code != 0 {
 		return code == 99991679
 	}
+
+	// If the upstream error string does not include a code, avoid guessing based
+	// on generic "permission denied" keywords. Those are often caused by Drive/Wiki
+	// object-level ACLs (e.g. view-only documents), not missing OAuth scopes.
 	lower := strings.ToLower(msg)
-	if strings.Contains(lower, "permission") || strings.Contains(lower, "privilege") || strings.Contains(lower, "unauthorized") {
+	if strings.Contains(lower, "scope") || strings.Contains(lower, "scopes") {
 		return true
 	}
-	if strings.Contains(msg, "权限") {
+	if strings.Contains(msg, "权限") && (strings.Contains(msg, "scope") || strings.Contains(msg, "权限范围")) {
 		return true
 	}
 	return false

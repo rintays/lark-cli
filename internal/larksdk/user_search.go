@@ -85,7 +85,7 @@ func (c *Client) SearchUsers(ctx context.Context, userAccessToken string, req Se
 		return SearchUsersResult{}, err
 	}
 	if !resp.Success() {
-		return SearchUsersResult{}, fmt.Errorf("search users failed (code=%d): %s", resp.Code, resp.Msg)
+		return SearchUsersResult{}, apiError("search users", resp.Code, resp.Msg)
 	}
 
 	result := SearchUsersResult{}

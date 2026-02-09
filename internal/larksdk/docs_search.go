@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -104,7 +103,7 @@ func (c *Client) SearchDocsObjectsWithUserToken(ctx context.Context, userAccessT
 		return DocsSearchResult{}, err
 	}
 	if !resp.Success() {
-		return DocsSearchResult{}, fmt.Errorf("docs search failed (code=%d): %s", resp.Code, resp.Msg)
+		return DocsSearchResult{}, apiError("docs search", resp.Code, resp.Msg)
 	}
 
 	result := DocsSearchResult{}

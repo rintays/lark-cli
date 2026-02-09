@@ -35,7 +35,7 @@ func (c *Client) BatchGetUserIDs(ctx context.Context, token string, req BatchGet
 		return nil, errors.New("batch get user ids failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("batch get user ids failed: %s", resp.Msg)
+		return nil, apiError("batch get user ids", resp.Code, resp.Msg)
 	}
 
 	users := []User{}
@@ -79,7 +79,7 @@ func (c *Client) ListUsersByDepartment(ctx context.Context, token string, req Li
 		return ListUsersByDepartmentResult{}, errors.New("list users failed: empty response")
 	}
 	if !resp.Success() {
-		return ListUsersByDepartmentResult{}, fmt.Errorf("list users failed: %s", resp.Msg)
+		return ListUsersByDepartmentResult{}, apiError("list users", resp.Code, resp.Msg)
 	}
 
 	result := ListUsersByDepartmentResult{}
@@ -124,7 +124,7 @@ func (c *Client) GetContactUser(ctx context.Context, token string, req GetContac
 		return User{}, errors.New("get contact user failed: empty response")
 	}
 	if !resp.Success() {
-		return User{}, fmt.Errorf("get contact user failed: %s", resp.Msg)
+		return User{}, apiError("get contact user", resp.Code, resp.Msg)
 	}
 
 	if resp.Data != nil && resp.Data.User != nil {

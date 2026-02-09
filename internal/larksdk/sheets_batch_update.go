@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -72,7 +71,7 @@ func (c *Client) UpdateSpreadsheetSheetTitle(ctx context.Context, token string, 
 		return err
 	}
 	if !resp.Success() {
-		return fmt.Errorf("update sheet title failed: %s", resp.Msg)
+		return apiError("update sheet title", resp.Code, resp.Msg)
 	}
 	return nil
 }

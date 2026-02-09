@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -41,7 +40,7 @@ func (c *Client) CreateMessageReaction(ctx context.Context, token string, messag
 		return MessageReaction{}, errors.New("create message reaction failed: empty response")
 	}
 	if !resp.Success() {
-		return MessageReaction{}, fmt.Errorf("create message reaction failed: %s", resp.Msg)
+		return MessageReaction{}, apiError("create message reaction", resp.Code, resp.Msg)
 	}
 	if resp.Data != nil {
 		return mapMessageReactionCreate(resp.Data), nil
@@ -77,7 +76,7 @@ func (c *Client) DeleteMessageReaction(ctx context.Context, token string, messag
 		return MessageReaction{}, errors.New("delete message reaction failed: empty response")
 	}
 	if !resp.Success() {
-		return MessageReaction{}, fmt.Errorf("delete message reaction failed: %s", resp.Msg)
+		return MessageReaction{}, apiError("delete message reaction", resp.Code, resp.Msg)
 	}
 	if resp.Data != nil {
 		return mapMessageReactionDelete(resp.Data), nil

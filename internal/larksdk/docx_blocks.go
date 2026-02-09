@@ -160,7 +160,7 @@ func (c *Client) GetDocxBlock(ctx context.Context, token string, tokenType Acces
 		builder.UserIdType(userIDType)
 	}
 
-resp, err := c.sdk.Docx.V1.DocumentBlock.Get(ctx, builder.Build(), option)
+	resp, err := c.sdk.Docx.V1.DocumentBlock.Get(ctx, builder.Build(), option)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ resp, err := c.sdk.Docx.V1.DocumentBlock.Get(ctx, builder.Build(), option)
 		return nil, errors.New("get docx block failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("get docx block failed: %s", resp.Msg)
+		return nil, apiError("get docx block", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return nil, nil
@@ -213,7 +213,7 @@ func (c *Client) ListDocxBlocks(ctx context.Context, token string, tokenType Acc
 		return nil, "", false, errors.New("list docx blocks failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, "", false, fmt.Errorf("list docx blocks failed: %s", resp.Msg)
+		return nil, "", false, apiError("list docx blocks", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return nil, "", false, nil
@@ -269,7 +269,7 @@ func (c *Client) GetDocxBlockChildren(ctx context.Context, token string, tokenTy
 		return nil, "", false, errors.New("get docx block children failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, "", false, fmt.Errorf("get docx block children failed: %s", resp.Msg)
+		return nil, "", false, apiError("get docx block children", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return nil, "", false, nil
@@ -325,7 +325,7 @@ func (c *Client) CreateDocxBlockChildren(ctx context.Context, token string, toke
 		return nil, errors.New("create docx block children failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("create docx block children failed: %s", resp.Msg)
+		return nil, apiError("create docx block children", resp.Code, resp.Msg)
 	}
 	return resp.Data, nil
 }
@@ -373,7 +373,7 @@ func (c *Client) CreateDocxBlockDescendant(ctx context.Context, token string, to
 		return nil, errors.New("create docx block descendant failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("create docx block descendant failed: %s", resp.Msg)
+		return nil, apiError("create docx block descendant", resp.Code, resp.Msg)
 	}
 	return resp.Data, nil
 }
@@ -421,7 +421,7 @@ func (c *Client) PatchDocxBlock(ctx context.Context, token string, tokenType Acc
 		return nil, errors.New("patch docx block failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("patch docx block failed: %s", resp.Msg)
+		return nil, apiError("patch docx block", resp.Code, resp.Msg)
 	}
 	return resp.Data, nil
 }
@@ -466,7 +466,7 @@ func (c *Client) BatchUpdateDocxBlocks(ctx context.Context, token string, tokenT
 		return nil, errors.New("batch update docx blocks failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("batch update docx blocks failed: %s", resp.Msg)
+		return nil, apiError("batch update docx blocks", resp.Code, resp.Msg)
 	}
 	return resp.Data, nil
 }
@@ -512,7 +512,7 @@ func (c *Client) BatchDeleteDocxBlockChildren(ctx context.Context, token string,
 		return nil, errors.New("batch delete docx block children failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("batch delete docx block children failed: %s", resp.Msg)
+		return nil, apiError("batch delete docx block children", resp.Code, resp.Msg)
 	}
 	return resp.Data, nil
 }
@@ -549,7 +549,7 @@ func (c *Client) ConvertDocxContent(ctx context.Context, token string, tokenType
 		return nil, errors.New("convert docx content failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("convert docx content failed: %s", resp.Msg)
+		return nil, apiError("convert docx content", resp.Code, resp.Msg)
 	}
 	return resp.Data, nil
 }

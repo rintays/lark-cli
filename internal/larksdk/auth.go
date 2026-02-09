@@ -45,7 +45,7 @@ func (c *Client) TenantAccessToken(ctx context.Context) (string, int64, error) {
 		return "", 0, errors.New("tenant access token failed: empty response")
 	}
 	if !resp.Success() {
-		return "", 0, fmt.Errorf("tenant access token failed: %s", resp.Msg)
+		return "", 0, apiError("tenant access token", resp.Code, resp.Msg)
 	}
 	if resp.TenantAccessToken == "" {
 		return "", 0, errors.New("tenant access token missing from response")

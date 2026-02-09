@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -61,7 +60,7 @@ func (c *Client) CreateDriveFolder(ctx context.Context, token string, name strin
 		return "", err
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("create drive folder failed: %s", resp.Msg)
+		return "", apiError("create drive folder", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.FolderToken == nil {
 		return "", errors.New("create drive folder failed: missing folder_token")
@@ -138,7 +137,7 @@ func (c *Client) CreateSpreadsheet(ctx context.Context, token string, tokenType 
 		return "", err
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("create spreadsheet failed: %s", resp.Msg)
+		return "", apiError("create spreadsheet", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Spreadsheet == nil || resp.Data.Spreadsheet.SpreadsheetToken == "" {
 		return "", errors.New("create spreadsheet failed: missing spreadsheet_token")
@@ -193,7 +192,7 @@ func (c *Client) DeleteChat(ctx context.Context, token string, chatID string) er
 		return err
 	}
 	if !resp.Success() {
-		return fmt.Errorf("delete chat failed: %s", resp.Msg)
+		return apiError("delete chat", resp.Code, resp.Msg)
 	}
 	return nil
 }

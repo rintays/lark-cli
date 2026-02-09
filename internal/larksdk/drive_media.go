@@ -59,7 +59,7 @@ func (c *Client) UploadDriveMedia(ctx context.Context, token string, req UploadD
 		return DriveMediaUploadResult{}, errors.New("drive media upload failed: empty response")
 	}
 	if !resp.Success() {
-		return DriveMediaUploadResult{}, fmt.Errorf("drive media upload failed: %s", resp.Msg)
+		return DriveMediaUploadResult{}, apiError("drive media upload", resp.Code, resp.Msg)
 	}
 	result := DriveMediaUploadResult{}
 	if resp.Data != nil && resp.Data.FileToken != nil {

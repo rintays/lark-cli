@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -158,7 +157,7 @@ func (c *Client) ReadSheetRange(ctx context.Context, token string, tokenType Acc
 		return SheetValueRange{}, err
 	}
 	if !resp.Success() {
-		return SheetValueRange{}, fmt.Errorf("read sheet range failed: %s", resp.Msg)
+		return SheetValueRange{}, apiError("read sheet range", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.ValueRange == nil {
 		return SheetValueRange{}, nil
@@ -213,7 +212,7 @@ func (c *Client) UpdateSheetRange(ctx context.Context, token string, tokenType A
 		return SheetValueUpdate{}, err
 	}
 	if !resp.Success() {
-		return SheetValueUpdate{}, fmt.Errorf("update sheet range failed: %s", resp.Msg)
+		return SheetValueUpdate{}, apiError("update sheet range", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return SheetValueUpdate{}, nil
@@ -271,7 +270,7 @@ func (c *Client) AppendSheetRange(ctx context.Context, token string, tokenType A
 		return SheetValueAppend{}, err
 	}
 	if !resp.Success() {
-		return SheetValueAppend{}, fmt.Errorf("append sheet range failed: %s", resp.Msg)
+		return SheetValueAppend{}, apiError("append sheet range", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return SheetValueAppend{}, nil
@@ -359,7 +358,7 @@ func (c *Client) InsertSheetRows(ctx context.Context, token string, tokenType Ac
 		return SheetDimensionInsertResult{}, err
 	}
 	if !resp.Success() {
-		return SheetDimensionInsertResult{}, fmt.Errorf("insert sheet rows failed: %s", resp.Msg)
+		return SheetDimensionInsertResult{}, apiError("insert sheet rows", resp.Code, resp.Msg)
 	}
 	return SheetDimensionInsertResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
 }
@@ -410,7 +409,7 @@ func (c *Client) DeleteSheetRows(ctx context.Context, token string, tokenType Ac
 		return SheetDimensionDeleteResult{}, err
 	}
 	if !resp.Success() {
-		return SheetDimensionDeleteResult{}, fmt.Errorf("delete sheet rows failed: %s", resp.Msg)
+		return SheetDimensionDeleteResult{}, apiError("delete sheet rows", resp.Code, resp.Msg)
 	}
 	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: startIndex + count}, nil
 }
@@ -461,7 +460,7 @@ func (c *Client) DeleteSheetCols(ctx context.Context, token string, tokenType Ac
 		return SheetDimensionDeleteResult{}, err
 	}
 	if !resp.Success() {
-		return SheetDimensionDeleteResult{}, fmt.Errorf("delete sheet cols failed: %s", resp.Msg)
+		return SheetDimensionDeleteResult{}, apiError("delete sheet cols", resp.Code, resp.Msg)
 	}
 	return SheetDimensionDeleteResult{StartIndex: startIndex, Count: count, EndIndex: startIndex + count}, nil
 }
@@ -512,7 +511,7 @@ func (c *Client) InsertSheetCols(ctx context.Context, token string, tokenType Ac
 		return SheetDimensionInsertResult{}, err
 	}
 	if !resp.Success() {
-		return SheetDimensionInsertResult{}, fmt.Errorf("insert sheet cols failed: %s", resp.Msg)
+		return SheetDimensionInsertResult{}, apiError("insert sheet cols", resp.Code, resp.Msg)
 	}
 	return SheetDimensionInsertResult{StartIndex: startIndex, Count: count, EndIndex: endIndex}, nil
 }
@@ -540,7 +539,7 @@ func (c *Client) GetSpreadsheetMetadata(ctx context.Context, token string, token
 		return SpreadsheetMetadata{}, errors.New("get spreadsheet metadata failed: empty response")
 	}
 	if !resp.Success() {
-		return SpreadsheetMetadata{}, fmt.Errorf("get spreadsheet metadata failed: %s", resp.Msg)
+		return SpreadsheetMetadata{}, apiError("get spreadsheet metadata", resp.Code, resp.Msg)
 	}
 	metadata := SpreadsheetMetadata{}
 	if resp.Data == nil || resp.Data.Spreadsheet == nil {

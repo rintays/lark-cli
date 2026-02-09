@@ -52,7 +52,7 @@ func (c *Client) SendMessage(ctx context.Context, token string, req MessageReque
 		return "", errors.New("send message failed: empty response")
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("send message failed: %s", resp.Msg)
+		return "", apiError("send message", resp.Code, resp.Msg)
 	}
 	if resp.Data != nil && resp.Data.MessageId != nil {
 		return *resp.Data.MessageId, nil
@@ -106,7 +106,7 @@ func (c *Client) ReplyMessage(ctx context.Context, token string, req ReplyMessag
 		return "", errors.New("reply message failed: empty response")
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("reply message failed: %s", resp.Msg)
+		return "", apiError("reply message", resp.Code, resp.Msg)
 	}
 	if resp.Data != nil && resp.Data.MessageId != nil {
 		return *resp.Data.MessageId, nil

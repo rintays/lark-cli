@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -219,7 +218,7 @@ func (c *Client) ListMailFolders(ctx context.Context, token, mailboxID string) (
 		return nil, err
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("list mail folders failed: %s", resp.Msg)
+		return nil, apiError("list mail folders", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Items == nil {
 		return nil, nil
@@ -245,7 +244,7 @@ func (c *Client) ListPublicMailboxes(ctx context.Context, token string) ([]Mailb
 		return nil, errors.New("list public mailboxes failed: empty response")
 	}
 	if !resp.Success() {
-		return nil, fmt.Errorf("list public mailboxes failed: %s", resp.Msg)
+		return nil, apiError("list public mailboxes", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Items == nil {
 		return nil, nil
@@ -304,7 +303,7 @@ func (c *Client) GetMailbox(ctx context.Context, token, mailboxID string) (Mailb
 		return Mailbox{}, err
 	}
 	if !resp.Success() {
-		return Mailbox{}, fmt.Errorf("get mailbox failed: %s", resp.Msg)
+		return Mailbox{}, apiError("get mailbox", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return Mailbox{}, nil
@@ -357,7 +356,7 @@ func (c *Client) ListMailMessages(ctx context.Context, token string, req ListMai
 		return ListMailMessagesResponse{}, errors.New("list mail messages failed: empty response")
 	}
 	if !resp.Success() {
-		return ListMailMessagesResponse{}, fmt.Errorf("list mail messages failed: %s", resp.Msg)
+		return ListMailMessagesResponse{}, apiError("list mail messages", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Items == nil {
 		return ListMailMessagesResponse{}, nil
@@ -428,7 +427,7 @@ func (c *Client) fetchMailMessage(ctx context.Context, token, mailboxID, message
 		return MailMessage{}, nil, errors.New("get mail message failed: empty response")
 	}
 	if !resp.Success() {
-		return MailMessage{}, resp, fmt.Errorf("get mail message failed: %s", resp.Msg)
+		return MailMessage{}, resp, apiError("get mail message", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Message == nil {
 		return MailMessage{}, resp, nil
@@ -631,7 +630,7 @@ func (c *Client) SendMail(ctx context.Context, token, mailboxID string, req Send
 		return "", errors.New("send mail failed: empty response")
 	}
 	if !resp.Success() {
-		return "", fmt.Errorf("send mail failed: %s", resp.Msg)
+		return "", apiError("send mail", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.MessageId == nil {
 		return "", nil

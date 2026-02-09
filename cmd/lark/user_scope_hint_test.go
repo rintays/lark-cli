@@ -8,7 +8,7 @@ import (
 
 func TestWithUserScopeHintForCommand_InferredScopes(t *testing.T) {
 	state := &appState{Command: "drive search"}
-	err := errors.New("permission denied")
+	err := errors.New("permission denied (code=99991679)")
 	got := withUserScopeHintForCommand(state, err)
 	if got == nil {
 		t.Fatalf("expected error")
@@ -33,7 +33,7 @@ func TestWithUserScopeHintForCommand_InferredScopes(t *testing.T) {
 
 func TestWithUserScopeHintForCommand_ExtractedScopesWin(t *testing.T) {
 	state := &appState{Command: "drive search"}
-	err := errors.New("permission denied [drive:drive:readonly]")
+	err := errors.New("permission denied (code=99991679) [drive:drive:readonly]")
 	got := withUserScopeHintForCommand(state, err)
 	if got == nil {
 		t.Fatalf("expected error")
@@ -46,7 +46,7 @@ func TestWithUserScopeHintForCommand_ExtractedScopesWin(t *testing.T) {
 
 func TestWithUserScopeHintForCommand_ChatsListScopes(t *testing.T) {
 	state := &appState{Command: "chats list"}
-	err := errors.New("permission denied")
+	err := errors.New("permission denied (code=99991679)")
 	got := withUserScopeHintForCommand(state, err)
 	if got == nil {
 		t.Fatalf("expected error")
@@ -62,7 +62,7 @@ func TestWithUserScopeHintForCommand_ChatsListScopes(t *testing.T) {
 
 func TestWithUserScopeHintForCommand_MessageSearchScopes(t *testing.T) {
 	state := &appState{Command: "messages search"}
-	err := errors.New("permission denied")
+	err := errors.New("permission denied (code=99991679)")
 	got := withUserScopeHintForCommand(state, err)
 	if got == nil {
 		t.Fatalf("expected error")

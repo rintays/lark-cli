@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
@@ -35,7 +34,7 @@ func (c *Client) CreateBaseTable(ctx context.Context, token, appToken, tableName
 		return BaseTable{}, errors.New("create base table failed: empty response")
 	}
 	if !resp.Success() {
-		return BaseTable{}, fmt.Errorf("create base table failed: %s", resp.Msg)
+		return BaseTable{}, apiError("create base table", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return BaseTable{}, nil
@@ -72,7 +71,7 @@ func (c *Client) DeleteBaseTable(ctx context.Context, token, appToken, tableID s
 		return BaseTableDeleteResult{}, errors.New("delete base table failed: empty response")
 	}
 	if !resp.Success() {
-		return BaseTableDeleteResult{}, fmt.Errorf("delete base table failed: %s", resp.Msg)
+		return BaseTableDeleteResult{}, apiError("delete base table", resp.Code, resp.Msg)
 	}
 	result := BaseTableDeleteResult{TableID: tableID, Deleted: true}
 	return result, nil

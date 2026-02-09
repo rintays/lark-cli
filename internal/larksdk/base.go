@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -68,7 +67,7 @@ func (c *Client) ListBaseTablesPage(ctx context.Context, token, appToken, pageTo
 		return ListBaseTablesResult{}, err
 	}
 	if !resp.Success() {
-		return ListBaseTablesResult{}, fmt.Errorf("list base tables failed: %s", resp.Msg)
+		return ListBaseTablesResult{}, apiError("list base tables", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ListBaseTablesResult{}, nil
@@ -144,7 +143,7 @@ func (c *Client) ListBaseFields(ctx context.Context, token, appToken, tableID st
 		return ListBaseFieldsResult{}, err
 	}
 	if !resp.Success() {
-		return ListBaseFieldsResult{}, fmt.Errorf("list base fields failed: %s", resp.Msg)
+		return ListBaseFieldsResult{}, apiError("list base fields", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ListBaseFieldsResult{}, nil
@@ -338,7 +337,7 @@ func (c *Client) ListBaseViews(ctx context.Context, token, appToken, tableID str
 		return ListBaseViewsResult{}, err
 	}
 	if !resp.Success() {
-		return ListBaseViewsResult{}, fmt.Errorf("list base views failed: %s", resp.Msg)
+		return ListBaseViewsResult{}, apiError("list base views", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ListBaseViewsResult{}, nil
@@ -603,7 +602,7 @@ func (c *Client) GetBaseRecord(ctx context.Context, token, appToken, tableID, re
 		return BaseRecord{}, err
 	}
 	if !resp.Success() {
-		return BaseRecord{}, fmt.Errorf("get base record failed: %s", resp.Msg)
+		return BaseRecord{}, apiError("get base record", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return BaseRecord{}, nil
@@ -775,7 +774,7 @@ func (c *Client) deleteBaseRecordSDK(ctx context.Context, tenantToken, appToken,
 		return BaseRecordDeleteResult{}, errors.New("delete base record failed: empty response")
 	}
 	if !resp.Success() {
-		return BaseRecordDeleteResult{}, fmt.Errorf("delete base record failed: %s", resp.Msg)
+		return BaseRecordDeleteResult{}, apiError("delete base record", resp.Code, resp.Msg)
 	}
 	result := BaseRecordDeleteResult{RecordID: recordID, Deleted: true}
 	if resp.Data != nil {
@@ -813,7 +812,7 @@ func (c *Client) deleteBaseRecordCore(ctx context.Context, tenantToken, appToken
 		return BaseRecordDeleteResult{}, err
 	}
 	if !resp.Success() {
-		return BaseRecordDeleteResult{}, fmt.Errorf("delete base record failed: %s", resp.Msg)
+		return BaseRecordDeleteResult{}, apiError("delete base record", resp.Code, resp.Msg)
 	}
 	result := BaseRecordDeleteResult{RecordID: recordID, Deleted: true}
 	if resp.Data != nil {
@@ -925,7 +924,7 @@ func (c *Client) SearchBaseRecords(ctx context.Context, token, appToken, tableID
 		return SearchBaseRecordsResult{}, err
 	}
 	if !resp.Success() {
-		return SearchBaseRecordsResult{}, fmt.Errorf("search base records failed: %s", resp.Msg)
+		return SearchBaseRecordsResult{}, apiError("search base records", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return SearchBaseRecordsResult{}, nil

@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkminutes "github.com/larksuite/oapi-sdk-go/v3/service/minutes/v1"
@@ -34,7 +33,7 @@ func (c *Client) GetMinute(ctx context.Context, token, minuteToken, userIDType s
 		return Minute{}, errors.New("get minute failed: empty response")
 	}
 	if !resp.Success() {
-		return Minute{}, fmt.Errorf("get minute failed: %s", resp.Msg)
+		return Minute{}, apiError("get minute", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Minute == nil {
 		return Minute{}, nil

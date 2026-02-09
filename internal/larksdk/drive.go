@@ -40,7 +40,7 @@ func (c *Client) ListDriveFiles(ctx context.Context, token string, tokenType Acc
 		return ListDriveFilesResult{}, errors.New("list drive files failed: empty response")
 	}
 	if !resp.Success() {
-		return ListDriveFilesResult{}, fmt.Errorf("list drive files failed: %s", resp.Msg)
+		return ListDriveFilesResult{}, apiError("list drive files", resp.Code, resp.Msg)
 	}
 
 	result := ListDriveFilesResult{}
@@ -138,7 +138,7 @@ func (c *Client) searchDriveFiles(ctx context.Context, req SearchDriveFilesReque
 		return SearchDriveFilesResult{}, err
 	}
 	if !resp.Success() {
-		return SearchDriveFilesResult{}, fmt.Errorf("search drive files failed (code=%d): %s", resp.Code, resp.Msg)
+		return SearchDriveFilesResult{}, apiError("search drive files", resp.Code, resp.Msg)
 	}
 	result := SearchDriveFilesResult{}
 	if resp.Data != nil {
@@ -222,7 +222,7 @@ func (c *Client) getDriveFileMetadata(ctx context.Context, req GetDriveFileReque
 		return DriveFile{}, err
 	}
 	if !resp.Success() {
-		return DriveFile{}, fmt.Errorf("get drive file failed: %s", resp.Msg)
+		return DriveFile{}, apiError("get drive file", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.File == nil {
 		return DriveFile{}, nil
@@ -258,7 +258,7 @@ func (c *Client) DeleteDriveFile(ctx context.Context, token, fileToken, fileType
 		return DeleteDriveFileResult{}, errors.New("delete drive file failed: empty response")
 	}
 	if !resp.Success() {
-		return DeleteDriveFileResult{}, fmt.Errorf("delete drive file failed: %s", resp.Msg)
+		return DeleteDriveFileResult{}, apiError("delete drive file", resp.Code, resp.Msg)
 	}
 	result := DeleteDriveFileResult{}
 	if resp.Data != nil && resp.Data.TaskId != nil {
@@ -341,7 +341,7 @@ func (c *Client) UpdateDrivePermissionPublic(ctx context.Context, token, fileTok
 		return DrivePermissionPublic{}, err
 	}
 	if !resp.Success() {
-		return DrivePermissionPublic{}, fmt.Errorf("update drive permission failed: %s", resp.Msg)
+		return DrivePermissionPublic{}, apiError("update drive permission", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return DrivePermissionPublic{}, nil
@@ -400,7 +400,7 @@ func (c *Client) UploadDriveFile(ctx context.Context, token string, tokenType Ac
 		return DriveUploadResult{}, errors.New("drive upload failed: empty response")
 	}
 	if !resp.Success() {
-		return DriveUploadResult{}, fmt.Errorf("drive upload failed: %s", resp.Msg)
+		return DriveUploadResult{}, apiError("drive upload", resp.Code, resp.Msg)
 	}
 
 	result := DriveUploadResult{}
@@ -452,7 +452,7 @@ func (c *Client) downloadDriveFile(ctx context.Context, fileToken string, option
 		}, nil
 	}
 	if !resp.Success() {
-		return DriveDownload{}, fmt.Errorf("drive download failed: %s", resp.Msg)
+		return DriveDownload{}, apiError("drive download", resp.Code, resp.Msg)
 	}
 	return DriveDownload{}, errors.New("drive download failed: empty file")
 }

@@ -67,7 +67,7 @@ func (c *Client) getChatAnnouncementIM(ctx context.Context, tenantToken string, 
 		if isDocxChatAnnouncementMessage(resp.Msg) {
 			return ChatAnnouncement{}, &docxChatAnnouncementError{msg: resp.Msg}
 		}
-		return ChatAnnouncement{}, fmt.Errorf("get chat announcement failed: %s", resp.Msg)
+		return ChatAnnouncement{}, apiError("get chat announcement", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ChatAnnouncement{}, errors.New("get chat announcement failed: empty data")
@@ -110,7 +110,7 @@ func (c *Client) UpdateChatAnnouncement(ctx context.Context, token string, chatI
 		return errors.New("update chat announcement failed: empty response")
 	}
 	if !resp.Success() {
-		return fmt.Errorf("update chat announcement failed: %s", resp.Msg)
+		return apiError("update chat announcement", resp.Code, resp.Msg)
 	}
 	return nil
 }
@@ -163,7 +163,7 @@ func (c *Client) getChatAnnouncementDocx(ctx context.Context, tenantToken string
 		return ChatAnnouncement{}, errors.New("get chat announcement (docx) failed: empty response")
 	}
 	if !resp.Success() {
-		return ChatAnnouncement{}, fmt.Errorf("get chat announcement (docx) failed: %s", resp.Msg)
+		return ChatAnnouncement{}, apiError("get chat announcement (docx)", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return ChatAnnouncement{}, errors.New("get chat announcement (docx) failed: empty data")
@@ -206,7 +206,7 @@ func (c *Client) listChatAnnouncementBlocksDocx(ctx context.Context, tenantToken
 			return nil, errors.New("list chat announcement blocks failed: empty response")
 		}
 		if !resp.Success() {
-			return nil, fmt.Errorf("list chat announcement blocks failed: %s", resp.Msg)
+			return nil, apiError("list chat announcement blocks", resp.Code, resp.Msg)
 		}
 		if resp.Data == nil {
 			return blocks, nil

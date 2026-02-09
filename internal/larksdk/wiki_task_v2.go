@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -51,7 +50,7 @@ func (c *Client) GetWikiTaskV2(ctx context.Context, token string, req GetWikiTas
 		return WikiTaskResult{}, errors.New("wiki task get failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiTaskResult{}, fmt.Errorf("wiki task get failed: %s", resp.Msg)
+		return WikiTaskResult{}, apiError("wiki task get", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Task == nil {
 		return WikiTaskResult{}, errors.New("wiki task get failed: missing task")
@@ -110,7 +109,7 @@ func (c *Client) GetWikiTaskV2WithUserToken(ctx context.Context, userAccessToken
 		return WikiTaskResult{}, errors.New("wiki task get failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiTaskResult{}, fmt.Errorf("wiki task get failed: %s", resp.Msg)
+		return WikiTaskResult{}, apiError("wiki task get", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Task == nil {
 		return WikiTaskResult{}, errors.New("wiki task get failed: missing task")

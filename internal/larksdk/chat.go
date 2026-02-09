@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	im "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
@@ -37,7 +36,7 @@ func (c *Client) ListChats(ctx context.Context, token string, req ListChatsReque
 		return ListChatsResult{}, errors.New("list chats failed: empty response")
 	}
 	if !resp.Success() {
-		return ListChatsResult{}, fmt.Errorf("list chats failed: %s", resp.Msg)
+		return ListChatsResult{}, apiError("list chats", resp.Code, resp.Msg)
 	}
 
 	result := ListChatsResult{}

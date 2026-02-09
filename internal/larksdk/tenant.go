@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -52,7 +51,7 @@ func (c *Client) WhoAmI(ctx context.Context, token string) (TenantInfo, error) {
 		return TenantInfo{}, err
 	}
 	if !resp.Success() {
-		return TenantInfo{}, fmt.Errorf("whoami failed: %s", resp.Msg)
+		return TenantInfo{}, apiError("whoami", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Tenant == nil {
 		return TenantInfo{}, errors.New("whoami response missing tenant")

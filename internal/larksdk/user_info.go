@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -27,7 +26,7 @@ func (c *Client) UserInfo(ctx context.Context, token string) (UserInfo, error) {
 		return UserInfo{}, errors.New("user info failed: empty response")
 	}
 	if !resp.Success() {
-		return UserInfo{}, fmt.Errorf("user info failed: %s", resp.Msg)
+		return UserInfo{}, apiError("user info", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return UserInfo{}, errors.New("user info response missing data")

@@ -3,7 +3,6 @@ package larksdk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -93,7 +92,7 @@ func (c *Client) updateWikiSpaceSettingV2(ctx context.Context, req UpdateWikiSpa
 		return WikiSpaceSetting{}, errors.New("wiki space setting update failed: empty response")
 	}
 	if !resp.Success() {
-		return WikiSpaceSetting{}, fmt.Errorf("wiki space setting update failed: %s", resp.Msg)
+		return WikiSpaceSetting{}, apiError("wiki space setting update", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil || resp.Data.Setting == nil {
 		return WikiSpaceSetting{}, nil

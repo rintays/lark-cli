@@ -174,7 +174,7 @@ func (c *Client) primaryCalendar(ctx context.Context, option larkcore.RequestOpt
 		return Calendar{}, err
 	}
 	if !resp.Success() {
-		return Calendar{}, fmt.Errorf("primary calendar failed: %s", resp.Msg)
+		return Calendar{}, apiError("primary calendar", resp.Code, resp.Msg)
 	}
 	if resp.Data == nil {
 		return Calendar{}, errors.New("primary calendar response missing data")
