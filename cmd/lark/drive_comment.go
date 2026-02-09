@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -370,20 +371,30 @@ func newDriveCommentReplyCmd(state *appState, defaults driveCommentCommandDefaul
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			reply, err := state.SDK.CreateDriveFileCommentReply(ctx, token, larksdk.AccessTokenType(tokenTypeValue), larksdk.CreateDriveFileCommentReplyRequest{
+			// Create reply
+			if _, err := state.SDK.CreateDriveFileCommentReply(ctx, token, larksdk.AccessTokenType(tokenTypeValue), larksdk.CreateDriveFileCommentReplyRequest{
 				FileToken:  fileToken,
 				FileType:   resolvedType,
 				CommentID:  commentID,
 				UserIDType: *userIDType,
 				Content:    content,
-			})
+			}); err != nil {
+				return err
+			}
+
+			// Best-effort: fetch replies and return the latest reply_id.
+			latest, err := fetchLatestDriveCommentReply(ctx, state, token, larksdk.AccessTokenType(tokenTypeValue), fileToken, resolvedType, commentID, *userIDType)
 			if err != nil {
 				return err
 			}
-			payload := map[string]any{"reply": reply}
+			replyID := ""
+			if latest != nil && latest.ReplyId != nil {
+				replyID = *latest.ReplyId
+			}
+			payload := map[string]any{"ok": true, "reply_id": replyID, "reply": latest}
 			textOut := "ok"
-			if reply != nil && reply.ReplyId != nil {
-				textOut = fmt.Sprintf("%s", *reply.ReplyId)
+			if replyID != "" {
+				textOut = replyID
 			}
 			return state.Printer.Print(payload, textOut)
 		},
@@ -603,4 +614,58 @@ func derefBool(ptr *bool) bool {
 		return false
 	}
 	return *ptr
+}
+
+func fetchLatestDriveCommentReply(ctx context.Context, state *appState, token string, tokenType larksdk.AccessTokenType, fileToken string, fileType string, commentID string, userIDType string) (*larkdrive.FileCommentReply, error) {
+	pageToken := ""
+	pageSize := 50
+	var latest *larkdrive.FileCommentReply
+	for {
+		result, err := state.SDK.ListDriveFileCommentReplies(ctx, token, tokenType, larksdk.ListDriveFileCommentRepliesRequest{
+			FileToken:  fileToken,
+			FileType:   fileType,
+			CommentID:  commentID,
+			UserIDType: userIDType,
+			PageSize:   pageSize,
+			PageToken:  pageToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+		latest = findLatestDriveCommentReply(latest, result.Items)
+		if !result.HasMore {
+			break
+		}
+		if strings.TrimSpace(result.PageToken) == "" {
+			break
+		}
+		pageToken = result.PageToken
+	}
+	return latest, nil
+}
+
+func findLatestDriveCommentReply(current *larkdrive.FileCommentReply, candidates []*larkdrive.FileCommentReply) *larkdrive.FileCommentReply {
+	best := current
+	bestTime := driveCommentReplyTime(current)
+	for _, r := range candidates {
+		t := driveCommentReplyTime(r)
+		if t >= bestTime {
+			bestTime = t
+			best = r
+		}
+	}
+	return best
+}
+
+func driveCommentReplyTime(r *larkdrive.FileCommentReply) int {
+	if r == nil {
+		return -1
+	}
+	if r.CreateTime != nil {
+		return *r.CreateTime
+	}
+	if r.UpdateTime != nil {
+		return *r.UpdateTime
+	}
+	return -1
 }

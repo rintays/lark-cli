@@ -3,6 +3,8 @@ package main
 import (
 	"strings"
 	"testing"
+
+	larkdrive "github.com/larksuite/oapi-sdk-go/v3/service/drive/v1"
 )
 
 func TestResolveDriveCommentFileRef(t *testing.T) {
@@ -77,6 +79,26 @@ func TestParseDriveCommentReplyContent(t *testing.T) {
 		t.Fatalf("unexpected content: %#v", content)
 	}
 }
+
+func TestFindLatestDriveCommentReply(t *testing.T) {
+	typeTextRun := "text_run"
+	_ = typeTextRun
+	c1 := &larkdrive.FileCommentReply{ReplyId: ptrString("r1"), CreateTime: ptrInt(10)}
+	c2 := &larkdrive.FileCommentReply{ReplyId: ptrString("r2"), CreateTime: ptrInt(20)}
+	c3 := &larkdrive.FileCommentReply{ReplyId: ptrString("r3"), UpdateTime: ptrInt(30)}
+
+	latest := findLatestDriveCommentReply(nil, []*larkdrive.FileCommentReply{c1, c2})
+	if latest == nil || derefString(latest.ReplyId) != "r2" {
+		t.Fatalf("expected r2, got: %#v", latest)
+	}
+	latest = findLatestDriveCommentReply(latest, []*larkdrive.FileCommentReply{c3})
+	if latest == nil || derefString(latest.ReplyId) != "r3" {
+		t.Fatalf("expected r3, got: %#v", latest)
+	}
+}
+
+func ptrString(s string) *string { return &s }
+func ptrInt(i int) *int { return &i }
 
 func TestBuildDriveFileCommentCreate(t *testing.T) {
 	content, err := parseDriveCommentReplyContent("hello", "")
