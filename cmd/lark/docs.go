@@ -43,6 +43,7 @@ func newDocsCmd(state *appState) *cobra.Command {
 	cmd.AddCommand(newDocsBlocksCmd(state))
 	cmd.AddCommand(newDocsConvertCmd(state))
 	cmd.AddCommand(newDocsOverwriteCmd(state))
+	cmd.AddCommand(newDocsCommentCmd(state))
 	return cmd
 }
 
