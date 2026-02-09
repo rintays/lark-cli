@@ -362,10 +362,6 @@ func newDriveCommentReplyCmd(state *appState, defaults driveCommentCommandDefaul
 			if err != nil {
 				return flagUsage(cmd, err.Error())
 			}
-			comment, err := buildDriveFileCommentCreate(&commentID, content, "")
-			if err != nil {
-				return flagUsage(cmd, err.Error())
-			}
 			ctx := cmd.Context()
 			token, tokenTypeValue, err := resolveAccessToken(ctx, state, tokenTypesTenantOrUser, nil)
 			if err != nil {
@@ -374,19 +370,20 @@ func newDriveCommentReplyCmd(state *appState, defaults driveCommentCommandDefaul
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-			created, err := state.SDK.CreateDriveFileComment(ctx, token, larksdk.AccessTokenType(tokenTypeValue), larksdk.CreateDriveFileCommentRequest{
+			reply, err := state.SDK.CreateDriveFileCommentReply(ctx, token, larksdk.AccessTokenType(tokenTypeValue), larksdk.CreateDriveFileCommentReplyRequest{
 				FileToken:  fileToken,
 				FileType:   resolvedType,
+				CommentID:  commentID,
 				UserIDType: *userIDType,
-				Comment:    comment,
+				Content:    content,
 			})
 			if err != nil {
 				return err
 			}
-			payload := map[string]any{"comment": created}
-			textOut := ""
-			if created != nil && created.CommentId != nil {
-				textOut = fmt.Sprintf("%s", *created.CommentId)
+			payload := map[string]any{"reply": reply}
+			textOut := "ok"
+			if reply != nil && reply.ReplyId != nil {
+				textOut = fmt.Sprintf("%s", *reply.ReplyId)
 			}
 			return state.Printer.Print(payload, textOut)
 		},
