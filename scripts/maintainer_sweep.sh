@@ -4,6 +4,11 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_DIR"
 
+MODE="full"
+if [[ "${1:-}" == "--cron" ]]; then
+  MODE="cron"
+fi
+
 now_rfc3339() {
   date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
@@ -22,9 +27,21 @@ kv() {
   printf -- "- %s: %s\n" "$1" "$2"
 }
 
-echo "# lark-cli maintainer sweep"
-kv "time_utc" "$(now_rfc3339)"
-kv "repo" "$REPO_DIR"
+REPORT_DIR="$HOME/.openclaw/lark-cli"
+mkdir -p "$REPORT_DIR"
+
+stamp="$(date -u +"%Y%m%dT%H%M%SZ")"
+report="$REPORT_DIR/maintainer-sweep-$stamp.md"
+latest="$REPORT_DIR/maintainer-sweep-latest.md"
+
+# Generate report into a buffer file first.
+TMP_REPORT="$(mktemp -t lark-cli-sweep.XXXXXX)"
+trap 'rm -f "$TMP_REPORT"' EXIT
+
+{
+  echo "# lark-cli maintainer sweep"
+  kv "time_utc" "$(now_rfc3339)"
+  kv "repo" "$REPO_DIR"
 
 section "git"
 # Avoid failing if no remotes.
@@ -105,3 +122,36 @@ if have gh; then
 else
   kv "gh" "not found"
 fi
+} >"$TMP_REPORT"
+
+# Persist full report for AG.
+cp -f "$TMP_REPORT" "$report"
+cp -f "$report" "$latest"
+
+# If not cron mode, print the full report.
+if [[ "$MODE" == "full" ]]; then
+  cat "$report"
+  exit 0
+fi
+
+# Cron mode: be silent unless issues are detected.
+dirty=$(grep -E '^- dirty_files:' "$report" | awk '{print $3}' | tr -d ' ' || echo "")
+behind_line=$(grep -E '^- behind_origin_main:' "$report" || true)
+behind=$(echo "$behind_line" | awk '{print $3}' | tr -d ' ' || echo "")
+go_test=$(grep -E '^- go_test:' "$report" | awk '{print $3}' | tr -d ' ' || echo "")
+
+issues=()
+if [[ -n "$dirty" && "$dirty" != "0" ]]; then issues+=("dirty_worktree=$dirty"); fi
+if [[ -n "$behind" && "$behind" != "0" && "$behind" != "?" ]]; then issues+=("behind_origin_main=$behind"); fi
+if [[ -n "$go_test" && "$go_test" != "ok" ]]; then issues+=("go_test=$go_test"); fi
+
+if [[ ${#issues[@]} -eq 0 ]]; then
+  exit 0
+fi
+
+echo "lark-cli maintainer sweep: issues detected"
+for it in "${issues[@]}"; do
+  echo "- $it"
+done
+echo "- full_report: $latest"
+exit 0
