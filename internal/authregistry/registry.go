@@ -133,7 +133,9 @@ var Registry = map[string]ServiceDef{
 		TokenTypes:         []TokenType{TokenTenant, TokenUser},
 		RequiredUserScopes: []string{"task:tasklist:read"},
 		UserScopes: ServiceScopeSet{
-			Full:     []string{"task:tasklist:write"},
+			// Tasklist APIs require the read scope even when write is granted.
+			// Request both to avoid confusing "missing scope" errors.
+			Full:     []string{"task:tasklist:read", "task:tasklist:write"},
 			Readonly: []string{"task:tasklist:read"},
 		},
 		RequiresOffline: true,
@@ -143,7 +145,9 @@ var Registry = map[string]ServiceDef{
 		TokenTypes:         []TokenType{TokenTenant, TokenUser},
 		RequiredUserScopes: []string{"task:tasklist:write"},
 		UserScopes: ServiceScopeSet{
-			Full: []string{"task:tasklist:write"},
+			// Keep compatibility for callers that explicitly ask for write-only,
+			// but include read to ensure list/read endpoints work.
+			Full: []string{"task:tasklist:read", "task:tasklist:write"},
 		},
 		RequiresOffline: true,
 	},
