@@ -12,7 +12,12 @@ import (
 var DefaultUserOAuthServices = []string{"drive"}
 
 // UserOAuthServiceAliases maps user-facing aliases to service names.
+//
+// NOTE: "all" / "user" are treated specially in ExpandUserOAuthServiceAliases
+// to mean "all services that support user OAuth" (i.e., ListUserOAuthServices()).
+// The map entries are kept for backward-compat documentation but are not relied on.
 var UserOAuthServiceAliases = map[string][]string{
+	// Deprecated legacy behavior: historically only covered the most common docs flows.
 	"all":  {"drive", "docx", "sheets"},
 	"user": {"drive", "docx", "sheets"},
 }
@@ -50,6 +55,15 @@ func ExpandUserOAuthServiceAliases(services []string) []string {
 	services = normalizeServices(services)
 	expanded := make([]string, 0, len(services))
 	for _, svc := range services {
+		// "all" and "user" should mean *all* supported user-OAuth services.
+		//
+		// The previous legacy behavior only included drive/docx/sheets, which made
+		// users think they had granted "everything" while task/tasklist/etc were
+		// still missing.
+		if svc == "all" || svc == "user" {
+			expanded = append(expanded, ListUserOAuthServices()...)
+			continue
+		}
 		if alias, ok := UserOAuthServiceAliases[svc]; ok {
 			expanded = append(expanded, alias...)
 			continue

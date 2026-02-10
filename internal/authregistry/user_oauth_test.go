@@ -15,7 +15,7 @@ func TestListUserOAuthServicesStableSorted(t *testing.T) {
 
 func TestExpandUserOAuthServiceAliases(t *testing.T) {
 	got := ExpandUserOAuthServiceAliases([]string{"all"})
-	want := []string{"drive", "docx", "sheets"}
+	want := ListUserOAuthServices()
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ExpandUserOAuthServiceAliases(all)=%v, want %v", got, want)
 	}
