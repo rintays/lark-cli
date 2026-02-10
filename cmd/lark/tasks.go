@@ -127,6 +127,21 @@ func newTaskCreateCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// UX: If the user didn't specify any members, default-assign the task to
+			// the current user so it shows up in "my_tasks".
+			//
+			// This only applies when using a user access token and member type is user.
+			if len(req.Members) == 0 && strings.TrimSpace(memberType) == "user" && tokenType == tokenTypeUser {
+				me, err := state.SDK.UserInfo(ctx, token)
+				if err != nil {
+					return err
+				}
+				if strings.TrimSpace(me.OpenID) != "" {
+					req.Members = []larksdk.TaskMember{{ID: strings.TrimSpace(me.OpenID), Type: "user", Role: "assignee"}}
+				}
+			}
+
 			var task larksdk.Task
 			switch tokenType {
 			case tokenTypeTenant:
