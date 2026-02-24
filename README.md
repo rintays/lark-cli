@@ -70,6 +70,18 @@ npx skills add github.com/rintays/lark-cli
 
 ---
 
+## Setup
+
+### OAuth redirect URL (required for user login)
+
+In your Feishu/Lark app (Bot) admin console, go to **Security Settings → Redirect URLs** and add:
+
+`http://localhost:17653/oauth/callback`
+
+This enables the local OAuth callback used by `lark auth user login`.
+
+---
+
 ## Quickstart
 
 ### 1) Store app credentials
@@ -92,13 +104,7 @@ Tenant token (app-only APIs):
 lark auth tenant
 ```
 
-User token (user-scoped APIs like Drive search, Mail send):
-
-> Setup note: in your Feishu/Lark app (Bot) admin console, go to **Security Settings → Redirect URLs** and add:
->
-> `http://localhost:17653/oauth/callback`
->
-> This enables the local OAuth callback used by `lark auth user login`.
+User token (user-scoped APIs like Drive search, Mail send; requires the redirect URL in Setup above):
 
 ```bash
 lark auth user login
