@@ -94,6 +94,12 @@ lark auth tenant
 
 User token (user-scoped APIs like Drive search, Mail send):
 
+> Setup note: in your Feishu/Lark app (Bot) admin console, go to **Security Settings → Redirect URLs** and add:
+>
+> `http://localhost:17653/oauth/callback`
+>
+> This enables the local OAuth callback used by `lark auth user login`.
+
 ```bash
 lark auth user login
 ```
