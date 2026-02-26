@@ -122,6 +122,25 @@ if have gh; then
 else
   kv "gh" "not found"
 fi
+
+section "issue watchlist (optional)"
+# Keep a tiny watchlist of known-impact issues so the cron job can alert until resolved.
+# Checks only; no mutations.
+WATCH_ISSUES=(9)
+if have gh; then
+  for n in "${WATCH_ISSUES[@]}"; do
+    if gh issue view "$n" --repo rintays/lark-cli --json number,state,title,url >/tmp/lark_cli_sweep_issue.json 2>/dev/null; then
+      state=$(jq -r '.state' </tmp/lark_cli_sweep_issue.json 2>/dev/null || echo "")
+      title=$(jq -r '.title' </tmp/lark_cli_sweep_issue.json 2>/dev/null || echo "")
+      url=$(jq -r '.url' </tmp/lark_cli_sweep_issue.json 2>/dev/null || echo "")
+      echo "- issue_$n: ${state:-unknown} — ${title:-} (${url:-})"
+    else
+      echo "- issue_$n: unable to query"
+    fi
+  done
+else
+  kv "gh" "not found"
+fi
 } >"$TMP_REPORT"
 
 # Persist full report for AG.
@@ -144,6 +163,19 @@ issues=()
 if [[ -n "$dirty" && "$dirty" != "0" ]]; then issues+=("dirty_worktree=$dirty"); fi
 if [[ -n "$behind" && "$behind" != "0" && "$behind" != "?" ]]; then issues+=("behind_origin_main=$behind"); fi
 if [[ -n "$go_test" && "$go_test" != "ok" ]]; then issues+=("go_test=$go_test"); fi
+
+# Issue watchlist alerts (best-effort): if watched issue is still open.
+if have gh; then
+  for n in 9; do
+    if gh issue view "$n" --repo rintays/lark-cli --json state,url >/tmp/lark_cli_sweep_issue_state.json 2>/dev/null; then
+      st=$(jq -r '.state' </tmp/lark_cli_sweep_issue_state.json 2>/dev/null || echo "")
+      url=$(jq -r '.url' </tmp/lark_cli_sweep_issue_state.json 2>/dev/null || echo "")
+      if [[ "$st" == "OPEN" ]]; then
+        issues+=("watch_issue_${n}=OPEN ($url)")
+      fi
+    fi
+  done
+fi
 
 if [[ ${#issues[@]} -eq 0 ]]; then
   exit 0
