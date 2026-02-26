@@ -142,8 +142,8 @@ func TestAuthExplainChatsList(t *testing.T) {
 	if strings.Join(payload.TokenTypes, ",") != "tenant,user" {
 		t.Fatalf("token_types: expected [tenant user], got %v", payload.TokenTypes)
 	}
-	if strings.Join(payload.RequiredUserScopes, ",") != "im:chat.group_info:readonly" {
-		t.Fatalf("required_user_scopes: expected [im:chat.group_info:readonly], got %v", payload.RequiredUserScopes)
+	if strings.Join(payload.RequiredUserScopes, ",") != "im:chat:read" {
+		t.Fatalf("required_user_scopes: expected [im:chat:read], got %v", payload.RequiredUserScopes)
 	}
 	if payload.SuggestedUserLoginCommand == "" {
 		t.Fatalf("expected suggested_user_login_command")

@@ -56,7 +56,7 @@ func TestUserOAuthScopesForCommand(t *testing.T) {
 	if want := []string{"im"}; !reflect.DeepEqual(services, want) {
 		t.Fatalf("services=%v, want %v", services, want)
 	}
-	if want := []string{"offline_access", "im:chat.group_info:readonly"}; !reflect.DeepEqual(scopes, want) {
+	if want := []string{"offline_access", "im:chat:read"}; !reflect.DeepEqual(scopes, want) {
 		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 
