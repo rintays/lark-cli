@@ -93,7 +93,7 @@
 - 2026-01-31: Adjusted Sheets dimension payloads for better API compatibility, switched columns to COLUMNS, clarified sheet range help/examples, normalized sheets create folder-id root handling, and clarified user token help/error text for Sheets search.
 - 2026-01-31: Added user OAuth account management, keychain token storage backend, account selection via --account/LARK_ACCOUNT, and preflight scope checks for user-token commands; removed legacy user-token fallback; updated config/README accordingly.
 - 2026-01-31: Messages send now requires `--receive-id`, chats update uses positional chat-id, and message/wiki search added `--pages` pagination with auto page-size; README updated.
-- 2026-01-31: Message search scope hints now include `im:message:get_as_user` alongside `search:message` for user OAuth guidance.
+- 2026-01-31: Message search scope hints now include `search:message` for user OAuth guidance.
 - 2026-01-31: Mail list output now includes sender and internal_date columns for quick triage.
 - 2026-01-31: Added Bitable base concept explanations to the `bases` command help and README.
 - 2026-01-31: Added product concept explanations to top-level help for users/drive/docs/sheets/wiki/mail/messages/chats/calendars/meetings/minutes/contacts.
@@ -163,7 +163,7 @@
 - 2026-02-02: Added Wiki node create/move/update-title/attach and space update-setting commands, fixed Wiki space create to use user tokens, added user-token support for Wiki v2 calls, and updated docs/coverage.
 - 2026-02-02: Added `lark wiki node tree` command for ASCII tree output with node tokens, plus docs/tests updates.
 - 2026-02-02: Capped wiki node tree page_size to 50 to match API limits and avoid invalid page_size errors.
-- 2026-02-02: Added user OAuth scopes for IM chat commands (im:chat.group_info:readonly / im:chat) with updated auth tests and hints.
+- 2026-02-02: Added user OAuth scopes for IM chat commands (`im:chat:read` / `im:chat.members:read`) with updated auth tests and hints.
 - 2026-02-02: Refreshed README structure and examples to align with gogcli-style flow (short Quickstart, output/auth sections, streamlined examples).
 - 2026-02-02: Removed informal "(today)" wording from README section headings.
 - 2026-02-02: Reordered User OAuth section to recommend services-based authorization first.

@@ -55,10 +55,10 @@ var Registry = map[string]ServiceDef{
 	"im": {
 		Name:               "im",
 		TokenTypes:         []TokenType{TokenTenant, TokenUser},
-		RequiredUserScopes: []string{"im:chat.group_info:readonly"},
+		RequiredUserScopes: []string{"im:chat:read"},
 		UserScopes: ServiceScopeSet{
-			Full:     []string{"im:chat"},
-			Readonly: []string{"im:chat.group_info:readonly"},
+			Full:     []string{"im:chat:read", "im:chat.members:read"},
+			Readonly: []string{"im:chat:read"},
 		},
 	},
 	"search-message": {Name: "search-message", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"im:message:readonly", "search:message"}, RequiresOffline: true},

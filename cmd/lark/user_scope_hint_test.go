@@ -52,7 +52,7 @@ func TestWithUserScopeHintForCommand_ChatsListScopes(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 	msg := got.Error()
-	if !strings.Contains(msg, "im:chat.group_info:readonly") {
+	if !strings.Contains(msg, "im:chat:read") {
 		t.Fatalf("expected chat scope, got: %s", msg)
 	}
 	if !strings.Contains(msg, "lark auth user login --services \"im\" --force-consent") {

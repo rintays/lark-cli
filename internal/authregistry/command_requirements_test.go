@@ -77,8 +77,8 @@ func TestRequirementsForCommandChatsAndMessagesMatch(t *testing.T) {
 	if off1 {
 		t.Fatalf("chats offline=true, want false")
 	}
-	if !reflect.DeepEqual(scopes1, []string{"im:chat.group_info:readonly"}) {
-		t.Fatalf("chats scopes=%v, want [im:chat.group_info:readonly]", scopes1)
+	if !reflect.DeepEqual(scopes1, []string{"im:chat:read"}) {
+		t.Fatalf("chats scopes=%v, want [im:chat:read]", scopes1)
 	}
 
 	if !reflect.DeepEqual(svcs1, svcs2) || !reflect.DeepEqual(tts1, tts2) || off1 != off2 || !reflect.DeepEqual(scopes1, scopes2) {
