@@ -66,6 +66,14 @@ lark drive list --token-type user
 - Use `--limit` / `--pages` for pagination-heavy commands.
 - Reuse `--account` or `LARK_ACCOUNT` for multi-user scenarios.
 
+### User-facing output style (important)
+
+When you execute `lark` commands on the user's behalf:
+- **Do not dump raw CLI commands or verbose terminal output** to the user by default.
+- Summarize results in **human-readable language** (what changed / what was found / next action).
+- Only include the exact command/output when the user explicitly asks, or when it's needed for debugging/repro.
+- Prefer short lists and direct links (Docx/Sheet URLs) over IDs/tokens.
+
 ## Common recipes
 
 See `references/RECIPES.md` for common tasks (send message, search users, read docs, etc.).
