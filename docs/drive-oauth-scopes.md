@@ -1,43 +1,54 @@
 # Drive OAuth scopes (user OAuth)
 
-This repo uses the **Lark Open Platform** (open.larksuite.com) scope codes for user OAuth. Feishu (open.feishu.cn) uses the same scope codes, but the Feishu docs UI sometimes hides codes behind hover popovers.
+This repo uses the **Lark Open Platform** scope codes (open.larksuite.com) for **user OAuth**.
 
-**Source of truth:** Lark Developer documentation “Scope list”
-- https://open.larksuite.com/document/server-docs/getting-started/scope-list
+Feishu (open.feishu.cn) uses the **same scope codes** in practice; the main difference is the documentation domain/UI.
 
-## drive:drive:readonly
-**Scope name (from scope list):** “View, comment, and download all files in My Space”
+Primary sources:
+- Scope list (scope codes): https://open.larksuite.com/document/server-docs/getting-started/scope-list
+- API reference (endpoints): https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/overview
 
-**Description (excerpt):**
-> This scope allows an app to perform the following operations within the access range of Docs:
-> Obtain file content
-> Comment file content
-> Save file content
+## lark-cli Drive-related services (internal/authregistry)
 
-**Used by lark-cli for read-only Drive operations**, e.g. `drive list`, `drive info`, `drive download`, `drive urls`, `drive search`.
+These are the granular services used by command→service mapping:
 
-## drive:drive
-**Scope name (from scope list):** “View, comment, edit, and manage all files in My Space”
+| Service | Required user OAuth scope codes |
+|---|---|
+| `drive-search` | `drive:drive.search:readonly` |
+| `drive-metadata` | `drive:drive.metadata:readonly`, `space:document:retrieve` |
+| `drive-download` | `drive:file:download` |
+| `drive-upload` | `drive:file:upload` |
+| `drive-export` | `drive:export:readonly` |
+| `drive-permissions` | `docs:permission.member:retrieve`, `docs:permission.member:create`, `docs:permission.member:update`, `docs:permission.member:delete`, `docs:permission.setting:write_only` |
+| `drive-comment-read` | `docs:document.comment:read` |
+| `drive-comment-write` | `docs:document.comment:create`, `docs:document.comment:update` |
 
-**Description (excerpt):**
-> Add, delete, and modify a file
-> Add, delete, and modify file content
-> Add, delete, and modify permissions related to a file
+> Note: We intentionally avoid the legacy broad scopes `drive:drive` and `drive:drive:readonly`.
 
-**Note (excerpt):**
-> This scope contains all the permissions of "drive:drive:readonly".
+## Endpoint → scope-code mapping (evidence)
 
-**Used by lark-cli for write/mutation Drive operations**, e.g. `drive upload`, `drive share`, `drive permissions add|update|delete`, `drive comment add|update|reply|reply-update`.
+The table below maps the OpenAPI endpoints used by `lark-cli` Drive subcommands to the minimal scope codes we request.
 
-## drive:export:readonly
-**Scope name (from scope list):** “Export Docs documents”
+| lark-cli command(s) | OpenAPI endpoint(s) (method + path) | Scope code(s) | Sources |
+|---|---|---|---|
+| `drive list`, `docs list`, `drive urls` (folder listing) | `GET /open-apis/drive/v1/files` | `space:document:retrieve` | Scope list + related API; API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file/list |
+| `drive info` (metadata) | `GET /open-apis/drive/v1/files/:file_token` | `drive:drive.metadata:readonly` | Scope list (`drive:drive.metadata:readonly`). Note: this specific endpoint is not consistently exposed in the public reference UI; it is a metadata read and is covered by the metadata scope. |
+| `drive search` | `POST /open-apis/drive/v1/files/search` | `drive:drive.search:readonly` | Scope list (`drive:drive.search:readonly`). (API Explorer requires login; public reference page for this endpoint is not always available.) |
+| `drive download` | `GET /open-apis/drive/v1/files/:file_token/download` | `drive:file:download` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file/download |
+| `drive upload` | `POST /open-apis/drive/v1/files/upload_all` | `drive:file:upload` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file/upload_all |
+| `drive export`, `docs export` | `POST /open-apis/drive/v1/export_tasks` (create), `GET /open-apis/drive/v1/export_tasks/:ticket` (poll), `GET /open-apis/drive/v1/export_tasks/file/:file_token/download` (download) | `drive:export:readonly` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/export_task/create |
+| `drive permissions list` | `GET /open-apis/drive/v1/permissions/:token/members` | `docs:permission.member:retrieve` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/permission-member/list |
+| `drive permissions add` | `POST /open-apis/drive/v1/permissions/:token/members` | `docs:permission.member:create` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/permission-member/create |
+| `drive permissions update` | `PUT /open-apis/drive/v1/permissions/:token/members/:member_id` | `docs:permission.member:update` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/permission-member/update |
+| `drive permissions delete` | `DELETE /open-apis/drive/v1/permissions/:token/members/:member_id` | `docs:permission.member:delete` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/permission-member/delete |
+| `drive share` | `PATCH /open-apis/drive/v1/permissions/:token/public` | `docs:permission.setting:write_only` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/permission-public/patch |
+| `drive comment list`, `drive comment get` | `GET /open-apis/drive/v1/files/:file_token/comments` (list), `GET /open-apis/drive/v1/files/:file_token/comments/:comment_id` (get) | `docs:document.comment:read` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file-comment/list |
+| `drive comment add`, `drive comment reply` | `POST /open-apis/drive/v1/files/:file_token/comments` (create comment), `POST /open-apis/drive/v1/files/:file_token/comments/:comment_id/replies` (create reply) | `docs:document.comment:create` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file-comment/create |
+| `drive comment update`, `drive comment reply-update` | `PATCH /open-apis/drive/v1/files/:file_token/comments/:comment_id` (update/solve), `PUT /open-apis/drive/v1/files/:file_token/comments/:comment_id/replies/:reply_id` (update reply) | `docs:document.comment:update` | Scope list + API reference: https://open.larksuite.com/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file-comment/patch |
 
-**Description (excerpt):**
-> This scope allows an app to export Docs documents.
+### Lark vs Feishu
 
-**Used by lark-cli for export operations**, e.g. `drive export` and `docs export`.
+- Scope codes in this document are taken from the **Lark scope list**.
+- The corresponding Feishu pages usually exist under the same path on **open.feishu.cn**.
 
-## drive:drive.metadata:readonly
-**Scope name (from scope list):** “View the metadata of files in My Space”
-
-This scope exists and may be sufficient for some metadata-only workflows, but **lark-cli currently standardizes on** `drive:drive:readonly` for read-only Drive operations (and `drive:drive` for write operations) to avoid surprising API gaps.
+If you find an endpoint that still rejects these granular scopes (and only works with `drive:drive` / `drive:drive:readonly`), treat that as a documentation/API mismatch and document the error + endpoint so we can decide whether to widen scopes for that specific command.
