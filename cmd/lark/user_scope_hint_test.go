@@ -20,26 +20,23 @@ func TestWithUserScopeHintForCommand_InferredScopes(t *testing.T) {
 	if !strings.Contains(msg, "Missing user OAuth scopes") {
 		t.Fatalf("expected hint, got: %s", msg)
 	}
-	if !strings.Contains(msg, "drive:drive") {
-		t.Fatalf("expected drive scope, got: %s", msg)
+	if !strings.Contains(msg, "drive:drive.search:readonly") {
+		t.Fatalf("expected drive search scope, got: %s", msg)
 	}
-	if !strings.Contains(msg, "search:docs:read") {
-		t.Fatalf("expected search docs scope, got: %s", msg)
-	}
-	if !strings.Contains(msg, "lark auth user login --services \"drive,search-docs\" --force-consent") {
+	if !strings.Contains(msg, "lark auth user login --services \"drive-search\" --force-consent") {
 		t.Fatalf("expected relogin command, got: %s", msg)
 	}
 }
 
 func TestWithUserScopeHintForCommand_ExtractedScopesWin(t *testing.T) {
 	state := &appState{Command: "drive search"}
-	err := errors.New("permission denied (code=99991679) [drive:drive:readonly]")
+	err := errors.New("permission denied (code=99991679) [drive:drive.search:readonly]")
 	got := withUserScopeHintForCommand(state, err)
 	if got == nil {
 		t.Fatalf("expected error")
 	}
 	msg := got.Error()
-	if !strings.Contains(msg, "drive:drive:readonly") {
+	if !strings.Contains(msg, "drive:drive.search:readonly") {
 		t.Fatalf("expected extracted scope, got: %s", msg)
 	}
 }

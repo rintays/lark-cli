@@ -9,7 +9,7 @@ import (
 
 // DefaultUserOAuthServices is the default service set used when the user enables
 // the services-based OAuth mode but doesn't specify an explicit list.
-var DefaultUserOAuthServices = []string{"drive"}
+var DefaultUserOAuthServices = []string{"drive-metadata"}
 
 // UserOAuthServiceAliases maps user-facing aliases to service names.
 //
@@ -18,8 +18,8 @@ var DefaultUserOAuthServices = []string{"drive"}
 // The map entries are kept for backward-compat documentation but are not relied on.
 var UserOAuthServiceAliases = map[string][]string{
 	// Deprecated legacy behavior: historically only covered the most common docs flows.
-	"all":  {"drive", "docx", "sheets"},
-	"user": {"drive", "docx", "sheets"},
+	"all":  {"drive-metadata", "docx", "sheets"},
+	"user": {"drive-metadata", "docx", "sheets"},
 }
 
 // ListUserOAuthServices returns services that can be used in services-based

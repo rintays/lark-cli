@@ -142,7 +142,7 @@ func TestDriveListCommandLimitMustBePositiveDoesNotCallHTTP(t *testing.T) {
 func TestDriveSearchCommand(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
+		if r.URL.Path != "/open-apis/drive/v1/files/search" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer user-token" {
@@ -156,26 +156,26 @@ func TestDriveSearchCommand(t *testing.T) {
 		if payload["search_key"] != "budget" {
 			t.Fatalf("unexpected search_key: %+v", payload)
 		}
-		if payload["count"].(float64) != 2 {
-			t.Fatalf("unexpected count: %+v", payload["count"])
+		if payload["page_size"].(float64) != 2 {
+			t.Fatalf("unexpected page_size: %+v", payload["page_size"])
 		}
-		if payload["offset"].(float64) != 0 {
-			t.Fatalf("unexpected offset: %+v", payload["offset"])
+		if _, ok := payload["page_token"]; ok {
+			t.Fatalf("unexpected page_token: %+v", payload["page_token"])
 		}
-		docTypes, ok := payload["docs_types"].([]any)
-		if !ok || len(docTypes) != 2 {
-			t.Fatalf("expected docs_types, got: %+v", payload["docs_types"])
+		fileTypes, ok := payload["file_types"].([]any)
+		if !ok || len(fileTypes) != 2 {
+			t.Fatalf("expected file_types, got: %+v", payload["file_types"])
 		}
-		if docTypes[0].(string) != "doc" || docTypes[1].(string) != "sheet" {
-			t.Fatalf("unexpected docs_types: %+v", docTypes)
+		if fileTypes[0].(string) != "doc" || fileTypes[1].(string) != "sheet" {
+			t.Fatalf("unexpected file_types: %+v", fileTypes)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"docs_entities": []map[string]any{{"docs_token": "f2", "docs_type": "sheet", "title": "Budget", "open_url": "https://example.com/sheet"}},
-				"has_more":      false,
-				"total":         1,
+				"files":      []map[string]any{{"token": "f2", "type": "sheet", "name": "Budget", "url": "https://example.com/sheet"}},
+				"has_more":   false,
+				"page_token": "",
 			},
 		})
 	})
@@ -410,7 +410,7 @@ func TestDriveSearchCommandStopsAtLimit(t *testing.T) {
 func TestDriveSearchCommandSingleFileType(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
+		if r.URL.Path != "/open-apis/drive/v1/files/search" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer user-token" {
@@ -424,26 +424,26 @@ func TestDriveSearchCommandSingleFileType(t *testing.T) {
 		if payload["search_key"] != "spec" {
 			t.Fatalf("unexpected search_key: %+v", payload)
 		}
-		if payload["count"].(float64) != 1 {
-			t.Fatalf("unexpected count: %+v", payload["count"])
+		if payload["page_size"].(float64) != 1 {
+			t.Fatalf("unexpected page_size: %+v", payload["page_size"])
 		}
-		if payload["offset"].(float64) != 0 {
-			t.Fatalf("unexpected offset: %+v", payload["offset"])
+		if _, ok := payload["page_token"]; ok {
+			t.Fatalf("unexpected page_token: %+v", payload["page_token"])
 		}
-		docTypes, ok := payload["docs_types"].([]any)
-		if !ok || len(docTypes) != 1 {
-			t.Fatalf("unexpected docs_types: %+v", payload["docs_types"])
+		fileTypes, ok := payload["file_types"].([]any)
+		if !ok || len(fileTypes) != 1 {
+			t.Fatalf("unexpected file_types: %+v", payload["file_types"])
 		}
-		if docTypes[0].(string) != "doc" {
-			t.Fatalf("unexpected docs_types: %+v", docTypes)
+		if fileTypes[0].(string) != "doc" {
+			t.Fatalf("unexpected file_types: %+v", fileTypes)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"docs_entities": []map[string]any{{"docs_token": "f9", "docs_type": "doc", "title": "Spec", "open_url": "https://example.com/doc"}},
-				"has_more":      false,
-				"total":         1,
+				"files":      []map[string]any{{"token": "f9", "type": "doc", "name": "Spec", "url": "https://example.com/doc"}},
+				"has_more":   false,
+				"page_token": "",
 			},
 		})
 	})
@@ -486,7 +486,7 @@ func TestDriveSearchCommandSingleFileType(t *testing.T) {
 func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 	t.Setenv("LARK_USER_ACCESS_TOKEN", "env-token")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/open-apis/suite/docs-api/search/object" {
+		if r.URL.Path != "/open-apis/drive/v1/files/search" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		if r.Header.Get("Authorization") != "Bearer env-token" {
@@ -497,9 +497,9 @@ func TestDriveSearchCommandUsesUserTokenEnv(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]any{
-				"docs_entities": []map[string]any{{"docs_token": "f7", "docs_type": "doc", "title": "Note", "open_url": "https://example.com/doc"}},
-				"has_more":      false,
-				"total":         1,
+				"files":      []map[string]any{{"token": "f7", "type": "doc", "name": "Note", "url": "https://example.com/doc"}},
+				"has_more":   false,
+				"page_token": "",
 			},
 		})
 	})
@@ -933,7 +933,7 @@ func TestDriveUploadCommand(t *testing.T) {
 		t.Fatalf("drive upload error: %v", err)
 	}
 
-	if !strings.Contains(buf.String(), "file_123\treport.txt\tfile\thttps://example.com/file") {
+	if !strings.Contains(buf.String(), "file_123\treport.txt\tfld_123") {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }

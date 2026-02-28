@@ -98,7 +98,7 @@ func TestFindLatestDriveCommentReply(t *testing.T) {
 }
 
 func ptrString(s string) *string { return &s }
-func ptrInt(i int) *int { return &i }
+func ptrInt(i int) *int          { return &i }
 
 func TestBuildDriveFileCommentCreate(t *testing.T) {
 	content, err := parseDriveCommentReplyContent("hello", "")

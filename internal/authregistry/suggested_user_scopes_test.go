@@ -6,17 +6,18 @@ import (
 )
 
 func TestSuggestedUserOAuthScopesFromServicesFullUsesVariantsAndFallback(t *testing.T) {
-	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive", "mail"}, false)
+	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, false)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices() err=%v", err)
 	}
 	want := []string{
-		"drive:drive",
+		"drive:drive.metadata:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",
 		"mail:user_mailbox.message:readonly",
 		"mail:user_mailbox.message:send",
+		"space:document:retrieve",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices()=%v, want %v", got, want)
@@ -24,16 +25,17 @@ func TestSuggestedUserOAuthScopesFromServicesFullUsesVariantsAndFallback(t *test
 }
 
 func TestSuggestedUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *testing.T) {
-	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive", "mail"}, true)
+	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, true)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(readonly) err=%v", err)
 	}
 	want := []string{
-		"drive:drive:readonly",
+		"drive:drive.metadata:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",
 		"mail:user_mailbox.message:readonly",
+		"space:document:retrieve",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(readonly)=%v, want %v", got, want)
@@ -88,11 +90,11 @@ func TestSuggestedUserOAuthScopesFromServicesFullFallsBackToReadonlyWhenFullVari
 }
 
 func TestSuggestedUserOAuthScopesFromServicesDeterministicUnion(t *testing.T) {
-	a, err := SuggestedUserOAuthScopesFromServices([]string{"drive", "mail"}, true)
+	a, err := SuggestedUserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, true)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(a) err=%v", err)
 	}
-	b, err := SuggestedUserOAuthScopesFromServices([]string{"mail", "drive"}, true)
+	b, err := SuggestedUserOAuthScopesFromServices([]string{"mail", "drive-metadata"}, true)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(b) err=%v", err)
 	}

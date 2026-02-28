@@ -26,7 +26,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 - A folder contains files; default folder-id is the root.
 - File types include docx, sheet, slide, mindnote, and file.`,
 	}
-	annotateAuthServices(cmd, "drive")
+	annotateAuthServices(cmd, "drive-metadata")
 	cmd.AddCommand(newDriveListCmd(state))
 	cmd.AddCommand(newDriveSearchCmd(state))
 	cmd.AddCommand(newDriveInfoCmd(state))
@@ -53,9 +53,6 @@ func newDriveListCmd(state *appState) *cobra.Command {
 				return flagUsage(cmd, "limit must be greater than 0")
 			}
 			folderID = strings.TrimSpace(folderID)
-			if strings.EqualFold(folderID, "root") {
-				folderID = "0"
-			}
 			if strings.EqualFold(folderID, "root") {
 				folderID = "0"
 			}
@@ -155,16 +152,15 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			if _, err := requireSDK(state); err != nil {
 				return err
 			}
-
 			folderID = strings.TrimSpace(folderID)
-			var files []larksdk.DriveFile
-			if folderID != "" {
-				files, err = searchDriveFilesInFolder(ctx, state, token, query, fileTypes, folderID, limit, pages)
-			} else {
-				files, err = docsSearchDriveFiles(ctx, state, token, "drive", query, fileTypes, limit, pages)
-			}
+			fileTypes = normalizeDocsSearchTypes(fileTypes)
+			files, err := searchDriveFilesInFolder(ctx, state, token, query, fileTypes, folderID, limit, pages)
 			if err != nil {
 				return err
+			}
+
+			for i := range files {
+				files[i].FileType = normalizeDocsSearchResultType(files[i].FileType)
 			}
 
 			payload := map[string]any{"files": files}
@@ -176,7 +172,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive", "search-docs")
+	annotateAuthServices(cmd, "drive-search")
 
 	cmd.Flags().StringSliceVar(&fileTypes, "type", nil, "filter by doc type (docx|doc|sheet|slides|bitable|mindnote|file); repeatable or comma-separated")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope the search")
@@ -286,33 +282,23 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fileToken := result.FileToken
-			fileInfo := result.File
-			if fileInfo.Token == "" {
-				fileInfo.Token = fileToken
-			}
-			if fileInfo.Token == "" {
+			fileToken := strings.TrimSpace(result.FileToken)
+			if fileToken == "" {
 				return errors.New("upload response missing file token")
 			}
-			if fileInfo.Name == "" || fileInfo.FileType == "" || fileInfo.URL == "" {
-				meta, err := driveFileMetadataWithToken(cmd.Context(), state.SDK, tokenTypeValue, token, fileInfo.Token)
-				if err != nil {
-					return err
-				}
-				fileInfo = meta
-			}
 			payload := map[string]any{
-				"file_token": fileInfo.Token,
-				"file":       fileInfo,
+				"file_token":   fileToken,
+				"file_name":    uploadName,
+				"folder_token": folderToken,
 			}
 			text := tableTextRow(
-				[]string{"token", "name", "type", "url"},
-				[]string{fileInfo.Token, fileInfo.Name, fileInfo.FileType, fileInfo.URL},
+				[]string{"file_token", "file_name", "folder_token"},
+				[]string{fileToken, uploadName, folderToken},
 			)
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-write")
+	annotateAuthServices(cmd, "drive-upload")
 
 	cmd.Flags().StringVar(&filePath, "file", "", "path to local file (or provide as positional argument)")
 	cmd.Flags().StringVar(&folderToken, "folder-id", "", "Drive folder token (default: root)")
@@ -366,19 +352,6 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 			defer download.Reader.Close()
 			if !writeStdout && outDir != "" {
 				fileName := strings.TrimSpace(download.FileName)
-				if fileName == "" {
-					req := larksdk.GetDriveFileRequest{FileToken: fileToken}
-					var meta larksdk.DriveFile
-					if tokenTypeValue == tokenTypeUser {
-						meta, err = state.SDK.GetDriveFileMetadataWithUserToken(cmd.Context(), token, req)
-					} else {
-						meta, err = state.SDK.GetDriveFileMetadata(cmd.Context(), token, req)
-					}
-					if err == nil {
-						fileName = strings.TrimSpace(meta.Name)
-					}
-				}
-				fileName = strings.TrimSpace(fileName)
 				if fileName != "" {
 					fileName = filepath.Base(fileName)
 				}
@@ -421,6 +394,8 @@ func newDriveDownloadCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+
+	annotateAuthServices(cmd, "drive-download")
 
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path or directory (or - for stdout)")
 	_ = cmd.MarkFlagRequired("out")
@@ -649,7 +624,7 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-write")
+	annotateAuthServices(cmd, "drive-permissions")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: doc, docx, sheet, bitable, file)")
 	cmd.Flags().StringVar(&linkShare, "link-share", "", "link share permission (for example: tenant_readable, anyone_readable)")

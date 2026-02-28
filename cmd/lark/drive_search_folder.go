@@ -22,9 +22,6 @@ func searchDriveFilesInFolder(ctx context.Context, state *appState, userToken, q
 		return nil, errors.New("pages must be greater than 0")
 	}
 	folderID = strings.TrimSpace(folderID)
-	if folderID == "" {
-		return nil, errors.New("folder id is required")
-	}
 
 	files := make([]larksdk.DriveFile, 0, limit)
 	pageToken := ""

@@ -64,8 +64,8 @@ func TestBuildUserAuthorizeURLWithPrompt(t *testing.T) {
 }
 
 func TestBuildUserAuthorizeURLIncrementalScopes(t *testing.T) {
-	scopeList := []string{"offline_access", "drive:drive", "calendar:calendar"}
-	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive", true), " ")
+	scopeList := []string{"offline_access", "drive:drive.metadata:readonly", "space:document:retrieve", "calendar:calendar"}
+	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive.metadata:readonly space:document:retrieve", true), " ")
 	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", scopeValue, "", true)
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
@@ -84,8 +84,8 @@ func TestBuildUserAuthorizeURLIncrementalScopes(t *testing.T) {
 }
 
 func TestBuildUserAuthorizeURLNonIncrementalScopes(t *testing.T) {
-	scopeList := []string{"offline_access", "drive:drive", "calendar:calendar"}
-	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive", false), " ")
+	scopeList := []string{"offline_access", "drive:drive.metadata:readonly", "space:document:retrieve", "calendar:calendar"}
+	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive.metadata:readonly space:document:retrieve", false), " ")
 	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", scopeValue, "", false)
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
@@ -98,7 +98,7 @@ func TestBuildUserAuthorizeURLNonIncrementalScopes(t *testing.T) {
 	if query.Get("include_granted_scopes") != "" {
 		t.Fatalf("unexpected include_granted_scopes: %s", query.Get("include_granted_scopes"))
 	}
-	if query.Get("scope") != "offline_access calendar:calendar drive:drive" {
+	if query.Get("scope") != "offline_access calendar:calendar drive:drive.metadata:readonly space:document:retrieve" {
 		t.Fatalf("unexpected scope: %s", query.Get("scope"))
 	}
 }
@@ -118,7 +118,7 @@ func TestResolveUserOAuthScopesDefaultsToOfflineAccess(t *testing.T) {
 }
 
 func TestResolveUserOAuthScopesFromConfig(t *testing.T) {
-	state := &appState{Config: &config.Config{UserScopes: []string{"offline_access", "drive:drive"}}}
+	state := &appState{Config: &config.Config{UserScopes: []string{"offline_access", "drive:drive.metadata:readonly"}}}
 	scopes, source, err := resolveUserOAuthScopes(state, userOAuthScopeOptions{})
 	if err != nil {
 		t.Fatalf("resolve scopes: %v", err)
@@ -126,7 +126,7 @@ func TestResolveUserOAuthScopesFromConfig(t *testing.T) {
 	if source != "config" {
 		t.Fatalf("unexpected source: %s", source)
 	}
-	if strings.Join(scopes, " ") != "offline_access drive:drive" {
+	if strings.Join(scopes, " ") != "offline_access drive:drive.metadata:readonly" {
 		t.Fatalf("unexpected scopes: %v", scopes)
 	}
 }
@@ -134,7 +134,7 @@ func TestResolveUserOAuthScopesFromConfig(t *testing.T) {
 func TestResolveUserOAuthScopesFromServicesReadonly(t *testing.T) {
 	state := &appState{Config: config.Default()}
 	opts := userOAuthScopeOptions{
-		Services:    []string{"drive"},
+		Services:    []string{"drive-metadata"},
 		ServicesSet: true,
 		Readonly:    true,
 	}
@@ -145,7 +145,7 @@ func TestResolveUserOAuthScopesFromServicesReadonly(t *testing.T) {
 	if source != "services" {
 		t.Fatalf("unexpected source: %s", source)
 	}
-	if strings.Join(scopes, " ") != "offline_access drive:drive:readonly" {
+	if strings.Join(scopes, " ") != "offline_access drive:drive.metadata:readonly space:document:retrieve" {
 		t.Fatalf("unexpected scopes: %v", scopes)
 	}
 }
