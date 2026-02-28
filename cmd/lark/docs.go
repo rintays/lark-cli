@@ -237,7 +237,7 @@ func newDocsExportCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-export")
+	annotateAuthServices(cmd, "drive-download")
 
 	cmd.Flags().StringVar(&format, "format", "", "export format (pdf)")
 	cmd.Flags().StringVar(&outPath, "out", "", "output file path (or - for stdout)")

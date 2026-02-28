@@ -26,7 +26,7 @@ func newDriveCmd(state *appState) *cobra.Command {
 - A folder contains files; default folder-id is the root.
 - File types include docx, sheet, slide, mindnote, and file.`,
 	}
-	annotateAuthServices(cmd, "drive-metadata")
+	annotateAuthServices(cmd, "drive-read")
 	cmd.AddCommand(newDriveListCmd(state))
 	cmd.AddCommand(newDriveSearchCmd(state))
 	cmd.AddCommand(newDriveInfoCmd(state))
@@ -172,7 +172,7 @@ func newDriveSearchCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-search")
+	annotateAuthServices(cmd, "drive-read")
 
 	cmd.Flags().StringSliceVar(&fileTypes, "type", nil, "filter by doc type (docx|doc|sheet|slides|bitable|mindnote|file); repeatable or comma-separated")
 	cmd.Flags().StringVar(&folderID, "folder-id", "", "Drive folder token to scope the search")
@@ -298,7 +298,7 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-upload")
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&filePath, "file", "", "path to local file (or provide as positional argument)")
 	cmd.Flags().StringVar(&folderToken, "folder-id", "", "Drive folder token (default: root)")
@@ -500,7 +500,7 @@ func newDriveExportCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-export")
+	annotateAuthServices(cmd, "drive-download")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: docx, sheet, bitable)")
 	cmd.Flags().StringVar(&format, "format", "", "export format (for example: pdf, docx, xlsx)")
@@ -624,7 +624,7 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
-	annotateAuthServices(cmd, "drive-permissions")
+	annotateAuthServices(cmd, "drive-admin")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: doc, docx, sheet, bitable, file)")
 	cmd.Flags().StringVar(&linkShare, "link-share", "", "link share permission (for example: tenant_readable, anyone_readable)")

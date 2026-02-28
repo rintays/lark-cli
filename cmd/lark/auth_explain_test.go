@@ -39,17 +39,17 @@ func TestAuthExplainDriveSearchJSON(t *testing.T) {
 	if payload.Command != "drive search" {
 		t.Fatalf("command: expected %q, got %q", "drive search", payload.Command)
 	}
-	if strings.Join(payload.Services, ",") != "drive-search" {
-		t.Fatalf("services: expected [drive-search], got %v", payload.Services)
+	if strings.Join(payload.Services, ",") != "drive-read" {
+		t.Fatalf("services: expected [drive-read], got %v", payload.Services)
 	}
-	if strings.Join(payload.TokenTypes, ",") != "user" {
-		t.Fatalf("token_types: expected [user], got %v", payload.TokenTypes)
+	if strings.Join(payload.TokenTypes, ",") != "tenant,user" {
+		t.Fatalf("token_types: expected [tenant,user], got %v", payload.TokenTypes)
 	}
 	if !payload.RequiresOffline {
 		t.Fatalf("requires_offline: expected true")
 	}
-	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive.search:readonly" {
-		t.Fatalf("required_user_scopes: expected [drive:drive.search:readonly], got %v", payload.RequiredUserScopes)
+	if strings.Join(payload.RequiredUserScopes, ",") != "docs:document.comment:read,drive:drive.metadata:readonly,drive:drive.search:readonly,space:document:retrieve" {
+		t.Fatalf("required_user_scopes: expected [docs:document.comment:read drive:drive.metadata:readonly drive:drive.search:readonly space:document:retrieve], got %v", payload.RequiredUserScopes)
 	}
 	if payload.SuggestedUserLoginCommand == "" {
 		t.Fatalf("expected suggested_user_login_command")
@@ -57,7 +57,7 @@ func TestAuthExplainDriveSearchJSON(t *testing.T) {
 	if !strings.Contains(payload.SuggestedUserLoginCommand, "lark auth user login") {
 		t.Fatalf("unexpected suggested_user_login_command: %q", payload.SuggestedUserLoginCommand)
 	}
-	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"drive-search\"") {
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"drive-read\"") {
 		t.Fatalf("unexpected suggested_user_login_command: %q", payload.SuggestedUserLoginCommand)
 	}
 	if strings.Join(payload.SuggestedUserLoginScopes, " ") == "" {
@@ -84,8 +84,8 @@ func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
 		t.Fatalf("unmarshal output: %v\noutput=%s", err, buf.String())
 	}
 
-	if strings.Join(payload.RequiredUserScopes, ",") != "drive:drive.search:readonly" {
-		t.Fatalf("required_user_scopes: expected [drive:drive.search:readonly], got %v", payload.RequiredUserScopes)
+	if strings.Join(payload.RequiredUserScopes, ",") != "docs:document.comment:read,drive:drive.metadata:readonly,drive:drive.search:readonly,space:document:retrieve" {
+		t.Fatalf("required_user_scopes: expected [docs:document.comment:read drive:drive.metadata:readonly drive:drive.search:readonly space:document:retrieve], got %v", payload.RequiredUserScopes)
 	}
 	if len(payload.SuggestedUserLoginScopes) == 0 || payload.SuggestedUserLoginScopes[0] != defaultUserOAuthScope {
 		t.Fatalf("expected suggested scopes to include %q first, got %v", defaultUserOAuthScope, payload.SuggestedUserLoginScopes)
@@ -99,7 +99,7 @@ func TestAuthExplainDriveSearchReadonlyJSON(t *testing.T) {
 	if !foundDriveSearch {
 		t.Fatalf("expected suggested scopes to include drive:drive.search:readonly, got %v", payload.SuggestedUserLoginScopes)
 	}
-	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"drive-search\"") {
+	if !strings.Contains(payload.SuggestedUserLoginCommand, "--services \"drive-read\"") {
 		t.Fatalf("expected suggested_user_login_command to include services, got %q", payload.SuggestedUserLoginCommand)
 	}
 	if !strings.Contains(payload.SuggestedUserLoginCommand, "--readonly") {

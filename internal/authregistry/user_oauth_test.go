@@ -7,7 +7,7 @@ import (
 
 func TestListUserOAuthServicesStableSorted(t *testing.T) {
 	got := ListUserOAuthServices()
-	want := []string{"calendar", "docs", "docx", "drive-comment-read", "drive-comment-write", "drive-download", "drive-export", "drive-metadata", "drive-permissions", "drive-search", "drive-upload", "im", "mail", "mail-send", "search-docs", "search-message", "search-user", "sheets", "task", "task-write", "tasklist", "tasklist-write", "vc-meeting", "wiki"}
+	want := []string{"calendar", "docs", "docx", "drive-admin", "drive-download", "drive-read", "drive-write", "im", "mail", "mail-send", "search-docs", "search-message", "search-user", "sheets", "task", "task-write", "tasklist", "tasklist-write", "vc-meeting", "wiki"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ListUserOAuthServices()=%v, want %v", got, want)
 	}
@@ -22,20 +22,22 @@ func TestExpandUserOAuthServiceAliases(t *testing.T) {
 }
 
 func TestUserOAuthScopesFromServicesStableUnion(t *testing.T) {
-	got1, err := UserOAuthScopesFromServices([]string{"drive-metadata", "docs"}, false, "")
+	got1, err := UserOAuthScopesFromServices([]string{"drive-read", "docs"}, false, "")
 	if err != nil {
 		t.Fatalf("scopes(drive,docs): %v", err)
 	}
-	got2, err := UserOAuthScopesFromServices([]string{"docs", "drive-metadata"}, false, "")
+	got2, err := UserOAuthScopesFromServices([]string{"docs", "drive-read"}, false, "")
 	if err != nil {
 		t.Fatalf("scopes(docs,drive): %v", err)
 	}
 	want := []string{
+		"docs:document.comment:read",
 		"docx:document.block:convert",
 		"docx:document:create",
 		"docx:document:readonly",
 		"docx:document:write_only",
 		"drive:drive.metadata:readonly",
+		"drive:drive.search:readonly",
 		"space:document:retrieve",
 	}
 	if !reflect.DeepEqual(got1, want) {
@@ -47,23 +49,25 @@ func TestUserOAuthScopesFromServicesStableUnion(t *testing.T) {
 }
 
 func TestUserOAuthScopesFromServicesReadonly(t *testing.T) {
-	got, err := UserOAuthScopesFromServices([]string{"drive-metadata"}, true, "")
+	got, err := UserOAuthScopesFromServices([]string{"drive-read"}, true, "")
 	if err != nil {
 		t.Fatalf("scopes(drive readonly): %v", err)
 	}
-	want := []string{"drive:drive.metadata:readonly", "space:document:retrieve"}
+	want := []string{"docs:document.comment:read", "drive:drive.metadata:readonly", "drive:drive.search:readonly", "space:document:retrieve"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("scopes=%v, want %v", got, want)
 	}
 }
 
 func TestUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *testing.T) {
-	got, err := UserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, true, "")
+	got, err := UserOAuthScopesFromServices([]string{"drive-read", "mail"}, true, "")
 	if err != nil {
 		t.Fatalf("scopes(drive,mail readonly): %v", err)
 	}
 	want := []string{
+		"docs:document.comment:read",
 		"drive:drive.metadata:readonly",
+		"drive:drive.search:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",
@@ -75,7 +79,7 @@ func TestUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *testing.T
 	}
 
 	// Ensure aggregation is deterministic w.r.t input ordering.
-	got2, err := UserOAuthScopesFromServices([]string{"mail", "drive-metadata"}, true, "")
+	got2, err := UserOAuthScopesFromServices([]string{"mail", "drive-read"}, true, "")
 	if err != nil {
 		t.Fatalf("scopes(mail,drive readonly): %v", err)
 	}

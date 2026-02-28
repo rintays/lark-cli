@@ -23,7 +23,7 @@ func TestWithUserScopeHintForCommand_InferredScopes(t *testing.T) {
 	if !strings.Contains(msg, "drive:drive.search:readonly") {
 		t.Fatalf("expected drive search scope, got: %s", msg)
 	}
-	if !strings.Contains(msg, "lark auth user login --services \"drive-search\" --force-consent") {
+	if !strings.Contains(msg, "lark auth user login --services \"drive-read\" --force-consent") {
 		t.Fatalf("expected relogin command, got: %s", msg)
 	}
 }

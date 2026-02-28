@@ -6,7 +6,7 @@ import (
 )
 
 func TestServicesMissingRequiredUserScopes(t *testing.T) {
-	missing, err := ServicesMissingRequiredUserScopes([]string{"drive-metadata", "mail", "wiki", "base"})
+	missing, err := ServicesMissingRequiredUserScopes([]string{"drive-read", "mail", "wiki", "base"})
 	if err != nil {
 		t.Fatalf("ServicesMissingRequiredUserScopes() err=%v", err)
 	}
@@ -31,7 +31,7 @@ func TestServicesMissingRequiredUserScopes(t *testing.T) {
 	wiki.RequiredUserScopes = nil
 	Registry["wiki"] = wiki
 
-	missing, err = ServicesMissingRequiredUserScopes([]string{"drive-metadata", "mail", "wiki", "base"})
+	missing, err = ServicesMissingRequiredUserScopes([]string{"drive-read", "mail", "wiki", "base"})
 	if err != nil {
 		t.Fatalf("ServicesMissingRequiredUserScopes() err=%v", err)
 	}

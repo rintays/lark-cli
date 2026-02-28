@@ -9,7 +9,7 @@ import (
 
 // DefaultUserOAuthServices is the default service set used when the user enables
 // the services-based OAuth mode but doesn't specify an explicit list.
-var DefaultUserOAuthServices = []string{"drive-metadata"}
+var DefaultUserOAuthServices = []string{"drive-read"}
 
 // UserOAuthServiceAliases maps user-facing aliases to service names.
 //
@@ -17,9 +17,22 @@ var DefaultUserOAuthServices = []string{"drive-metadata"}
 // to mean "all services that support user OAuth" (i.e., ListUserOAuthServices()).
 // The map entries are kept for backward-compat documentation but are not relied on.
 var UserOAuthServiceAliases = map[string][]string{
+	// Convenience alias: request all Drive-related capabilities.
+	"drive": {"drive-read", "drive-download", "drive-write", "drive-admin"},
+
+	// Back-compat aliases for older granular Drive services.
+	"drive-search":        {"drive-read"},
+	"drive-metadata":      {"drive-read"},
+	"drive-comment-read":  {"drive-read"},
+	"drive-download":      {"drive-download"},
+	"drive-export":        {"drive-download"},
+	"drive-upload":        {"drive-write"},
+	"drive-comment-write": {"drive-write"},
+	"drive-permissions":   {"drive-admin"},
+
 	// Deprecated legacy behavior: historically only covered the most common docs flows.
-	"all":  {"drive-metadata", "docx", "sheets"},
-	"user": {"drive-metadata", "docx", "sheets"},
+	"all":  {"drive-read", "docx", "sheets"},
+	"user": {"drive-read", "docx", "sheets"},
 }
 
 // ListUserOAuthServices returns services that can be used in services-based

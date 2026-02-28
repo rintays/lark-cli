@@ -6,12 +6,14 @@ import (
 )
 
 func TestSuggestedUserOAuthScopesFromServicesFullUsesVariantsAndFallback(t *testing.T) {
-	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, false)
+	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive-read", "mail"}, false)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices() err=%v", err)
 	}
 	want := []string{
+		"docs:document.comment:read",
 		"drive:drive.metadata:readonly",
+		"drive:drive.search:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",
@@ -25,12 +27,14 @@ func TestSuggestedUserOAuthScopesFromServicesFullUsesVariantsAndFallback(t *test
 }
 
 func TestSuggestedUserOAuthScopesFromServicesReadonlyUsesVariantsAndFallback(t *testing.T) {
-	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, true)
+	got, err := SuggestedUserOAuthScopesFromServices([]string{"drive-read", "mail"}, true)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(readonly) err=%v", err)
 	}
 	want := []string{
+		"docs:document.comment:read",
 		"drive:drive.metadata:readonly",
+		"drive:drive.search:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",
@@ -90,11 +94,11 @@ func TestSuggestedUserOAuthScopesFromServicesFullFallsBackToReadonlyWhenFullVari
 }
 
 func TestSuggestedUserOAuthScopesFromServicesDeterministicUnion(t *testing.T) {
-	a, err := SuggestedUserOAuthScopesFromServices([]string{"drive-metadata", "mail"}, true)
+	a, err := SuggestedUserOAuthScopesFromServices([]string{"drive-read", "mail"}, true)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(a) err=%v", err)
 	}
-	b, err := SuggestedUserOAuthScopesFromServices([]string{"mail", "drive-metadata"}, true)
+	b, err := SuggestedUserOAuthScopesFromServices([]string{"mail", "drive-read"}, true)
 	if err != nil {
 		t.Fatalf("SuggestedUserOAuthScopesFromServices(b) err=%v", err)
 	}

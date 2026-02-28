@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const driveSearchUserTokenHint = "drive search requires a user access token; set LARK_USER_ACCESS_TOKEN or run `lark auth user login --services drive --readonly --force-consent`"
+const driveSearchUserTokenHint = "drive search requires a user access token; set LARK_USER_ACCESS_TOKEN or run `lark auth user login --services drive-read --readonly --force-consent`"
 
 func resolveDriveSearchToken(ctx context.Context, state *appState) (string, error) {
 	if state == nil || state.Config == nil {

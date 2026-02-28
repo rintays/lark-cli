@@ -65,7 +65,7 @@ func TestBuildUserAuthorizeURLWithPrompt(t *testing.T) {
 
 func TestBuildUserAuthorizeURLIncrementalScopes(t *testing.T) {
 	scopeList := []string{"offline_access", "drive:drive.metadata:readonly", "space:document:retrieve", "calendar:calendar"}
-	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive.metadata:readonly space:document:retrieve", true), " ")
+	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access docs:document.comment:read drive:drive.metadata:readonly drive:drive.search:readonly space:document:retrieve", true), " ")
 	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", scopeValue, "", true)
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
@@ -85,7 +85,7 @@ func TestBuildUserAuthorizeURLIncrementalScopes(t *testing.T) {
 
 func TestBuildUserAuthorizeURLNonIncrementalScopes(t *testing.T) {
 	scopeList := []string{"offline_access", "drive:drive.metadata:readonly", "space:document:retrieve", "calendar:calendar"}
-	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access drive:drive.metadata:readonly space:document:retrieve", false), " ")
+	scopeValue := strings.Join(requestedUserOAuthScopes(scopeList, "offline_access docs:document.comment:read drive:drive.metadata:readonly drive:drive.search:readonly space:document:retrieve", false), " ")
 	urlStr, err := buildUserAuthorizeURL("https://open.feishu.cn", "app-id", userOAuthRedirectURL, "state123", scopeValue, "", false)
 	if err != nil {
 		t.Fatalf("build authorize url: %v", err)
@@ -134,7 +134,7 @@ func TestResolveUserOAuthScopesFromConfig(t *testing.T) {
 func TestResolveUserOAuthScopesFromServicesReadonly(t *testing.T) {
 	state := &appState{Config: config.Default()}
 	opts := userOAuthScopeOptions{
-		Services:    []string{"drive-metadata"},
+		Services:    []string{"drive-read"},
 		ServicesSet: true,
 		Readonly:    true,
 	}
@@ -145,7 +145,7 @@ func TestResolveUserOAuthScopesFromServicesReadonly(t *testing.T) {
 	if source != "services" {
 		t.Fatalf("unexpected source: %s", source)
 	}
-	if strings.Join(scopes, " ") != "offline_access drive:drive.metadata:readonly space:document:retrieve" {
+	if strings.Join(scopes, " ") != "offline_access docs:document.comment:read drive:drive.metadata:readonly drive:drive.search:readonly space:document:retrieve" {
 		t.Fatalf("unexpected scopes: %v", scopes)
 	}
 }

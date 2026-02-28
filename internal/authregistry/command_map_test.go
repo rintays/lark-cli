@@ -10,7 +10,7 @@ func TestServicesForCommandPathMapping(t *testing.T) {
 		path []string
 		want []string
 	}{
-		{path: []string{"drive"}, want: []string{"drive-metadata"}},
+		{path: []string{"drive"}, want: []string{"drive-read"}},
 		{path: []string{"docs"}, want: []string{"docs"}},
 		{path: []string{"sheets"}, want: []string{"sheets"}},
 		{path: []string{"mail"}, want: []string{"mail"}},
@@ -48,7 +48,7 @@ func TestServicesForCommandPathPrefixMatch(t *testing.T) {
 	if !ok {
 		t.Fatalf("ServicesForCommandPath(drive list)=ok false, want true")
 	}
-	want := []string{"drive-metadata"}
+	want := []string{"drive-read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ServicesForCommandPath(drive list)=%v, want %v", got, want)
 	}
@@ -59,7 +59,7 @@ func TestServicesForCommandNormalization(t *testing.T) {
 	if !ok {
 		t.Fatalf("ServicesForCommand(DRIVE LiSt)=ok false, want true")
 	}
-	want := []string{"drive-metadata"}
+	want := []string{"drive-read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ServicesForCommand(DRIVE LiSt)=%v, want %v", got, want)
 	}
@@ -94,7 +94,7 @@ func TestServicesForCommandPathUnknown(t *testing.T) {
 
 func TestServicesForCommandDeterministicSortedUnique(t *testing.T) {
 	orig := commandServiceMap["drive"]
-	commandServiceMap["drive"] = []string{"docs", "drive-metadata", "docs"}
+	commandServiceMap["drive"] = []string{"docs", "drive-read", "docs"}
 	t.Cleanup(func() {
 		commandServiceMap["drive"] = orig
 	})
@@ -103,7 +103,7 @@ func TestServicesForCommandDeterministicSortedUnique(t *testing.T) {
 	if !ok {
 		t.Fatalf("ServicesForCommand(drive)=ok false, want true")
 	}
-	want := []string{"docs", "drive-metadata"}
+	want := []string{"docs", "drive-read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ServicesForCommand(drive)=%v, want %v", got, want)
 	}

@@ -6,22 +6,29 @@ import (
 )
 
 func TestRequiredUserScopesFromServicesStableSortedUnique(t *testing.T) {
-	got, err := RequiredUserScopesFromServices([]string{"sheets", "drive-metadata", "drive-metadata", "docs"})
+	got, err := RequiredUserScopesFromServices([]string{"sheets", "drive-read", "drive-read", "docs"})
 	if err != nil {
 		t.Fatalf("RequiredUserScopesFromServices() err=%v", err)
 	}
-	want := []string{"docx:document:readonly", "drive:drive.metadata:readonly", "sheets:spreadsheet:read", "space:document:retrieve"}
+	want := []string{
+		"docs:document.comment:read",
+		"docx:document:readonly",
+		"drive:drive.metadata:readonly",
+		"drive:drive.search:readonly",
+		"sheets:spreadsheet:read",
+		"space:document:retrieve",
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("RequiredUserScopesFromServices()=%v, want %v", got, want)
 	}
 }
 
 func TestRequiredUserScopesFromServicesOrderIndependence(t *testing.T) {
-	a, err := RequiredUserScopesFromServices([]string{"drive-metadata", "mail", "wiki"})
+	a, err := RequiredUserScopesFromServices([]string{"drive-read", "mail", "wiki"})
 	if err != nil {
 		t.Fatalf("RequiredUserScopesFromServices(a) err=%v", err)
 	}
-	b, err := RequiredUserScopesFromServices([]string{"wiki", "mail", "drive-metadata"})
+	b, err := RequiredUserScopesFromServices([]string{"wiki", "mail", "drive-read"})
 	if err != nil {
 		t.Fatalf("RequiredUserScopesFromServices(b) err=%v", err)
 	}
@@ -29,7 +36,9 @@ func TestRequiredUserScopesFromServicesOrderIndependence(t *testing.T) {
 		t.Fatalf("union not deterministic: a=%v b=%v", a, b)
 	}
 	want := []string{
+		"docs:document.comment:read",
 		"drive:drive.metadata:readonly",
+		"drive:drive.search:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",
@@ -95,7 +104,7 @@ func TestRequiresOfflineFromServices(t *testing.T) {
 	if offline {
 		t.Fatalf("RequiresOfflineFromServices(base)=true, want false")
 	}
-	offline, err = RequiresOfflineFromServices([]string{"drive-metadata", "base"})
+	offline, err = RequiresOfflineFromServices([]string{"drive-read", "base"})
 	if err != nil {
 		t.Fatalf("RequiresOfflineFromServices(drive,base) err=%v", err)
 	}

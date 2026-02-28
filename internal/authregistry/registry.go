@@ -79,50 +79,76 @@ var Registry = map[string]ServiceDef{
 
 	// Drive ("My Space") uses dedicated scopes per operation. Avoid the legacy
 	// broad drive:drive / drive:drive:readonly scopes.
-	"drive-search": {
-		Name:               "drive search",
-		TokenTypes:         []TokenType{TokenUser},
-		RequiredUserScopes: []string{"drive:drive.search:readonly"},
-		UserScopes: ServiceScopeSet{
-			// Search is read-only.
-			Full:     []string{"drive:drive.search:readonly"},
-			Readonly: []string{"drive:drive.search:readonly"},
-		},
-		RequiresOffline: true,
-	},
-	"drive-metadata": {
-		Name:       "drive metadata",
+	//
+	// NOTE: Drive commands are intentionally mapped to a small set of bundle-level
+	// services (read/download/write/admin) to keep UX simple and avoid per-command
+	// fragmentation.
+	"drive-read": {
+		Name:       "drive read",
 		TokenTypes: []TokenType{TokenTenant, TokenUser},
-		// drive:drive.metadata:readonly covers file/folder metadata; space:document:retrieve
-		// is required by list endpoints.
-		RequiredUserScopes: []string{"drive:drive.metadata:readonly", "space:document:retrieve"},
+		// Read-only Drive operations used by list/info/metadata/search + comment reads.
+		RequiredUserScopes: []string{
+			"docs:document.comment:read",
+			"drive:drive.metadata:readonly",
+			"drive:drive.search:readonly",
+			"space:document:retrieve",
+		},
 		UserScopes: ServiceScopeSet{
-			Full:     []string{"drive:drive.metadata:readonly", "space:document:retrieve"},
-			Readonly: []string{"drive:drive.metadata:readonly", "space:document:retrieve"},
+			Full: []string{
+				"docs:document.comment:read",
+				"drive:drive.metadata:readonly",
+				"drive:drive.search:readonly",
+				"space:document:retrieve",
+			},
+			Readonly: []string{
+				"docs:document.comment:read",
+				"drive:drive.metadata:readonly",
+				"drive:drive.search:readonly",
+				"space:document:retrieve",
+			},
 		},
 		RequiresOffline: true,
 	},
 	"drive-download": {
-		Name:               "drive download",
-		TokenTypes:         []TokenType{TokenTenant, TokenUser},
-		RequiredUserScopes: []string{"drive:file:download"},
+		Name:       "drive download",
+		TokenTypes: []TokenType{TokenTenant, TokenUser},
+		// File downloads + export task flows.
+		RequiredUserScopes: []string{
+			"drive:export:readonly",
+			"drive:file:download",
+		},
 		UserScopes: ServiceScopeSet{
-			Full:     []string{"drive:file:download"},
-			Readonly: []string{"drive:file:download"},
+			Full: []string{
+				"drive:export:readonly",
+				"drive:file:download",
+			},
+			Readonly: []string{
+				"drive:export:readonly",
+				"drive:file:download",
+			},
 		},
 		RequiresOffline: true,
 	},
-	"drive-upload": {
-		Name:               "drive upload",
-		TokenTypes:         []TokenType{TokenTenant, TokenUser},
-		RequiredUserScopes: []string{"drive:file:upload"},
+	"drive-write": {
+		Name:       "drive write",
+		TokenTypes: []TokenType{TokenTenant, TokenUser},
+		// Uploads + comment writes.
+		RequiredUserScopes: []string{
+			"docs:document.comment:create",
+			"docs:document.comment:update",
+			"drive:file:upload",
+		},
 		UserScopes: ServiceScopeSet{
-			Full: []string{"drive:file:upload"},
+			Full: []string{
+				"docs:document.comment:create",
+				"docs:document.comment:update",
+				"drive:file:upload",
+			},
 		},
 		RequiresOffline: true,
 	},
-	"drive-permissions": {
-		Name:       "drive permissions",
+	"drive-admin": {
+		Name:       "drive admin",
 		TokenTypes: []TokenType{TokenTenant, TokenUser},
 		// Collaborator management + public permission settings.
 		RequiredUserScopes: []string{
@@ -141,31 +167,6 @@ var Registry = map[string]ServiceDef{
 				"docs:permission.setting:write_only",
 			},
 			Readonly: []string{"docs:permission.member:retrieve"},
-		},
-		RequiresOffline: true,
-	},
-	"drive-comment-read": {
-		Name:               "drive comment read",
-		TokenTypes:         []TokenType{TokenTenant, TokenUser},
-		RequiredUserScopes: []string{"docs:document.comment:read"},
-		UserScopes: ServiceScopeSet{
-			Full:     []string{"docs:document.comment:read"},
-			Readonly: []string{"docs:document.comment:read"},
-		},
-		RequiresOffline: true,
-	},
-	"drive-comment-write": {
-		Name:       "drive comment write",
-		TokenTypes: []TokenType{TokenTenant, TokenUser},
-		RequiredUserScopes: []string{
-			"docs:document.comment:create",
-			"docs:document.comment:update",
-		},
-		UserScopes: ServiceScopeSet{
-			Full: []string{
-				"docs:document.comment:create",
-				"docs:document.comment:update",
-			},
 		},
 		RequiresOffline: true,
 	},
@@ -269,10 +270,9 @@ var Registry = map[string]ServiceDef{
 		},
 		RequiresOffline: true,
 	},
-	"mail-send":    {Name: "mail send", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"mail:user_mailbox.message:send"}, RequiresOffline: true},
-	"mail-public":  {Name: "mail public", TokenTypes: []TokenType{TokenTenant}},
-	"drive-export": {Name: "drive export", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:export:readonly"}, RequiresOffline: true},
-	"wiki":         {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
+	"mail-send":   {Name: "mail send", TokenTypes: []TokenType{TokenUser}, RequiredUserScopes: []string{"mail:user_mailbox.message:send"}, RequiresOffline: true},
+	"mail-public": {Name: "mail public", TokenTypes: []TokenType{TokenTenant}},
+	"wiki":        {Name: "wiki", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"wiki:wiki"}, UserScopes: ServiceScopeSet{Full: []string{"wiki:wiki"}, Readonly: []string{"wiki:wiki:readonly"}}, RequiresOffline: true},
 	"vc-meeting": {
 		Name:       "vc meeting",
 		TokenTypes: []TokenType{TokenUser},

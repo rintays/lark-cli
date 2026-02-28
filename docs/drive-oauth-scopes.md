@@ -10,18 +10,14 @@ Primary sources:
 
 ## lark-cli Drive-related services (internal/authregistry)
 
-These are the granular services used by command→service mapping:
+Drive commands are mapped to a small set of **bundle-level** services:
 
 | Service | Required user OAuth scope codes |
 |---|---|
-| `drive-search` | `drive:drive.search:readonly` |
-| `drive-metadata` | `drive:drive.metadata:readonly`, `space:document:retrieve` |
-| `drive-download` | `drive:file:download` |
-| `drive-upload` | `drive:file:upload` |
-| `drive-export` | `drive:export:readonly` |
-| `drive-permissions` | `docs:permission.member:retrieve`, `docs:permission.member:create`, `docs:permission.member:update`, `docs:permission.member:delete`, `docs:permission.setting:write_only` |
-| `drive-comment-read` | `docs:document.comment:read` |
-| `drive-comment-write` | `docs:document.comment:create`, `docs:document.comment:update` |
+| `drive-read` | `drive:drive.metadata:readonly`, `space:document:retrieve`, `drive:drive.search:readonly`, `docs:document.comment:read` |
+| `drive-download` | `drive:file:download`, `drive:export:readonly` |
+| `drive-write` | `drive:file:upload`, `docs:document.comment:create`, `docs:document.comment:update` |
+| `drive-admin` | `docs:permission.member:retrieve`, `docs:permission.member:create`, `docs:permission.member:update`, `docs:permission.member:delete`, `docs:permission.setting:write_only` |
 
 > Note: We intentionally avoid the legacy broad scopes `drive:drive` and `drive:drive:readonly`.
 

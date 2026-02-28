@@ -14,7 +14,7 @@ func TestRequirementsForCommandDrive(t *testing.T) {
 		t.Fatalf("RequirementsForCommand(drive list) ok=false, want true")
 	}
 
-	if want := []string{"drive-metadata"}; !reflect.DeepEqual(services, want) {
+	if want := []string{"drive-read"}; !reflect.DeepEqual(services, want) {
 		t.Fatalf("services=%v, want %v", services, want)
 	}
 	if want := []TokenType{TokenTenant, TokenUser}; !reflect.DeepEqual(tokenTypes, want) {
@@ -23,7 +23,7 @@ func TestRequirementsForCommandDrive(t *testing.T) {
 	if !offline {
 		t.Fatalf("offline=false, want true")
 	}
-	if want := []string{"drive:drive.metadata:readonly", "space:document:retrieve"}; !reflect.DeepEqual(scopes, want) {
+	if want := []string{"docs:document.comment:read", "drive:drive.metadata:readonly", "drive:drive.search:readonly", "space:document:retrieve"}; !reflect.DeepEqual(scopes, want) {
 		t.Fatalf("scopes=%v, want %v", scopes, want)
 	}
 }
@@ -97,7 +97,7 @@ func TestRequirementsForCommandChatsAndMessagesMatch(t *testing.T) {
 
 func TestRequirementsForCommandDeterministicSortedUnique(t *testing.T) {
 	orig := commandServiceMap["drive"]
-	commandServiceMap["drive"] = []string{"docs", "drive-metadata", "docs"}
+	commandServiceMap["drive"] = []string{"docs", "drive-read", "docs"}
 	t.Cleanup(func() {
 		commandServiceMap["drive"] = orig
 	})
@@ -117,7 +117,7 @@ func TestRequirementsForCommandDeterministicSortedUnique(t *testing.T) {
 		t.Fatalf("RequirementsForCommand(drive) second call ok=false, want true")
 	}
 
-	wantServices := []string{"docs", "drive-metadata"}
+	wantServices := []string{"docs", "drive-read"}
 	if !reflect.DeepEqual(services1, wantServices) {
 		t.Fatalf("services=%v, want %v", services1, wantServices)
 	}
@@ -127,7 +127,7 @@ func TestRequirementsForCommandDeterministicSortedUnique(t *testing.T) {
 	if !offline1 {
 		t.Fatalf("offline=false, want true")
 	}
-	if want := []string{"docx:document:readonly", "drive:drive.metadata:readonly", "space:document:retrieve"}; !reflect.DeepEqual(scopes1, want) {
+	if want := []string{"docs:document.comment:read", "docx:document:readonly", "drive:drive.metadata:readonly", "drive:drive.search:readonly", "space:document:retrieve"}; !reflect.DeepEqual(scopes1, want) {
 		t.Fatalf("scopes=%v, want %v", scopes1, want)
 	}
 
