@@ -10,7 +10,7 @@ func TestRequiredUserScopesFromServicesStableSortedUnique(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RequiredUserScopesFromServices() err=%v", err)
 	}
-	want := []string{"docx:document:readonly", "drive:drive", "sheets:spreadsheet:read"}
+	want := []string{"docx:document:readonly", "drive:drive:readonly", "sheets:spreadsheet:read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("RequiredUserScopesFromServices()=%v, want %v", got, want)
 	}
@@ -29,7 +29,7 @@ func TestRequiredUserScopesFromServicesOrderIndependence(t *testing.T) {
 		t.Fatalf("union not deterministic: a=%v b=%v", a, b)
 	}
 	want := []string{
-		"drive:drive",
+		"drive:drive:readonly",
 		"mail:user_mailbox.message.address:read",
 		"mail:user_mailbox.message.body:read",
 		"mail:user_mailbox.message.subject:read",

@@ -312,6 +312,7 @@ func newDriveUploadCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&filePath, "file", "", "path to local file (or provide as positional argument)")
 	cmd.Flags().StringVar(&folderToken, "folder-id", "", "Drive folder token (default: root)")
@@ -648,6 +649,7 @@ func newDriveShareCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (for example: doc, docx, sheet, bitable, file)")
 	cmd.Flags().StringVar(&linkShare, "link-share", "", "link share permission (for example: tenant_readable, anyone_readable)")

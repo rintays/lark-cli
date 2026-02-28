@@ -139,6 +139,7 @@ func newDriveCommentAddCmd(state *appState, defaults driveCommentCommandDefaults
 			return state.Printer.Print(payload, textOut)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&quote, "quote", "", "anchor quote string for partial comments (must be unique and continuous in the file)")
 	cmd.Flags().StringVar(&text, "text", "", "plain text content (mutually exclusive with --content-json)")
@@ -280,6 +281,7 @@ func newDriveCommentUpdateCmd(state *appState, defaults driveCommentCommandDefau
 			return state.Printer.Print(payload, "ok")
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().BoolVar(&solved, "solved", false, "mark comment as solved (true) or unsolved (false)")
 	return cmd
@@ -399,6 +401,7 @@ func newDriveCommentReplyCmd(state *appState, defaults driveCommentCommandDefaul
 			return state.Printer.Print(payload, textOut)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&text, "text", "", "plain text content (mutually exclusive with --content-json)")
 	cmd.Flags().StringVar(&contentJSON, "content-json", "", driveCommentContentJSONHelp())
@@ -453,6 +456,7 @@ func newDriveCommentReplyUpdateCmd(state *appState, defaults driveCommentCommand
 			return state.Printer.Print(payload, "ok")
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&text, "text", "", "plain text content (mutually exclusive with --content-json)")
 	cmd.Flags().StringVar(&contentJSON, "content-json", "", driveCommentContentJSONHelp())

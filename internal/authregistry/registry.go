@@ -76,13 +76,31 @@ var Registry = map[string]ServiceDef{
 
 	// NOTE: "docs" is a legacy name used by existing commands; "docx" is the
 	// user-facing/API surface name for the same capability. Keep them aligned.
-	"drive": {Name: "drive", TokenTypes: []TokenType{TokenTenant, TokenUser}, RequiredUserScopes: []string{"drive:drive"}, UserScopes: ServiceScopeSet{Full: []string{"drive:drive"}, Readonly: []string{"drive:drive:readonly"}}, RequiresOffline: true},
+	"drive": {
+		Name:               "drive",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"drive:drive:readonly"},
+		UserScopes: ServiceScopeSet{
+			Full:     []string{"drive:drive"},
+			Readonly: []string{"drive:drive:readonly"},
+		},
+		RequiresOffline: true,
+	},
+	"drive-write": {
+		Name:               "drive write",
+		TokenTypes:         []TokenType{TokenTenant, TokenUser},
+		RequiredUserScopes: []string{"drive:drive"},
+		UserScopes: ServiceScopeSet{
+			Full: []string{"drive:drive"},
+		},
+		RequiresOffline: true,
+	},
 	"docs": {
 		Name:               "docs",
 		TokenTypes:         []TokenType{TokenTenant, TokenUser},
 		RequiredUserScopes: []string{"docx:document:readonly"},
 		UserScopes: ServiceScopeSet{
-			Full:     []string{"docx:document", "docx:document.block:convert", "docx:document:create", "docx:document:readonly", "docx:document:write_only"},
+			Full:     []string{"docx:document.block:convert", "docx:document:create", "docx:document:readonly", "docx:document:write_only"},
 			Readonly: []string{"docx:document:readonly"},
 		},
 		RequiresOffline: true,
@@ -92,7 +110,7 @@ var Registry = map[string]ServiceDef{
 		TokenTypes:         []TokenType{TokenTenant, TokenUser},
 		RequiredUserScopes: []string{"docx:document:readonly"},
 		UserScopes: ServiceScopeSet{
-			Full:     []string{"docx:document", "docx:document.block:convert", "docx:document:create", "docx:document:readonly", "docx:document:write_only"},
+			Full:     []string{"docx:document.block:convert", "docx:document:create", "docx:document:readonly", "docx:document:write_only"},
 			Readonly: []string{"docx:document:readonly"},
 		},
 		RequiresOffline: true,

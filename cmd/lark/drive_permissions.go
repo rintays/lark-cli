@@ -131,6 +131,7 @@ Arguments:
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
 	cmd.Flags().StringVar(&perm, "perm", "", "permission role (view, edit, full_access)")
@@ -326,6 +327,7 @@ func newDrivePermissionUpdateCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
 	cmd.Flags().StringVar(&perm, "perm", "", "permission role (view, edit, full_access)")
@@ -427,6 +429,7 @@ func newDrivePermissionDeleteCmd(state *appState) *cobra.Command {
 			return state.Printer.Print(payload, text)
 		},
 	}
+	annotateAuthServices(cmd, "drive-write")
 
 	cmd.Flags().StringVar(&fileType, "type", "", "Drive file type (docx, sheet, file, wiki, bitable, folder, mindnote, minutes, slides)")
 	cmd.Flags().StringVar(&permType, "perm-type", "", "permission scope for wiki (container, single_page)")
